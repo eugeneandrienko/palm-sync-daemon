@@ -1,0 +1,402 @@
+\documentclass[a4paper,12pt,oneside]{scrartcl}
+\usepackage{cmap}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{textcomp}
+\newcommand*{\No}{\textnumero}
+
+\usepackage{indentfirst}
+
+\usepackage[pdftex,
+            pdfauthor={Eugene Andrienko},
+            pdftitle={palm-sync-daemon description},
+            pdfsubject={Technical description of palm-sync-daemon},
+            pdfkeywords={Palm, OrgMode, Linux}]{hyperref}
+\hypersetup{
+    hidelinks,
+    unicode=true,
+    urlcolor=blue
+}
+\usepackage{breakurl}
+
+\usepackage[fleqn]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{icomma}
+
+\usepackage{graphicx}
+\graphicspath{{images/}}
+
+\usepackage{float}
+\usepackage{wrapfig}
+\usepackage{afterpage}
+\usepackage{paralist}
+\usepackage{topcapt}
+\usepackage{fancyhdr}
+\usepackage{extsizes}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+
+\usepackage{listingsutf8}
+\lstset{escapechar=|,
+  frame=single,
+  showstringspaces=false,
+  inputencoding=utf8,
+  extendedchars=true,
+  captionpos=b,
+  breaklines=true,
+  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}},
+  stringstyle=\ttfamily}
+
+\lstdefinelanguage{org}{
+  keywords={TODO, VERIFIED, DONE, CANCELLED, SCHEDULED, DEADLINE},
+  keywordstyle=\bfseries
+}
+
+\usepackage[backend=biber,
+    abbreviate=false,
+    style=numeric]{biblatex}
+\addbibresource{bibliography.bib}
+
+
+\renewcommand{\le}{\leqslant}
+\renewcommand{\ge}{\geqslant}
+% hm for break formulas. For ex.: \hm{=}
+\newcommand{\hm}[1]{#1\nobreak\discretionary{}%
+  {\hbox{$\mathsurround=0pt #1$}}{}}
+
+\renewcommand{\thesection}{\arabic{section}.}
+\renewcommand{\theequation}{\thesection\arabic{equation}}
+\renewcommand{\thesubsection}{\thesection\arabic{subsection}}
+\renewcommand{\labelenumii}{\theenumii}
+\renewcommand{\theenumii}{\theenumi.\arabic{enumii}.}
+
+\title{palm-sync-daemon description}
+\author{Eugene Andrienko}
+%\date{}
+
+
+%---------------------------------------------------------------------------
+
+
+\begin{document}
+
+\clearpage
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\pagestyle{fancy}
+\lhead{}
+\chead{}
+\rhead{palm-sync-daemon}
+\lfoot{}
+\cfoot{\arabic{page}}
+\rfoot{}
+
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
+
+\begin{tabular}{|l|l|l|}
+  \hline
+  \textbf{Date} & \textbf{Document version} & \textbf{Changes} \\
+  \hline
+  \hline
+  2024-01-14 & 1.0 & First version \\
+  \hline
+\end{tabular}
+
+\newpage
+
+%---------------------------------------------------------------------------
+
+\begin{abstract}
+  Main purpose of \texttt{palm-sync-daemon} is seamless synchronization between
+  Palm and OrgMode files on the Linux PC. Desired goal~--- user just press
+  button on the cradle (or cable) and all necessary data synchonize two way
+  between Palm and OrgMode files. Without destructive changes on org-files.
+
+  Org-files will be synchronized with the next applications on the Palm:
+  \begin{itemize}
+  \item Calendar
+  \item Memos
+  \item Tasks
+  \end{itemize}
+
+  Palm device running Palm OS 5.4.7 (Garnet).
+\end{abstract}
+
+\section{Desired OrgMode file format}
+\label{sec:desired-orgmode-file}
+
+All data from org-files divided to 3 logical parts:
+\begin{enumerate}
+\item Data for Memos~--- different notes, not belonging to TODO-list of calendar
+  data.
+\item Data for Tasks~--- tasks from TODO-list
+\item Data for Calendar~--- tasks (may be repetitive) from TODO-list with time
+  range.
+\end{enumerate}
+
+Lets look closer to the each type of data.
+
+\subsection{Notes}
+\label{sec:notes}
+
+My notes stored in separate file, for example \texttt{org/notes.org}. Each note
+is a first-level headline\footnote{In terms of OrgMode. See
+  \url{https://orgmode.org/manual/Headlines.html}}. Under this headline can be
+headlines of the next levels, some text of lists~--- all of these belongs to
+the this note.
+
+Each note can have categories or do not have categories at all. For example,
+categories which I use:
+\begin{itemize}
+\item \texttt{doings}
+\item \texttt{psychotherapy}
+\item \texttt{todo}
+\end{itemize}
+
+Each note can have priority or TODO keyword\footnote{See
+  \url{https://orgmode.org/manual/TODO-Basics.html}} or may not. For example, I
+can use next TODO keywords:
+\begin{itemize}
+\item \texttt{TODO}
+\item \texttt{VERIFIED}
+\item \texttt{DONE}
+\item \texttt{CANCELLED}
+\end{itemize}
+
+Notes example:
+\begin{lstlisting}[language=org]
+  * Camera wrist strap
+  * Knots:
+  - straight
+  - figure eight
+  - bowline
+  - Austrian conductor
+  ** From Ashley Book of Knots:
+  - Knot #1119
+  - Knot #5
+\end{lstlisting}
+
+\subsection{TODO-list tasks}
+\label{sec:todo-list-tasks}
+
+TODO-lists stored in a separate file. For example: \texttt{org/todo.org}. Each
+TODO-list item is a first-level headline, which starts from TODO keyword
+(described above).
+
+Each TODO-list item can have a special tag, which marks item as:
+\begin{itemize}
+\item Important and urgent~--- \texttt{important\_urgent} tag
+\item Important and not urgent~--- \texttt{important\_nonurgent} tag
+\item Not important and urgent~--- \texttt{nonimportant\_urgent} tag
+\item Not important and not urgent~--- \texttt{nonimportant\_nonurgent} tag.
+\end{itemize}
+
+Also, item may not have any tags at all.
+
+Example:
+\begin{lstlisting}[language=org]
+  * TODO Buy bicycle parts               :important_urgent:
+  * TODO Fix printer paper feed          :important_nonurgent:
+\end{lstlisting}
+
+Each TODO-list item \textit{may have} property \texttt{SCHEDULED} or
+\texttt{DEADLINE} or just an explanatory text right after first-level headline:
+\begin{lstlisting}[language=org]
+  * TODO Recall if parcel is lost
+  SCHEDULED: <2024-01-02 Tue>
+  Date of first call: 25-12-2023
+  8-800-234-48-99
+\end{lstlisting}
+
+\subsection{Calendar tasks}
+\label{sec:calendar-tasks}
+
+Calendar tasks stored in the same file as TODO-list tasks (see
+section~\ref{sec:todo-list-tasks}). But calendar tasks differs from TODO-list
+tasks. Calendar tasks has a time range. Also a repeater interval may be
+set\footnote{See \url{https://orgmode.org/manual/Timestamps.html}}.
+
+For example:
+\begin{lstlisting}[language=org]
+  * TODO Therapy
+  SCHEDULED: <2024-01-08 Mon 08:00-09:30 +1w>
+\end{lstlisting}
+
+\section{Synchronization scenario~--- first look}
+\label{sec:synchr-scen-first-look}
+
+Primarily, I want to create simple but robust synchronization algorithm. It
+should neither duplicate nor delete data on the computer or on the Palm. Of
+course, data should not be corrupted too easy.
+
+As you see from examples above (see section~\ref{sec:desired-orgmode-file}), I
+do not use any special IDs (like UUID) to distinguish records in
+org-files. Also, I do not save date of creation or modification of headline
+inside drawer~--- I want my files to be visually clean.
+
+Records from Palm and from org-file will be equal if text from Palm record
+header and from first-level headline will be equal. If there are no special
+headers, like in Memos application~--- then we treat as header all symbols in
+note from first symbol to symbol(s) of carriage return (plus line feed).
+
+If user changed the same record in Palm and in org-file
+\textit{simultaneously}~--- that's \textbf{his problem}. In that case his record
+will be corrupted. If user deleted something in Palm~"--- corresponding record
+will not be deleted on the org-file, to preserve org-files contents. \textbf{Do
+  not delete anything on Palm~--- do this action only on PC}.
+
+Other org-files content which should be synced properly:
+\begin{description}
+\item[Tags] should be mapped to categories on the Palm. Handheld device has some
+  limitations on the length of category name. So, for example tag name
+  \texttt{important\_urgent} is too long and for Palm it should be mapped to
+  \texttt{Imp.\,Urgent} category name. Category names should conform Palm Design
+  Guidelines~\cite{PalmDesignGuide}.
+
+  If record from org-file does not have tag~--- it should be mapped to
+  \texttt{Unfilled} category on the Palm device.
+\item[TODO keywords] should be mapped in the next way: \texttt{TODO} and
+  \texttt{VERIFIED} keywords mapped to unchecked check-box on the corresponding
+  Palm application. \texttt{DONE} and \texttt{CANCELLED} keywords should be
+  mapped to checked check-box.
+
+  When synchronizing notes to the Memos application, all TODO keywords should be
+  removed.
+\item[Dates] should be mapped one by one when synchronizing to/from the
+  corresponding applications on the Palm.
+\item[Time ranges] should be mapped one by one when synchronizing to/from the
+  corresponding applications on the Palm.
+\item[Repeater intervals] should be mapped one by one when synchronizing to/from
+  the corresponding applications on the Palm.
+
+  When we change TODO keyword to the \texttt{DONE} or \texttt{CANCELLED} in the
+  Emacs OrgMode~--- scheduled date will increment to the corresponding repeater
+  interval. To avoid unnecessary rollback of this change after synchronization
+  with Palm~--- we should compare date in Palm plus $N$ repeater intervals with
+  date in org-file ($N$ is integer). If dates equal~--- do not sync date from
+  Palm with date in org-file.
+
+  And vice versa~--- if we synchronize org-files with Palm~--- compare date in
+  Palm plus $N$ repeater interval with date in org-file. If dates equal~--- do
+  not sync date from org-file with date in Palm.
+
+  If dates not equal (for integer $N$)~--- synchronize date as usual.
+\end{description}
+
+If first-level headers have some descriptive text below, or bullet lists, or
+next-level headers~--- they should be synced as text into corresponding record
+in Palm.
+
+To a first approximation, I see the synchronization scenario as follows. User
+comes home, insert Palm into the cradle and press button. After that our daemon
+discovers Palm device in the system and immediately starts synchronization
+process. This process runs in the background and \textbf{should not} require
+user attention.
+
+Algorithm of synchronization process can look like this:
+\begin{enumerate}
+\item \textbf{Synchronize org-files on the PC with data from Palm}. Assume, that
+  user did some \textit{important} changes on the go (change TODO-list item
+  status, etc) and we need to sync these changes with PC.
+
+  If user delete something on the Palm~--- \textit{do not sync} these changes
+  with PC!  Better to delete all necessary records directly on PC to not
+  suddenly damage the user org-files.
+
+  \begin{enumerate}
+  \item If note(s) exists on the Memos application and do not exists on the
+    org-files~--- sync it with org-files (write it to \texttt{notes.org}, for
+    example).
+
+    Use symbols from the start of note to the first newline as text for
+    first-level headline in org-file. If there are some text after that
+    newline~--- add it as text under the first-level headline.
+  \item If there is a note, which exists both on the Palm and on the PC~---
+    check is there a text under this note? If this text exists, then compare
+    text on Palm and on PC, ignoring the newlines. If texts not equals~--- sync
+    text on PC with text from Palm.
+  \item If TODO-list item exists on the Tasks application and do not exists in
+    the org-files~--- sync it with org-files (write it to \texttt{todo.org},,
+    for example).
+
+    If TODO-list item has unchecked checkbox~--- sync it with \texttt{TODO}
+    keyword. If item has checked checkbox~--- sync it with \texttt{DONE}
+    keyword.
+
+    Treat text from the TODO-list header as first-level headline and all text
+    below (if exists) as text below first-level headline.
+  \item If TODO-list item exists both on Palm and on PC, then:
+    \begin{itemize}
+    \item Compare the statuses. If record from Palm is checked as done and has
+      \texttt{TODO} or \texttt{VERIFIED} statuses on the PC~--- then change
+      status to \texttt{DONE} on the PC. If record from Palm is unchecked and
+      has \texttt{DONE} or \texttt{CANCELLED} statuses on the PC~--- then change
+      status to \texttt{TODO} on the PC.
+    \item Compare categories. If category changed on the Palm~--- change it on
+      the PC.
+    \item Compare planned time. If time changed on the Palm~--- change it on the
+      PC.
+    \item Compare description for TODO item in Tasks and text below first-level
+      headline in the org-file. If there are not equal (ignore newlines)~---
+      copy text from Palm to org-file.
+    \end{itemize}
+  \item If record in Calendar exists in Palm and not exists on the PC~--- copy
+    it to org-files. All record properties~--- date, time range, repeater
+    interval and text should be copied to org-file too.
+  \item If record in Calendar already exists in the org-file and there is no
+    repeater interval~--- sync record in the same manner like TODO-list item
+    sync, described above.
+  \item If record in Calendar already exists in the org-file and both records
+    have repeater intervals~--- check is date in org-file equals with date from
+    Calendar. How to compare dates~--- described in previous list in
+    \textit{«Repeater intervals»} item.
+
+    If dates and repeater intervals are equal~--- do not sync date and repeater
+    interval from Palm with date and repeater interval in org-file. Otherwise
+    sync it.
+
+    All other record properties~--- sync them in same manner as described above,
+    for TODO-list item. Do not change TODO keywords for records on the PC~---
+    Calendar on Palm do not has the checkboxes with same meaning.
+  \end{enumerate}
+\item \textbf{Synchronize data on the Palm with org-files on the PC}. At this
+  point all necessary data from Palm already synced with our org-files. So we
+  need only to sync new data from PC with our Palm handheld.
+
+  User can add some new data on the PC\footnote{What's why we do not delete
+    records on the PC if there are not exists on the Palm PDA.}, so we need to
+  add these changes to the Palm PDA.
+
+  \begin{enumerate}
+  \item If we have new note on the PC~--- sync it with Memos application.
+  \item If we have new TODO-list item on the PC~--- sync it with Tasks
+    application.
+  \item If we have new TODO-list item with time range~--- sync it with Calendar
+    application.
+  \end{enumerate}
+\end{enumerate}
+
+% ---------------------------------------------------------------------------
+
+\newpage
+
+\printbibliography[heading=bibintoc]
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
