@@ -69,10 +69,6 @@ doc/auto/
 .deps/
 .dirstamp
 autom4te.cache/
-compile
-depcomp
-install-sh
-missing
 Makefile
 Makefile.in
 config.h
@@ -81,4 +77,3 @@ stamp-h1
 *~
 
 palm-sync-daemon
-
