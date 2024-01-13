@@ -1,0 +1,32 @@
+.TH PALM-SYNC-DAEMON 1
+.SH NAME
+palm-sync-daemon \- synchronize Palm with org-files
+.SH SYNOPSIS
+.B palm-sync-daemon
+[\fB\-f\fR]
+.SH DESCRIPTION
+.B palm-sync-daemon
+is a daemon to synchronize Palm with given org-files.
+.SH OPTIONS
+.TP
+.BR \-f ", " \-\-foreground
+Run daemon in foreground.
+.SH EXIT STATUS
+.TP
+.BR 0
+Program exited normally,
+.TP
+.BR 1
+Failed to parse commandline arguments,
+.TP
+.BR 2
+Failed to setup
+.BR atexit()
+function,
+.TP
+.BR 3
+Failed to daemonize.
+.SH AUTHOR
+Written by Eugene Andrienko.
+.SH REPORTING BUGS
+Report bugs to <https://github.com/eugeneandrienko/palm-sync-daemon/issues>

@@ -64,3 +64,21 @@ doc/auto/
 *.run.xml
 *.synctex.gz
 *.toc
+
+# Autoconf
+.deps/
+.dirstamp
+autom4te.cache/
+compile
+depcomp
+install-sh
+missing
+Makefile
+Makefile.in
+config.h
+config.status
+stamp-h1
+*~
+
+palm-sync-daemon
+
