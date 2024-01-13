@@ -8,13 +8,15 @@
 #include <errno.h>
 #include <popt.h>
 #include <string.h>
-#include <syslog.h>
 #include <unistd.h>
-#include "../config.h"
+#include "config.h"
+#include "log.h"
+
 
 void _on_exit_actions()
 {
-	closelog();
+	log_write(LOG_INFO, "Closing...");
+	log_close();
 }
 
 int main(int argc, const char * argv[])
@@ -45,20 +47,20 @@ int main(int argc, const char * argv[])
 		return 2;
 	}
 
-	/* Connect to system logger */
-	openlog(PACKAGE_NAME, LOG_PID, LOG_DAEMON);
+	log_init(foreground);
 
 	/* Daemonize program */
 	if(!foreground)
 	{
 		if(daemon(0, 0))
 		{
-			syslog(LOG_EMERG, "Fail to daemonize: %s", strerror(errno));
+			log_write(LOG_EMERG, "Fail to daemonize: %s", strerror(errno));
 			return 3;
 		}
 	}
 
 	/* Main actions of program */
+	log_write(LOG_INFO, "%s started successfully", PACKAGE_NAME);
 
 	return 0;
 }

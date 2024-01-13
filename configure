@@ -4489,6 +4489,12 @@ then :
   printf "%s\n" "#define HAVE_SYSLOG_H 1" >>confdefs.h
 
 fi
+ac_fn_c_check_header_compile "$LINENO" "stdarg.h" "ac_cv_header_stdarg_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdarg_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_STDARG_H 1" >>confdefs.h
+
+fi
 
 
 # Checks for typedefs, structures, and compiler characteristics.
