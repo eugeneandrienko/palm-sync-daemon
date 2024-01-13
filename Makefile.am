@@ -5,3 +5,4 @@ palm_sync_daemon_SOURCES = \
 	src/main.c
 AM_CFLAGS = -Wall -I./include/
 dist_man_MANS = man/palm-sync-daemon.1
+dist_doc_DATA = LICENSE
