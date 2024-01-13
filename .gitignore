@@ -76,4 +76,10 @@ config.status
 stamp-h1
 *~
 
+# Binaries
 palm-sync-daemon
+log_test
+
+# Tests
+*.trs
+
