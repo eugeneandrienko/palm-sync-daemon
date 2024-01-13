@@ -1,7 +1,7 @@
 AC_PREREQ([2.69])
 AC_INIT([palm_sync_daemon],[1.0],[evg.andrienko@gmail.com])
-AM_INIT_AUTOMAKE
-AC_CONFIG_SRCDIR([src/main.c])
+AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror -Wportability])
+AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 

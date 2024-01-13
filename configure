@@ -616,7 +616,7 @@ PACKAGE_STRING='palm_sync_daemon 1.0'
 PACKAGE_BUGREPORT='evg.andrienko@gmail.com'
 PACKAGE_URL=''
 
-ac_unique_file="src/main.c"
+ac_unique_file="src/palm-sync-daemon.c"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stddef.h>

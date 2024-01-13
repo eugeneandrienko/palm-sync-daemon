@@ -52,7 +52,7 @@ Mkfile.old
 dkms.conf
 
 # LaTeX
-doc/auto/
+docs/auto/
 *.aux
 *.bbl
 *.bcf
