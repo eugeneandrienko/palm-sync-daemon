@@ -70,16 +70,20 @@ docs/auto/
 .dirstamp
 autom4te.cache/
 Makefile
-Makefile.in
 config.h
 config.status
 stamp-h1
 *~
 
 # Binaries
-palm-sync-daemon
+compile
+depcomp
+install-sh
 log_test
+missing
+palm-sync-daemon
 palm_sync_daemon_test
+test-driver
 
 # Tests
 *.trs

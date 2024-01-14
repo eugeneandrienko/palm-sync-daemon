@@ -8,4 +8,5 @@ rm -vf *\~
 aclocal
 autoconf
 autoheader
-automake
+automake --add-missing
+
