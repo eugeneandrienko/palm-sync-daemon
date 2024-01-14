@@ -1,3 +1,8 @@
+/**
+   @author Eugene Andrienko
+   @brief Simple logging subsystem realization
+*/
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <errno.h>
@@ -6,10 +11,15 @@
 #include "config.h"
 #include "log.h"
 
-#define LOG_BUFFER_SIZE 200
+#define LOG_BUFFER_SIZE 200 /** Size of buffer for log message strings */
 
-static int foreground = 0;
+static int foreground = 0; /** 0 if program runs as daemon, 1 if program runs foreground */
 
+/**
+   Initialize logging system.
+
+   @param fg 0 if program runs as daemon, 1 if program runs foreground
+*/
 void log_init(int fg)
 {
 	foreground = fg;
@@ -19,6 +29,15 @@ void log_init(int fg)
 	}
 }
 
+/**
+   Writes message to log.
+
+   Records message to syslog.
+   Last parameters - parameters for format string.
+
+   @param priority log priority (as for syslog(...))
+   @param format Format string
+*/
 void log_write(int priority, const char * format, ...)
 {
 	va_list vlist;
@@ -84,6 +103,9 @@ void log_write(int priority, const char * format, ...)
 	va_end(vlist);
 }
 
+/**
+   Close logging system.
+*/
 void log_close()
 {
 	if(!foreground)

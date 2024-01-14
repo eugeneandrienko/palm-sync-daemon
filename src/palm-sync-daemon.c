@@ -14,13 +14,22 @@
 #include "config.h"
 #include "log.h"
 
-#define ARGUMENT_BUFFER_SIZE 50
-#define PID_BUFFER_SIZE 10
-#define ENV_NOTES_FILE "PALM_SYNC_NOTES_ORG"
-#define ENV_TODO_FILE "PALM_SYNC_TODO_ORG"
-#define LOCK_FILE_PATH "/tmp/" PACKAGE_NAME ".pid"
+#define ARGUMENT_BUFFER_SIZE 50                    /** Buffer size for command-line argument */
+#define PID_BUFFER_SIZE 10                         /** Buffer size for PID as string */
+#define ENV_NOTES_FILE "PALM_SYNC_NOTES_ORG"       /** Environment variable with path to notes org-file */
+#define ENV_TODO_FILE "PALM_SYNC_TODO_ORG"         /** Environment variable with path to todo/calendar org-file */
+#define LOCK_FILE_PATH "/tmp/" PACKAGE_NAME ".pid" /** Path to lock-file */
 
 
+/**
+   Lock process to not execute another one instance of daemon.
+
+   Creates lock-file in LOCK_FILE_PATH which prevents execution of another
+   daemon instance.
+   If lock-file already exists - prevent program execution.
+
+   @return 0 is lock-file created, 1 if lock-file exists or some error happened.
+*/
 static int _lock_process()
 {
 	char pid[PID_BUFFER_SIZE] = "\0";
@@ -59,11 +68,20 @@ static int _lock_process()
 	return 0;
 }
 
+/**
+   Unlock process.
+
+   Remove lock-file and unlocks process.
+   This function should be called right before program exit (or termination).
+*/
 void _unlock_process()
 {
 	unlink(LOCK_FILE_PATH);
 }
 
+/**
+   Actions, which should be called on program exit.
+*/
 void _on_exit_actions()
 {
 	log_write(LOG_INFO, "Closing...");
@@ -71,29 +89,48 @@ void _on_exit_actions()
 	_unlock_process();
 }
 
-static char * _get_orgfile_path(char * env)
+/**
+   Read path to file from given environment variable.
+
+   Reads path to file from environment variable. Also checks is file exists and
+   process can read and write to it.
+
+   @param env Environment variable name
+   @return Path to file or NULL if function failed
+*/
+static char * _get_file_path(char * env)
 {
 	char * path = getenv(env);
 	if(path == NULL)
 	{
-		fprintf(stderr, "%s: no %s environment variable defined\n", PACKAGE_NAME, env);
+		log_write(LOG_EMERG, "%s: no %s environment variable defined\n", PACKAGE_NAME, env);
 		return NULL;
 	}
 	if(access(path, F_OK | R_OK | W_OK))
 	{
-		fprintf(stderr, "%s: no access to %s file\n", PACKAGE_NAME, path);
+		log_write(LOG_EMERG, "%s: no access to %s file\n", PACKAGE_NAME, path);
 		return NULL;
 	}
 	return path;
 }
 
-volatile static int terminateProgram = 0;
+volatile static int terminateProgram = 0; /** Flag that shows necessity of program termination */
 
+/**
+   Signal handler
+*/
 void sig_handler(int signum)
 {
 	terminateProgram = 1;
 }
 
+/**
+   Setup handler for signals.
+
+   Setup signal handler for SIGINT, SIGQUIT and SIGTERM.
+
+   @return 0 if handler successfully set, 1 if error happened
+*/
 static int _setup_sig_handler()
 {
 	struct sigaction sa;
@@ -166,15 +203,6 @@ int main(int argc, const char * argv[])
 	}
 	poptFreeContext(pContext);
 
-	/* Read necessary environment variables */
-	char * notesFile;
-	char * todoFile;
-	if((notesFile = _get_orgfile_path(ENV_NOTES_FILE)) == NULL ||
-	   (todoFile = _get_orgfile_path(ENV_TODO_FILE)) == NULL)
-	{
-		return 1;
-	}
-
 	/* Daemonize program */
 	if(!foreground)
 	{
@@ -204,7 +232,16 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
-	/* Main actions of program */
+	/* Read necessary environment variables */
+	char * notesFile;
+	char * todoFile;
+	if((notesFile = _get_file_path(ENV_NOTES_FILE)) == NULL ||
+	   (todoFile = _get_file_path(ENV_TODO_FILE)) == NULL)
+	{
+		return 1;
+	}
+
+	/* Main program actions */
 	log_write(LOG_INFO, "%s started successfully", PACKAGE_NAME);
 	log_write(LOG_DEBUG, "Device: %s", palmDeviceFile);
 	log_write(LOG_DEBUG, "Path to notes org-file: %s", notesFile);
