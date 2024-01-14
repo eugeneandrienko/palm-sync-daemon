@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include "config.h"
 #include "log.h"
+#include "palm.h"
+
 
 #define ARGUMENT_BUFFER_SIZE 50                    /** Buffer size for command-line argument */
 #define PID_BUFFER_SIZE 10                         /** Buffer size for PID as string */
@@ -44,20 +46,20 @@ static int _lock_process()
 					  LOCK_FILE_PATH, strerror(errno));
 			strcpy(pid, "UNKNOWN");
 		}
-		log_write(LOG_CRIT, "Lock file owned by process with PID %s\n", pid);
+		log_write(LOG_CRIT, "Lock file owned by process with PID %s", pid);
 		close(fd);
 		return 1;
 	}
 	else if(fd < 0)
 	{
-		log_write(LOG_EMERG, "Cannot create lock file %s: %s\n", LOCK_FILE_PATH, strerror(errno));
+		log_write(LOG_EMERG, "Cannot create lock file %s: %s", LOCK_FILE_PATH, strerror(errno));
 		return 1;
 	}
 
 	sprintf(pid, "%d", getpid());
 	if(write(fd, pid, strlen(pid)) == -1)
 	{
-		log_write(LOG_EMERG, "Failed to write PID to lock file %s: %s\n",
+		log_write(LOG_EMERG, "Failed to write PID to lock file %s: %s",
 				  LOCK_FILE_PATH, strerror(errno));
 		close(fd);
 		unlink(LOCK_FILE_PATH);
@@ -103,12 +105,12 @@ static char * _get_file_path(char * env)
 	char * path = getenv(env);
 	if(path == NULL)
 	{
-		log_write(LOG_EMERG, "%s: no %s environment variable defined\n", PACKAGE_NAME, env);
+		log_write(LOG_EMERG, "%s: no %s environment variable defined", PACKAGE_NAME, env);
 		return NULL;
 	}
-	if(access(path, F_OK | R_OK | W_OK))
+	if(access(path, R_OK | W_OK))
 	{
-		log_write(LOG_EMERG, "%s: no access to %s file\n", PACKAGE_NAME, path);
+		log_write(LOG_EMERG, "%s: no access to %s file", PACKAGE_NAME, path);
 		return NULL;
 	}
 	return path;
@@ -203,6 +205,8 @@ int main(int argc, const char * argv[])
 	}
 	poptFreeContext(pContext);
 
+	log_init(foreground);
+
 	/* Daemonize program */
 	if(!foreground)
 	{
@@ -213,8 +217,6 @@ int main(int argc, const char * argv[])
 		}
 	}
 
-	log_init(foreground);
-
 	if(_lock_process())
 	{
 		log_close();
@@ -223,12 +225,14 @@ int main(int argc, const char * argv[])
 
 	if(_setup_sig_handler())
 	{
+		log_close();
 		return 1;
 	}
 
 	if(atexit(_on_exit_actions))
 	{
 		log_write(LOG_EMERG, "%s: failed to set atexit function\n", PACKAGE_NAME);
+		log_close();
 		return 1;
 	}
 
@@ -253,6 +257,12 @@ int main(int argc, const char * argv[])
 		{
 			exit(0);
 		}
+		if(palm_device_test(palmDeviceFile))
+		{
+			sleep(1);
+			continue;
+		}
+
 		sleep(1);
 	}
 

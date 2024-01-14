@@ -4438,6 +4438,59 @@ then :
 
   LIBS="-lpopt $LIBS"
 
+else $as_nop
+  as_fn_error $? "cannot find libpopt" "$LINENO" 5
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for pi_connect in -lpisock" >&5
+printf %s "checking for pi_connect in -lpisock... " >&6; }
+if test ${ac_cv_lib_pisock_pi_connect+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpisock  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char pi_connect (void);
+int
+main (void)
+{
+return pi_connect ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_pisock_pi_connect=yes
+else $as_nop
+  ac_cv_lib_pisock_pi_connect=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pisock_pi_connect" >&5
+printf "%s\n" "$ac_cv_lib_pisock_pi_connect" >&6; }
+if test "x$ac_cv_lib_pisock_pi_connect" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBPISOCK 1" >>confdefs.h
+
+  LIBS="-lpisock $LIBS"
+
+else $as_nop
+  as_fn_error $? "cannot find libpisock" "$LINENO" 5
 fi
 
 
@@ -4469,12 +4522,6 @@ if test $ac_cv_header_stdlib_h = yes && test $ac_cv_header_string_h = yes
 then :
 
 printf "%s\n" "#define STDC_HEADERS 1" >>confdefs.h
-
-fi
-ac_fn_c_check_header_compile "$LINENO" "popt.h" "ac_cv_header_popt_h" "$ac_includes_default"
-if test "x$ac_cv_header_popt_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_POPT_H 1" >>confdefs.h
 
 fi
 ac_fn_c_check_header_compile "$LINENO" "errno.h" "ac_cv_header_errno_h" "$ac_includes_default"
@@ -4512,6 +4559,30 @@ if test "x$ac_cv_header_signal_h" = xyes
 then :
   printf "%s\n" "#define HAVE_SIGNAL_H 1" >>confdefs.h
 
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "popt.h" "ac_cv_header_popt_h" "$ac_includes_default"
+if test "x$ac_cv_header_popt_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find popt.h" "$LINENO" 5
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "libpisock/pi-header.h" "ac_cv_header_libpisock_pi_header_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpisock_pi_header_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find libpisock/pi-header.h" "$LINENO" 5
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "libpisock/pi-socket.h" "ac_cv_header_libpisock_pi_socket_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpisock_pi_socket_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find libpisock/pi-socket.h" "$LINENO" 5
 fi
 
 

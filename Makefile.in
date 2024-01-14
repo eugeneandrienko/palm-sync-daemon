@@ -111,12 +111,12 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_log_test_OBJECTS = src/log.$(OBJEXT) tests/log_test.$(OBJEXT)
 log_test_OBJECTS = $(am_log_test_OBJECTS)
 log_test_LDADD = $(LDADD)
-am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) \
+am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/palm.$(OBJEXT) \
 	src/palm-sync-daemon.$(OBJEXT)
 palm_sync_daemon_OBJECTS = $(am_palm_sync_daemon_OBJECTS)
 palm_sync_daemon_LDADD = $(LDADD)
 am_palm_sync_daemon_test_OBJECTS = src/palm-sync-daemon.$(OBJEXT) \
-	src/log.$(OBJEXT)
+	src/log.$(OBJEXT) src/palm.$(OBJEXT)
 palm_sync_daemon_test_OBJECTS = $(am_palm_sync_daemon_test_OBJECTS)
 palm_sync_daemon_test_LDADD = $(LDADD)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -163,7 +163,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/log.Po \
-	src/$(DEPDIR)/palm-sync-daemon.Po tests/$(DEPDIR)/log_test.Po
+	src/$(DEPDIR)/palm-sync-daemon.Po src/$(DEPDIR)/palm.Po \
+	tests/$(DEPDIR)/log_test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -501,6 +502,8 @@ top_srcdir = @top_srcdir@
 palm_sync_daemon_SOURCES = \
 	src/log.c \
 	src/log.h \
+	src/palm.c \
+	src/palm.h \
 	src/palm-sync-daemon.c
 
 AM_CFLAGS = \
@@ -525,7 +528,8 @@ log_test_SOURCES = \
 
 palm_sync_daemon_test_SOURCES = \
 	src/palm-sync-daemon.c \
-	src/log.c
+	src/log.c \
+	src/palm.c
 
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -644,6 +648,7 @@ tests/log_test.$(OBJEXT): tests/$(am__dirstamp) \
 log_test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test_DEPENDENCIES) 
 	@rm -f log_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(log_test_OBJECTS) $(log_test_LDADD) $(LIBS)
+src/palm.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/palm-sync-daemon.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
@@ -700,6 +705,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/log_test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
@@ -1243,6 +1249,7 @@ distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
+	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f tests/$(DEPDIR)/log_test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
@@ -1293,6 +1300,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -rf $(top_srcdir)/autom4te.cache
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
+	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f tests/$(DEPDIR)/log_test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic

@@ -2,6 +2,8 @@ bin_PROGRAMS = palm-sync-daemon
 palm_sync_daemon_SOURCES = \
 	src/log.c \
 	src/log.h \
+	src/palm.c \
+	src/palm.h \
 	src/palm-sync-daemon.c
 AM_CFLAGS = \
 	-I$(top_srcdir)/src
@@ -25,4 +27,5 @@ log_test_SOURCES = \
 	tests/log_test.c
 palm_sync_daemon_test_SOURCES = \
 	src/palm-sync-daemon.c \
-	src/log.c
+	src/log.c \
+	src/palm.c
