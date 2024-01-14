@@ -11,9 +11,14 @@ dist_doc_DATA = \
 	docs/technical_description.tex
 
 TESTS = \
-	tests/log_test.sh
+	tests/log_test.sh \
+	tests/palm_sync_daemon_test.sh
 check_PROGRAMS = \
-	log_test
+	log_test \
+	palm_sync_daemon_test
 log_test_SOURCES = \
 	src/log.c \
 	tests/log_test.c
+palm_sync_daemon_test_SOURCES = \
+	src/palm-sync-daemon.c \
+	src/log.c

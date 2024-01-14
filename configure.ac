@@ -15,7 +15,7 @@ AC_CHECK_LIB(popt, poptGetContext)
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT
-AC_CHECK_HEADERS([popt.h errno.h syslog.h stdarg.h time.h])
+AC_CHECK_HEADERS([popt.h errno.h syslog.h stdarg.h time.h fcntl.h signal.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

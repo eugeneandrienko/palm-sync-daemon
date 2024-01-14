@@ -79,6 +79,7 @@ stamp-h1
 # Binaries
 palm-sync-daemon
 log_test
+palm_sync_daemon_test
 
 # Tests
 *.trs

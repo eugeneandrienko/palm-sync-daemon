@@ -17,18 +17,10 @@ Palm PDA symbolic device where to connect. \fI/dev/ttyUSB1\fR by default.
 .SH EXIT STATUS
 .TP
 .BR 0
-Program exited normally,
+Program exited normally.
 .TP
 .BR 1
-Failed to parse commandline arguments,
-.TP
-.BR 2
-Failed to setup
-.BR atexit()
-function,
-.TP
-.BR 3
-Failed to daemonize.
+Failed to start daemon.
 .SH ENVIRONMENT
 .TP
 PALM_SYNC_NOTES_ORG
@@ -36,6 +28,10 @@ Path to OrgMode file with notes.
 .TP
 PALM_SYNC_TODO_ORG
 Path to OrgMode file with TODO items and calendar records.
+.SH FILES
+.TP
+\fI/tmp/palm-sync-daemon.pid\fR
+Daemon's lock file.
 .SH AUTHOR
 Written by Eugene Andrienko.
 .SH REPORTING BUGS
