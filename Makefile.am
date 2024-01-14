@@ -1,12 +1,12 @@
 bin_PROGRAMS = palm-sync-daemon
 palm_sync_daemon_SOURCES = \
+	include/log.h \
 	src/log.c \
-	src/log.h \
+	include/palm.h \
 	src/palm.c \
-	src/palm.h \
 	src/palm-sync-daemon.c
 AM_CFLAGS = \
-	-I$(top_srcdir)/src
+	-I$(top_srcdir)/include
 
 dist_man_MANS = docs/palm-sync-daemon.1
 dist_doc_DATA = \
