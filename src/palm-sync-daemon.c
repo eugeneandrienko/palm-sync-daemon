@@ -39,8 +39,10 @@ int main(int argc, const char * argv[])
 {
 	/* Parse command-line arguments */
 	int foreground = 0;
+	char palmDeviceFile[ARGUMENT_BUFFER_SIZE] = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
+		{"device", 'd', POPT_ARG_STRING, palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
 		{NULL, '\0', POPT_ARG_NONE, NULL, 0, NULL, NULL}
 	};
@@ -63,7 +65,7 @@ int main(int argc, const char * argv[])
 	if((notesFile = _get_orgfile_path(ENV_NOTES_FILE)) == NULL ||
 	   (todoFile = _get_orgfile_path(ENV_TODO_FILE)) == NULL)
 	{
-		return 2;
+		return 1;
 	}
 
 	/* Daemonize program */

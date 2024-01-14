@@ -3,7 +3,7 @@
 palm-sync-daemon \- synchronize Palm with org-files
 .SH SYNOPSIS
 .B palm-sync-daemon
-[\fB\-f\fR]
+[\fBOPTION\fR]
 .SH DESCRIPTION
 .B palm-sync-daemon
 is a daemon to synchronize Palm with given org-files.
@@ -11,6 +11,9 @@ is a daemon to synchronize Palm with given org-files.
 .TP
 .BR \-f ", " \-\-foreground
 Run daemon in foreground.
+.TP
+.BR \-d ", " \-\-device =\fIDEVICE\fR
+Palm PDA symbolic device where to connect. \fI/dev/ttyUSB1\fR by default.
 .SH EXIT STATUS
 .TP
 .BR 0
