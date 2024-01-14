@@ -7,6 +7,7 @@ LOCK_FILE="/tmp/palm-sync-daemon.pid"
 
 # Test locking files
 ./palm_sync_daemon_test
+sleep 2
 if [ ! -f "$LOCK_FILE" ]; then
     echo "Failed test! Lock file not created"
     exit 1
