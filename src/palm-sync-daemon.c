@@ -12,11 +12,27 @@
 #include "config.h"
 #include "log.h"
 
+#define ENV_NOTES_FILE "PALM_SYNC_NOTES_ORG"
+#define ENV_TODO_FILE "PALM_SYNC_TODO_ORG"
 
 void _on_exit_actions()
 {
 	log_write(LOG_INFO, "Closing...");
 	log_close();
+static char * _get_orgfile_path(char * env)
+{
+	char * path = getenv(env);
+	if(path == NULL)
+	{
+		fprintf(stderr, "%s: no %s environment variable defined\n", PACKAGE_NAME, env);
+		return NULL;
+	}
+	if(access(path, F_OK | R_OK | W_OK))
+	{
+		fprintf(stderr, "%s: no access to %s file\n", PACKAGE_NAME, path);
+		return NULL;
+	}
+	return path;
 }
 
 int main(int argc, const char * argv[])
@@ -41,13 +57,14 @@ int main(int argc, const char * argv[])
 	}
 	poptFreeContext(pContext);
 
-	if(atexit(_on_exit_actions))
+	/* Read necessary environment variables */
+	char * notesFile;
+	char * todoFile;
+	if((notesFile = _get_orgfile_path(ENV_NOTES_FILE)) == NULL ||
+	   (todoFile = _get_orgfile_path(ENV_TODO_FILE)) == NULL)
 	{
-		fprintf(stderr, "%s: failed to set atexit function\n", PACKAGE_NAME);
 		return 2;
 	}
-
-	log_init(foreground);
 
 	/* Daemonize program */
 	if(!foreground)
