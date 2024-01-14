@@ -500,6 +500,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 palm_sync_daemon_SOURCES = \
 	src/log.c \
+	src/log.h \
 	src/palm-sync-daemon.c
 
 AM_CFLAGS = \

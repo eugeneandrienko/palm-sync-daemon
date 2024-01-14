@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 
-export PALM_SYNC_NOTES_ORG="./tests/test.org"
-export PALM_SYNC_TODO_ORG="./tests/test.org"
+TEST_ORG=$(mktemp test.XXXXXX.org)
+function cleanup()
+{
+    rm -f "$TEST_ORG"
+}
+trap cleanup EXIT
+
+export PALM_SYNC_NOTES_ORG="$TEST_ORG"
+export PALM_SYNC_TODO_ORG="$TEST_ORG"
 
 LOCK_FILE="/tmp/palm-sync-daemon.pid"
 
@@ -60,3 +67,5 @@ if [ "$(pidof palm_sync_daemon_test | wc -l)" -ne "0" ]; then
     echo "Failed test. Process still running after SIGTERM"
     exit 1
 fi
+
+rm -f "$TEST_ORG"
