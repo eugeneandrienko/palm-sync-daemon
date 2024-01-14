@@ -9,6 +9,9 @@ dist_man_MANS = docs/palm-sync-daemon.1
 dist_doc_DATA = \
 	LICENSE \
 	docs/technical_description.tex
+dist_bin_SCRIPTS = \
+	tests/log_test.sh \
+	tests/palm_sync_daemon_test.sh
 
 TESTS = \
 	tests/log_test.sh \
