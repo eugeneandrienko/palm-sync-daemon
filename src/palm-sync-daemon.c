@@ -257,6 +257,7 @@ int main(int argc, const char * argv[])
 		log_write(LOG_NOTICE, "Will wait for %s connection in infinite cycle...", palmDeviceFile);
 	}
 
+	int palmd = 0;
 	while(1)
 	{
 		if(terminateProgram)
@@ -268,6 +269,14 @@ int main(int argc, const char * argv[])
 			sleep(1);
 			continue;
 		}
+
+		if((palmd = palm_open(palmDeviceFile)) < 0)
+		{
+			log_write(LOG_ERR, "Cannot open connection to Palm device: %s", palmDeviceFile);
+			continue;
+		}
+
+		palm_close(palmd);
 
 		sleep(1);
 	}

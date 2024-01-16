@@ -7,6 +7,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <libpisock/pi-dlp.h>
 #include <libpisock/pi-socket.h>
 #include "log.h"
 #include "palm.h"
@@ -108,15 +109,37 @@ int palm_device_test(const char * device, int printErrors)
 	return 0;
 }
 
+static void _log_system_info(struct SysInfo * info)
+{
+	log_write(LOG_DEBUG, "Device ROM version: major=%d, minor=%d, fix=%d, stage=%d, build=%d",
+			  (info->romVersion >> 32) & 0x000000ff,
+			  (info->romVersion >> 24) & 0x000000ff,
+			  (info->romVersion >> 16) & 0x000000ff,
+			  (info->romVersion >> 8)  & 0x000000ff,
+			  (info->romVersion)       & 0x000000ff);
+	log_write(LOG_DEBUG, "DLP protocol: %d.%d", info->dlpMajorVersion, info->dlpMinorVersion);
+	log_write(LOG_DEBUG, "Compatible DLP protocol: %d.%d",
+			  info->compatMajorVersion,
+			  info->compatMinorVersion);
+}
+
+/**
+   Open connection to Palm device
+
+   @param device Path to symbolic device on the system
+   @return Device descriptor or -1 if error happens
+*/
 int palm_open(char * device)
 {
 	int sd = -1;
 	int result = 0;
+
 	if((sd = pi_socket(PI_AF_PILOT, PI_SOCK_STREAM, PI_PF_DLP)) < 0)
 	{
 		log_write(LOG_WARNING, "Cannot create socket for Palm: %s", strerror(errno));
-		return 1;
+		return -1;
 	}
+
 	if((result = pi_bind(sd, device)) < 0)
 	{
 		log_write(LOG_ERR, "Cannot bind %s", device);
@@ -124,8 +147,43 @@ int palm_open(char * device)
 		{
 			log_write(LOG_ERR, "Socket is invalid for %s", device);
 		}
-		return 1;
+		return -1;
 	}
 
-	return 0;
+	if(pi_listen(sd, 1) < 0)
+	{
+		log_write(LOG_ERR, "Cannot listen %s", device);
+		pi_close(sd);
+		return -1;
+	}
+
+	result = pi_accept_to(sd, 0, 0, 0);
+	if(result < 0)
+	{
+		log_write(LOG_ERR, "Cannot accept data on %s", device);
+		pi_close(sd);
+		return -1;
+	}
+	sd = result;
+
+	struct SysInfo sysInfo;
+	if(dlp_ReadSysInfo(sd, &sysInfo) < 0)
+	{
+		log_write(LOG_ERR, "Cannot read system info from Palm on %s", device);
+		return -1;
+	}
+	_log_system_info(&sysInfo);
+
+	dlp_OpenConduit(sd);
+	return sd;
+}
+
+/**
+   Close connection to Palm device.
+
+   @param sd Device descriptor
+*/
+void palm_close(int sd)
+{
+	pi_close(sd);
 }
