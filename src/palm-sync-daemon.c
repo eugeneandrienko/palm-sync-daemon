@@ -251,13 +251,19 @@ int main(int argc, const char * argv[])
 	log_write(LOG_DEBUG, "Path to notes org-file: %s", notesFile);
 	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", todoFile);
 
+	/* First call of palm_device_test to catch possible errors from libraries */
+	if(palm_device_test(palmDeviceFile, 1))
+	{
+		log_write(LOG_NOTICE, "Will wait for %s connection in infinite cycle...", palmDeviceFile);
+	}
+
 	while(1)
 	{
 		if(terminateProgram)
 		{
 			exit(0);
 		}
-		if(palm_device_test(palmDeviceFile))
+		if(palm_device_test(palmDeviceFile, 0))
 		{
 			sleep(1);
 			continue;

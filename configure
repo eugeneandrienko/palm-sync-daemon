@@ -4442,6 +4442,55 @@ else $as_nop
   as_fn_error $? "cannot find libpopt" "$LINENO" 5
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libusb_init in -lusb-1.0" >&5
+printf %s "checking for libusb_init in -lusb-1.0... " >&6; }
+if test ${ac_cv_lib_usb_1_0_libusb_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lusb-1.0  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libusb_init (void);
+int
+main (void)
+{
+return libusb_init ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_lib_usb_1_0_libusb_init=yes
+else $as_nop
+  ac_cv_lib_usb_1_0_libusb_init=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_usb_1_0_libusb_init" >&5
+printf "%s\n" "$ac_cv_lib_usb_1_0_libusb_init" >&6; }
+if test "x$ac_cv_lib_usb_1_0_libusb_init" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBUSB_1_0 1" >>confdefs.h
+
+  LIBS="-lusb-1.0 $LIBS"
+
+fi
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for pi_connect in -lpisock" >&5
 printf %s "checking for pi_connect in -lpisock... " >&6; }
 if test ${ac_cv_lib_pisock_pi_connect+y}
@@ -4567,6 +4616,13 @@ then :
 
 else $as_nop
   as_fn_error $? "cannot find popt.h" "$LINENO" 5
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "libusb-1.0/libusb.h" "ac_cv_header_libusb_1_0_libusb_h" "$ac_includes_default"
+if test "x$ac_cv_header_libusb_1_0_libusb_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_LIBUSB_1_0_LIBUSB_H 1" >>confdefs.h
+
 fi
 
 ac_fn_c_check_header_compile "$LINENO" "libpisock/pi-header.h" "ac_cv_header_libpisock_pi_header_h" "$ac_includes_default"
@@ -4714,8 +4770,6 @@ _ACEOF
     ;;
 esac
 
-
-# Checks for library functions.
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure

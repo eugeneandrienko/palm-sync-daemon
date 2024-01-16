@@ -15,6 +15,12 @@
 /* Define to 1 if you have the `popt' library (-lpopt). */
 #undef HAVE_LIBPOPT
 
+/* Define to 1 if you have the `usb-1.0' library (-lusb-1.0). */
+#undef HAVE_LIBUSB_1_0
+
+/* Define to 1 if you have the <libusb-1.0/libusb.h> header file. */
+#undef HAVE_LIBUSB_1_0_LIBUSB_H
+
 /* Define to 1 if you have the <signal.h> header file. */
 #undef HAVE_SIGNAL_H
 
