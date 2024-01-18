@@ -15,6 +15,7 @@
 #include "log.h"
 #include "palm.h"
 
+#define PALM_DB_NAME_LEN 31           /** Palm database name length: 31 byte + '\0' */
 #define PALM_PDB_FNAME_BUFFER_LEN 128 /** Maximal length for PDB filename */
 #define PALM_PDB_TMP_DIR "/tmp"       /** Directory to store temporary PDB files */
 #define PALM_SYNCLOG_ENTRY_LEN 512    /** Maximal length for synclog string */
@@ -268,6 +269,14 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 	struct DBInfo info;
 	struct pi_file * f;
 
+	if(strlen(dbname) > PALM_DB_NAME_LEN)
+	{
+		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s characters!",
+				  dbname, PALM_DB_NAME_LEN);
+		log_write(LOG_ERR, "Cannot read %s database", dbname);
+		return;
+	}
+
 	if(dlp_FindDBInfo(sd, 0, 0, dbname, 0, 0, &info) < 0)
 	{
 		log_write(LOG_ERR, "Unable to locate database %s on the Palm", dbname);
@@ -321,6 +330,14 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 */
 static void _palm_write_database(int sd, const char * dbname, const char * path)
 {
+	if(strlen(dbname) > PALM_DB_NAME_LEN)
+	{
+		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s characters!",
+				  dbname, PALM_DB_NAME_LEN);
+		log_write(LOG_ERR, "Cannot write data to %s database", dbname);
+		return;
+	}
+
 	struct stat sbuf;
 	if(stat(path, &sbuf))
 	{
