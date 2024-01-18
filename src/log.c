@@ -14,19 +14,22 @@
 #define LOG_BUFFER_SIZE 200 /** Size of buffer for log message strings */
 
 static int foreground = 0; /** 0 if program runs as daemon, 1 if program runs foreground */
+static int debug_mode = 0; /** 0 if debug mode disabled, 1 if need to print debug log messages */
 
 /**
    Initialize logging system.
 
    @param fg 0 if program runs as daemon, 1 if program runs foreground
+   @param debug 0 to skip debug messages, 1 to print debug messages
 */
-void log_init(int fg)
+void log_init(int fg, int debug)
 {
 	foreground = fg;
 	if(!foreground)
 	{
 		openlog(PACKAGE_NAME, LOG_PID, LOG_DAEMON);
 	}
+	debug_mode = debug;
 }
 
 /**
@@ -40,6 +43,11 @@ void log_init(int fg)
 */
 void log_write(int priority, const char * format, ...)
 {
+	if(!debug_mode && priority == LOG_DEBUG)
+	{
+		return;
+	}
+
 	va_list vlist;
 	va_start(vlist, format);
 

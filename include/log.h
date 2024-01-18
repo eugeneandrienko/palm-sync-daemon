@@ -7,8 +7,9 @@
    Initialize logging system.
 
    @param fg 0 if program runs as daemon, 1 if program runs foreground
+   @param debug 0 to skip debug messages, 1 to print debug messages
 */
-void log_init(int fg);
+void log_init(int fg, int debug);
 
 /**
    Writes message to log.

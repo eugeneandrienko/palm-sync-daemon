@@ -4,8 +4,7 @@
 
 int main(int argc, char * argv[])
 {
-	log_init(1);
-
+	log_init(1, 0);
 	log_write(LOG_EMERG, "Test emerg");
 	log_write(LOG_ALERT, "Test alert");
 	log_write(LOG_CRIT, "Test crit");
@@ -15,7 +14,11 @@ int main(int argc, char * argv[])
 	log_write(LOG_INFO, "Test info");
 	log_write(LOG_DEBUG, "Test debug");
 	log_write(255, "Test unknown priority");
-
 	log_close();
+
+	log_init(1, 1);
+	log_write(LOG_DEBUG, "Test debug");
+	log_close();
+
 	return 0;
 }

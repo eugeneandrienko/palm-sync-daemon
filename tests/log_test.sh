@@ -7,8 +7,8 @@ EXPECTED_RESULT+=("[ERROR]: Test err")
 EXPECTED_RESULT+=("[WARNING]: Test warning")
 EXPECTED_RESULT+=("[NOTICE]: Test notice")
 EXPECTED_RESULT+=("[INFO]: Test info")
-EXPECTED_RESULT+=("[DEBUG]: Test debug")
 EXPECTED_RESULT+=("[UNKNOWN PRIORITY]: Test unknown priority")
+EXPECTED_RESULT+=("[DEBUG]: Test debug")
 
 mapfile -t ACTUAL_RESULT < <(./log_test 2>&1)
 

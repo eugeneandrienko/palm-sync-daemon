@@ -61,9 +61,11 @@ int main(int argc, const char * argv[])
 {
 	/* Parse command-line arguments */
 	int foreground = 0;
+	int debug = 0;
 	char palmDeviceFile[ARGUMENT_BUFFER_SIZE] = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
+		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
 		{"device", 'd', POPT_ARG_STRING, palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
 		{NULL, '\0', POPT_ARG_NONE, NULL, 0, NULL, NULL}
@@ -81,7 +83,7 @@ int main(int argc, const char * argv[])
 	}
 	poptFreeContext(pContext);
 
-	log_init(foreground);
+	log_init(foreground, debug);
 	if(_process_init(foreground))
 	{
 		return 1;
