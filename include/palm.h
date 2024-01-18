@@ -2,13 +2,14 @@
 #define _PALM_H_
 
 /**
-   Check is file a device file with Palm PDA connected to it
-
-   @param device Path to file
-   @param printErrors Print errors to syslog
-   @return 0 if Palm connected to system, otherwise returns 1
+   Temporary PDB files from Palm device
 */
-int palm_device_test(const char * device, int printErrors);
+struct palm_data {
+	char * datebookDBPath; /** Path to DatebookDB */
+	char * memoDBPath;     /** Path to MemoDB */
+	char * todoDBPath;     /** Path to ToDoDB */
+};
+typedef struct palm_data PalmData;
 
 /**
    Open connection to Palm device
@@ -19,10 +20,43 @@ int palm_device_test(const char * device, int printErrors);
 int palm_open(char * device);
 
 /**
+   Read Palm databases from Palm PDA.
+
+   Read next databases: DatebookDB, MemoDB, ToDoDB.
+   Fill initialized PalmData structure with paths to PDB files.
+
+   @param sd Palm device descriptor
+   @param data Initialized palm_data structure
+   @return 0 if read successfull, otherwise -1.
+*/
+int palm_read(int sd, PalmData * data);
+
+/**
+   Write Palm databases to Palm PDA.
+
+   Write next databases: DatebookDB, MemoDB, ToDoDB.
+   Paths to PDB files taken from initialized PalmData structure.
+
+   @param sd Palm device descriptor
+   @param data Initialized and filled PalmData structure
+   @return 0 if write successfull, otherwise -1.
+*/
+int palm_write(int sd, PalmData * data);
+
+/**
    Close connection to Palm device.
 
    @param sd Device descriptor
+   @param device Path to file with Palm device
+   @return 0 if successfull. Return -1 if failed to close connection - got timeout.
 */
-void palm_close(int sd);
+int palm_close(int sd, char * device);
+
+/**
+   Clear PalmData structure.
+
+   @param data Initialized PalmData structure
+*/
+void palm_free(PalmData * data);
 
 #endif

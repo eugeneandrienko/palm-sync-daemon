@@ -3,125 +3,28 @@
    @brief Functions to read/write from/to Palm device.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <libpisock/pi-dlp.h>
+#include <libpisock/pi-file.h>
 #include <libpisock/pi-socket.h>
 #include "log.h"
 #include "palm.h"
-#include "config.h"
 
-#if HAVE_LIBUSB_1_0_LIBUSB_H == 1 &&			\
-	HAVE_LIBUSB_1_0 == 1
-#include <libusb-1.0/libusb.h>
-#define PALM_VID 0x0830
-#define PALM_PID 0x0061
-#else
-#warning "No libusb-1.0 - do not check VID/PID on connected device"
-#endif
+#define PALM_PDB_FNAME_BUFFER_LEN 128 /** Maximal length for PDB filename */
+#define PALM_PDB_TMP_DIR "/tmp"       /** Directory to store temporary PDB files */
+#define PALM_SYNCLOG_ENTRY_LEN 512    /** Maximal length for synclog string */
+#define PALM_CLOSE_WAIT_SEC 5         /** Seconds to wait while device disappering after close */
 
 
-/**
-   Check is file a device file with Palm PDA connected to it
+static void _palm_log_system_info(struct SysInfo * info);
+static void _palm_read_database(int sd, const char * dbname, char ** path);
+static void _palm_write_database(int sd, const char * dbname, const char * path);
 
-   Function checks is given device file belongs to Palm PDA. And is this PDA in
-   HotSync and ready to synchronize?
-
-   @param device Path to file
-   @param printErrors Print errors to syslog
-   @return 0 if Palm connected to system, otherwise returns 1
-*/
-int palm_device_test(const char * device, int printErrors)
-{
-	/* Is file exists* */
-	if(access(device, R_OK | W_OK))
-	{
-		if(printErrors)
-		{
-			log_write(LOG_ERR, "%s not readable/writable", device);
-		}
-		return 1;
-	}
-
-	/* Is file a device file? */
-	struct stat deviceStat;
-	if(stat(device, &deviceStat))
-	{
-		if(printErrors)
-		{
-			log_write(LOG_ERR, "Cannot stat %s file: %s", device, strerror(errno));
-		}
-		return 1;
-	}
-	if(!S_ISCHR(deviceStat.st_mode))
-	{
-		if(printErrors)
-		{
-			log_write(LOG_ERR, "%s file is not a character file", device);
-		}
-		return 1;
-	}
-
-	/* Is file belongs to Palm? */
-#if HAVE_LIBUSB_1_0_LIBUSB_H == 1 &&			\
-	HAVE_LIBUSB_1_0 == 1
-	int result = 0;
-	libusb_context * usbCtx;
-	if(result = libusb_init(&usbCtx))
-	{
-		if(printErrors)
-		{
-			log_write(LOG_ERR, "Cannot initialize libusb");
-			log_write(LOG_ERR, "%s: %s", libusb_error_name(result), libusb_strerror(result));
-		}
-		return 1;
-	}
-
-	libusb_device_handle * palmHandle;
-	if((palmHandle = libusb_open_device_with_vid_pid(
-			usbCtx, PALM_VID, PALM_PID)) == NULL)
-	{
-		if(printErrors)
-		{
-			log_write(
-				LOG_WARNING,
-				"Device with VID=0x%04x, PID=0x%04x not found - looks like Palm device not connected to system",
-				PALM_VID,
-				PALM_PID);
-		}
-		libusb_exit(usbCtx);
-		return 1;
-	}
-
-	if(printErrors)
-	{
-		log_write(LOG_INFO, "Device with VID=0x%04x, PID=0x%04x connected to the system",
-				  PALM_VID, PALM_PID);
-	}
-
-	libusb_close(palmHandle);
-	libusb_exit(usbCtx);
-#endif
-
-	log_write(LOG_INFO, "Palm device %s connected to the system", device);
-	return 0;
-}
-
-static void _log_system_info(struct SysInfo * info)
-{
-	log_write(LOG_DEBUG, "Device ROM version: major=%d, minor=%d, fix=%d, stage=%d, build=%d",
-			  (info->romVersion >> 32) & 0x000000ff,
-			  (info->romVersion >> 24) & 0x000000ff,
-			  (info->romVersion >> 16) & 0x000000ff,
-			  (info->romVersion >> 8)  & 0x000000ff,
-			  (info->romVersion)       & 0x000000ff);
-	log_write(LOG_DEBUG, "DLP protocol: %d.%d", info->dlpMajorVersion, info->dlpMinorVersion);
-	log_write(LOG_DEBUG, "Compatible DLP protocol: %d.%d",
-			  info->compatMajorVersion,
-			  info->compatMinorVersion);
-}
 
 /**
    Open connection to Palm device
@@ -142,10 +45,14 @@ int palm_open(char * device)
 
 	if((result = pi_bind(sd, device)) < 0)
 	{
-		log_write(LOG_ERR, "Cannot bind %s", device);
+		log_write(LOG_DEBUG, "Cannot bind %s", device);
 		if(result == PI_ERR_SOCK_INVALID)
 		{
 			log_write(LOG_ERR, "Socket is invalid for %s", device);
+		}
+		else
+		{
+			pi_close(sd);
 		}
 		return -1;
 	}
@@ -170,20 +77,302 @@ int palm_open(char * device)
 	if(dlp_ReadSysInfo(sd, &sysInfo) < 0)
 	{
 		log_write(LOG_ERR, "Cannot read system info from Palm on %s", device);
+		pi_close(sd);
 		return -1;
 	}
-	_log_system_info(&sysInfo);
+	_palm_log_system_info(&sysInfo);
 
-	dlp_OpenConduit(sd);
+	if(dlp_OpenConduit(sd) < 0)
+	{
+		log_write(LOG_ERR, "Cannot open conduit");
+		pi_close(sd);
+		return -1;
+	}
+
 	return sd;
+}
+
+/**
+   Read Palm databases from Palm PDA.
+
+   Read next databases: DatebookDB, MemoDB, ToDoDB.
+   Fill initialized PalmData structure with paths to PDB files.
+
+   @param sd Palm device descriptor
+   @param data Initialized PalmData structure
+   @return 0 if read successfull, otherwise -1.
+*/
+int palm_read(int sd, PalmData * data)
+{
+	if(sd < 0)
+	{
+		log_write(LOG_ERR, "Wrong Palm descriptor: %d", sd);
+		return -1;
+	}
+	if(data == NULL)
+	{
+		log_write(LOG_ERR, "Uninitialized PalmData structure");
+		return -1;
+	}
+
+	_palm_read_database(sd, "DatebookDB", &data->datebookDBPath);
+	_palm_read_database(sd, "MemoDB",     &data->memoDBPath);
+	_palm_read_database(sd, "ToDoDB",     &data->todoDBPath);
+
+	return 0;
+}
+
+/**
+   Write Palm databases to Palm PDA.
+
+   Write next databases: DatebookDB, MemoDB, ToDoDB.
+   Paths to PDB files taken from initialized PalmData structure.
+
+   @param sd Palm device descriptor
+   @param data Initialized and filled PalmData structure
+   @return 0 if write successfull, otherwise -1.
+*/
+int palm_write(int sd, PalmData * data)
+{
+	if(sd < 0)
+	{
+		log_write(LOG_ERR, "Wrong Palm descriptor: %d", sd);
+		return -1;
+	}
+	if(data == NULL)
+	{
+		log_write(LOG_ERR, "Uninitialized PalmData structure");
+		return -1;
+	}
+	if(data->datebookDBPath == NULL ||
+	   data->memoDBPath == NULL ||
+	   data->todoDBPath == NULL)
+	{
+		log_write(LOG_ERR, "Empty PalmData structure");
+		return -1;
+	}
+
+	_palm_write_database(sd, "DatebookDB", data->datebookDBPath);
+	_palm_write_database(sd, "MemoDB", data->memoDBPath);
+	_palm_write_database(sd, "ToDoDB", data->todoDBPath);
+
+	return 0;
 }
 
 /**
    Close connection to Palm device.
 
    @param sd Device descriptor
+   @param device Path to file with Palm device
+   @return 0 if successfull. Return -1 if failed to close connection - got timeout.
 */
-void palm_close(int sd)
+int palm_close(int sd, char * device)
 {
 	pi_close(sd);
+
+	/* Wait while device disconnects */
+	int secondsToWait = PALM_CLOSE_WAIT_SEC;
+	while((secondsToWait > 0) && (access(device, F_OK) == 0))
+	{
+		log_write(LOG_DEBUG, "Waiting for %s to disappear...", device);
+		sleep(1);
+		secondsToWait--;
+	}
+
+	if(secondsToWait == 0)
+	{
+		log_write(LOG_CRIT, "Timeout when waiting %s to disappear from system", device);
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+/**
+   Clear PalmData structure and associated files.
+
+   @param data Initialized PalmData structure
+*/
+void palm_free(PalmData * data)
+{
+	if(data->datebookDBPath == NULL &&
+	   data->memoDBPath == NULL &&
+	   data->todoDBPath == NULL)
+	{
+		// Nothing to clean.
+		return;
+	}
+
+ 	if(data->datebookDBPath != NULL)
+	{
+		if(unlink(data->datebookDBPath))
+		{
+			log_write(LOG_ERR, "Cannot delete %s: %s", data->datebookDBPath,
+					  strerror(errno));
+		}
+		free(data->datebookDBPath);
+		data->datebookDBPath = NULL;
+	}
+	if(data->memoDBPath != NULL)
+	{
+		if(unlink(data->memoDBPath))
+		{
+			log_write(LOG_ERR, "Cannot delete %s: %s", data->memoDBPath,
+					  strerror(errno));
+		}
+		free(data->memoDBPath);
+		data->memoDBPath = NULL;
+	}
+	if(data->todoDBPath != NULL)
+	{
+		if(unlink(data->todoDBPath))
+		{
+			log_write(LOG_ERR, "Cannot delete %s: %s", data->todoDBPath,
+					  strerror(errno));
+		}
+		free(data->todoDBPath);
+		data->todoDBPath = NULL;
+	}
+}
+
+/**
+   Prints Palm system info.
+
+   @param info System info from Palm device
+*/
+static void _palm_log_system_info(struct SysInfo * info)
+{
+	log_write(LOG_DEBUG, "Device ROM version: major=%d, minor=%d, fix=%d, stage=%d, build=%d",
+			  (info->romVersion >> 32) & 0x00000000ff,
+			  (info->romVersion >> 24) & 0x00000000ff,
+			  (info->romVersion >> 16) & 0x00000000ff,
+			  (info->romVersion >> 8)  & 0x00000000ff,
+			  (info->romVersion)       & 0x00000000ff);
+	log_write(LOG_DEBUG, "DLP protocol: %d.%d", info->dlpMajorVersion, info->dlpMinorVersion);
+	log_write(LOG_DEBUG, "Compatible DLP protocol: %d.%d",
+			  info->compatMajorVersion,
+			  info->compatMinorVersion);
+}
+
+/**
+   Read database from Palm.
+
+   @param sd Palm device descriptor.
+   @param dbname Name of database to fetch
+   @param path Pointer to path of temporary file where Palm DB is saved
+*/
+static void _palm_read_database(int sd, const char * dbname, char ** path)
+{
+	struct DBInfo info;
+	struct pi_file * f;
+
+	if(dlp_FindDBInfo(sd, 0, 0, dbname, 0, 0, &info) < 0)
+	{
+		log_write(LOG_ERR, "Unable to locate database %s on the Palm", dbname);
+		return;
+	}
+
+	/* Some magic from pilot-link/src/pilot-xfer.c:682 */
+	info.flags &= 0x2fd;
+
+	*path = calloc(PALM_PDB_FNAME_BUFFER_LEN, sizeof(char));
+	if(*path == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for path to PDB file for %s", dbname);
+		return;
+	}
+	pid_t pid = getpid();
+	sprintf(*path, PALM_PDB_TMP_DIR "/%s.%d.pdb\0", dbname, pid);
+
+	f = pi_file_create(*path, &info);
+	if(f == 0)
+	{
+		log_write(LOG_ERR, "Unable to create file %s", *path);
+		free(*path);
+		*path = NULL;
+		return;
+	}
+
+	if(pi_file_retrieve(f, sd, 0, NULL) < 0)
+	{
+		log_write(LOG_ERR, "Unable to fetch database %s from Palm to %s", dbname, *path);
+		pi_file_close(f);
+		unlink(*path);
+		free(*path);
+		*path = NULL;
+		return;
+	}
+	log_write(LOG_INFO, "Read %s to %s", dbname, *path);
+
+	char synclog[PALM_SYNCLOG_ENTRY_LEN];
+	snprintf(synclog, sizeof(synclog) - 1, "Read %s to PC\n", dbname);
+	dlp_AddSyncLogEntry(sd, synclog);
+	pi_file_close(f);
+}
+
+/**
+   Write Palm database from file to Palm device.
+
+   @param sd Palm device descriptor
+   @param dbname Database name to write
+   @param path String with path to PDB file with database data
+*/
+static void _palm_write_database(int sd, const char * dbname, const char * path)
+{
+	struct stat sbuf;
+	if(stat(path, &sbuf))
+	{
+		log_write(LOG_ERR, "Cannot stat %s file: %s", path, strerror(errno));
+		return;
+	}
+
+	struct pi_file * f;
+	const char * basename = strrchr(path, '/');
+	f = pi_file_open(path);
+	if(f == NULL)
+	{
+		log_write(LOG_ERR, "Cannot open %s to write to Palm device", path);
+		return;
+	}
+	if(f->file_name == NULL)
+	{
+		f->file_name = strdup(basename);
+	}
+
+	struct CardInfo card;
+	card.card = -1;
+	card.more = 1;
+
+	while(card.more)
+	{
+		if(dlp_ReadStorageInfo(sd, card.card + 1, &card) < 0)
+		{
+			break;
+		}
+	}
+
+	if((unsigned long)sbuf.st_size > card.ramFree)
+	{
+		log_write(LOG_ERR, "Insufficient space on Palm device to install file %s", path);
+		log_write(LOG_ERR, "We need %lu and have only %lu available",
+				  (unsigned long)sbuf.st_size, card.ramFree);
+		pi_file_close(f);
+		return;
+	}
+
+	if(pi_file_install(f, sd, 0, NULL) < 0)
+	{
+		log_write(LOG_ERR, "Cannot install %s file to Palm (%d, PalmOS 0x%04x)",
+				  path, pi_error(sd), pi_palmos_error(sd));
+		pi_file_close(f);
+		return;
+	}
+
+	char synclog[PALM_SYNCLOG_ENTRY_LEN];
+	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld) from PC\n", dbname, sbuf.st_size);
+	dlp_AddSyncLogEntry(sd, synclog);
+	pi_file_close(f);
+	log_write(LOG_INFO, "Write %s from %s (%ld bytes)", dbname, path, sbuf.st_size);
 }
