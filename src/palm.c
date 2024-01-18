@@ -371,7 +371,7 @@ static void _palm_write_database(int sd, const char * dbname, const char * path)
 	}
 
 	char synclog[PALM_SYNCLOG_ENTRY_LEN];
-	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld) from PC\n", dbname, sbuf.st_size);
+	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld bytes) from PC\n", dbname, sbuf.st_size);
 	dlp_AddSyncLogEntry(sd, synclog);
 	pi_file_close(f);
 	log_write(LOG_INFO, "Write %s from %s (%ld bytes)", dbname, path, sbuf.st_size);
