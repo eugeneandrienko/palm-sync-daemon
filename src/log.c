@@ -121,3 +121,13 @@ void log_close()
 		closelog();
 	}
 }
+
+/**
+   Check is debug mode enabled
+
+   @return Non-zero value of debug mode is enabled
+*/
+int log_is_debug()
+{
+	return debug_mode;
+}

@@ -16,7 +16,8 @@ AC_CHECK_LIB([pisock], [pi_connect], [], AC_MSG_ERROR([cannot find libpisock]))
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT
-AC_CHECK_HEADERS([errno.h syslog.h stdarg.h time.h fcntl.h signal.h])
+AC_CHECK_HEADERS([errno.h syslog.h stdarg.h stddef.h time.h fcntl.h signal.h endian.h], [], AC_MSG_ERROR([cannot find std headers]))
+AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([cannot find glibc data structures]))
 AC_CHECK_HEADER([popt.h], [], AC_MSG_ERROR([cannot find popt.h]))
 AC_CHECK_HEADER([libpisock/pi-header.h], [], AC_MSG_ERROR([cannot find libpisock/pi-header.h]))
 AC_CHECK_HEADER([libpisock/pi-socket.h], [], AC_MSG_ERROR([cannot find libpisock/pi-socket.h]))

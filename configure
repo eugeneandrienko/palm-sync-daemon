@@ -4524,41 +4524,27 @@ then :
 printf "%s\n" "#define STDC_HEADERS 1" >>confdefs.h
 
 fi
-ac_fn_c_check_header_compile "$LINENO" "errno.h" "ac_cv_header_errno_h" "$ac_includes_default"
-if test "x$ac_cv_header_errno_h" = xyes
+       for ac_header in errno.h syslog.h stdarg.h stddef.h time.h fcntl.h signal.h endian.h
+do :
+  as_ac_Header=`printf "%s\n" "ac_cv_header_$ac_header" | $as_tr_sh`
+ac_fn_c_check_header_compile "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
+if eval test \"x\$"$as_ac_Header"\" = x"yes"
 then :
-  printf "%s\n" "#define HAVE_ERRNO_H 1" >>confdefs.h
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_header" | $as_tr_cpp` 1
+_ACEOF
 
+else $as_nop
+  as_fn_error $? "cannot find std headers" "$LINENO" 5
 fi
-ac_fn_c_check_header_compile "$LINENO" "syslog.h" "ac_cv_header_syslog_h" "$ac_includes_default"
-if test "x$ac_cv_header_syslog_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_SYSLOG_H 1" >>confdefs.h
 
-fi
-ac_fn_c_check_header_compile "$LINENO" "stdarg.h" "ac_cv_header_stdarg_h" "$ac_includes_default"
-if test "x$ac_cv_header_stdarg_h" = xyes
+done
+ac_fn_c_check_header_compile "$LINENO" "sys/queue.h" "ac_cv_header_sys_queue_h" "$ac_includes_default"
+if test "x$ac_cv_header_sys_queue_h" = xyes
 then :
-  printf "%s\n" "#define HAVE_STDARG_H 1" >>confdefs.h
 
-fi
-ac_fn_c_check_header_compile "$LINENO" "time.h" "ac_cv_header_time_h" "$ac_includes_default"
-if test "x$ac_cv_header_time_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_TIME_H 1" >>confdefs.h
-
-fi
-ac_fn_c_check_header_compile "$LINENO" "fcntl.h" "ac_cv_header_fcntl_h" "$ac_includes_default"
-if test "x$ac_cv_header_fcntl_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_FCNTL_H 1" >>confdefs.h
-
-fi
-ac_fn_c_check_header_compile "$LINENO" "signal.h" "ac_cv_header_signal_h" "$ac_includes_default"
-if test "x$ac_cv_header_signal_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_SIGNAL_H 1" >>confdefs.h
-
+else $as_nop
+  as_fn_error $? "cannot find glibc data structures" "$LINENO" 5
 fi
 
 ac_fn_c_check_header_compile "$LINENO" "popt.h" "ac_cv_header_popt_h" "$ac_includes_default"

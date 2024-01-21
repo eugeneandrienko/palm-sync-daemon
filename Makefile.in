@@ -89,7 +89,9 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = palm-sync-daemon$(EXEEXT)
-check_PROGRAMS = log_test$(EXEEXT) palm_sync_daemon_test$(EXEEXT)
+check_PROGRAMS = log_test$(EXEEXT) pdb_test$(EXEEXT) \
+	pdb_categories_test$(EXEEXT) pdb_record_test$(EXEEXT) \
+	palm_sync_daemon_test$(EXEEXT)
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -112,13 +114,25 @@ am_log_test_OBJECTS = src/log.$(OBJEXT) tests/log_test.$(OBJEXT)
 log_test_OBJECTS = $(am_log_test_OBJECTS)
 log_test_LDADD = $(LDADD)
 am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/palm.$(OBJEXT) \
-	src/palm-sync-daemon.$(OBJEXT)
+	src/pdb/pdb.$(OBJEXT) src/palm-sync-daemon.$(OBJEXT)
 palm_sync_daemon_OBJECTS = $(am_palm_sync_daemon_OBJECTS)
 palm_sync_daemon_LDADD = $(LDADD)
 am_palm_sync_daemon_test_OBJECTS = src/palm-sync-daemon.$(OBJEXT) \
-	src/log.$(OBJEXT) src/palm.$(OBJEXT)
+	src/log.$(OBJEXT) src/palm.$(OBJEXT) src/pdb/pdb.$(OBJEXT)
 palm_sync_daemon_test_OBJECTS = $(am_palm_sync_daemon_test_OBJECTS)
 palm_sync_daemon_test_LDADD = $(LDADD)
+am_pdb_categories_test_OBJECTS = src/log.$(OBJEXT) \
+	src/pdb/pdb.$(OBJEXT) tests/pdb_categories_test.$(OBJEXT)
+pdb_categories_test_OBJECTS = $(am_pdb_categories_test_OBJECTS)
+pdb_categories_test_LDADD = $(LDADD)
+am_pdb_record_test_OBJECTS = src/log.$(OBJEXT) src/pdb/pdb.$(OBJEXT) \
+	tests/pdb_record_test.$(OBJEXT)
+pdb_record_test_OBJECTS = $(am_pdb_record_test_OBJECTS)
+pdb_record_test_LDADD = $(LDADD)
+am_pdb_test_OBJECTS = src/log.$(OBJEXT) src/pdb/pdb.$(OBJEXT) \
+	tests/pdb_test.$(OBJEXT)
+pdb_test_OBJECTS = $(am_pdb_test_OBJECTS)
+pdb_test_LDADD = $(LDADD)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -164,7 +178,9 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/log.Po \
 	src/$(DEPDIR)/palm-sync-daemon.Po src/$(DEPDIR)/palm.Po \
-	tests/$(DEPDIR)/log_test.Po
+	src/pdb/$(DEPDIR)/pdb.Po tests/$(DEPDIR)/log_test.Po \
+	tests/$(DEPDIR)/pdb_categories_test.Po \
+	tests/$(DEPDIR)/pdb_record_test.Po tests/$(DEPDIR)/pdb_test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -179,9 +195,13 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_SOURCES) \
-	$(palm_sync_daemon_test_SOURCES)
+	$(palm_sync_daemon_test_SOURCES) \
+	$(pdb_categories_test_SOURCES) $(pdb_record_test_SOURCES) \
+	$(pdb_test_SOURCES)
 DIST_SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_SOURCES) \
-	$(palm_sync_daemon_test_SOURCES)
+	$(palm_sync_daemon_test_SOURCES) \
+	$(pdb_categories_test_SOURCES) $(pdb_record_test_SOURCES) \
+	$(pdb_test_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -504,33 +524,51 @@ palm_sync_daemon_SOURCES = \
 	src/log.c \
 	include/palm.h \
 	src/palm.c \
+	include/pdb.h \
+	src/pdb/pdb.c \
 	src/palm-sync-daemon.c
 
 AM_CFLAGS = \
 	-I$(top_srcdir)/include
 
-dist_man_MANS = docs/palm-sync-daemon.1
-dist_doc_DATA = \
-	LICENSE \
-	docs/technical_description.tex
-
-dist_bin_SCRIPTS = \
-	tests/log_test.sh \
-	tests/palm_sync_daemon_test.sh
-
 TESTS = \
 	tests/log_test.sh \
+	tests/pdb_test.sh \
+	tests/pdb_categories_test.sh \
+	tests/pdb_record_test.sh \
 	tests/palm_sync_daemon_test.sh
 
 log_test_SOURCES = \
 	src/log.c \
 	tests/log_test.c
 
+pdb_test_SOURCES = \
+	src/log.c \
+	src/pdb/pdb.c \
+	tests/pdb_test.c
+
+pdb_categories_test_SOURCES = \
+	src/log.c \
+	src/pdb/pdb.c \
+	tests/pdb_categories_test.c
+
+pdb_record_test_SOURCES = \
+	src/log.c \
+	src/pdb/pdb.c \
+	tests/pdb_record_test.c
+
 palm_sync_daemon_test_SOURCES = \
 	src/palm-sync-daemon.c \
 	src/log.c \
-	src/palm.c
+	src/palm.c \
+	src/pdb/pdb.c
 
+dist_man_MANS = docs/palm-sync-daemon.1
+dist_doc_DATA = \
+	LICENSE \
+	docs/technical_description.tex
+
+dist_bin_SCRIPTS = $(TESTS)
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -649,6 +687,14 @@ log_test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 	@rm -f log_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(log_test_OBJECTS) $(log_test_LDADD) $(LIBS)
 src/palm.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/pdb/$(am__dirstamp):
+	@$(MKDIR_P) src/pdb
+	@: > src/pdb/$(am__dirstamp)
+src/pdb/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/pdb/$(DEPDIR)
+	@: > src/pdb/$(DEPDIR)/$(am__dirstamp)
+src/pdb/pdb.$(OBJEXT): src/pdb/$(am__dirstamp) \
+	src/pdb/$(DEPDIR)/$(am__dirstamp)
 src/palm-sync-daemon.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
@@ -659,6 +705,24 @@ palm-sync-daemon$(EXEEXT): $(palm_sync_daemon_OBJECTS) $(palm_sync_daemon_DEPEND
 palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_DEPENDENCIES) $(EXTRA_palm_sync_daemon_test_DEPENDENCIES) 
 	@rm -f palm_sync_daemon_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_LDADD) $(LIBS)
+tests/pdb_categories_test.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+pdb_categories_test$(EXEEXT): $(pdb_categories_test_OBJECTS) $(pdb_categories_test_DEPENDENCIES) $(EXTRA_pdb_categories_test_DEPENDENCIES) 
+	@rm -f pdb_categories_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pdb_categories_test_OBJECTS) $(pdb_categories_test_LDADD) $(LIBS)
+tests/pdb_record_test.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+pdb_record_test$(EXEEXT): $(pdb_record_test_OBJECTS) $(pdb_record_test_DEPENDENCIES) $(EXTRA_pdb_record_test_DEPENDENCIES) 
+	@rm -f pdb_record_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pdb_record_test_OBJECTS) $(pdb_record_test_LDADD) $(LIBS)
+tests/pdb_test.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+pdb_test$(EXEEXT): $(pdb_test_OBJECTS) $(pdb_test_DEPENDENCIES) $(EXTRA_pdb_test_DEPENDENCIES) 
+	@rm -f pdb_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pdb_test_OBJECTS) $(pdb_test_LDADD) $(LIBS)
 install-dist_binSCRIPTS: $(dist_bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
@@ -698,6 +762,7 @@ uninstall-dist_binSCRIPTS:
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/*.$(OBJEXT)
+	-rm -f src/pdb/*.$(OBJEXT)
 	-rm -f tests/*.$(OBJEXT)
 
 distclean-compile:
@@ -706,7 +771,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/pdb/$(DEPDIR)/pdb.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/log_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/pdb_categories_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/pdb_record_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/pdb_test.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -1001,6 +1070,27 @@ tests/log_test.sh.log: tests/log_test.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/pdb_test.sh.log: tests/pdb_test.sh
+	@p='tests/pdb_test.sh'; \
+	b='tests/pdb_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/pdb_categories_test.sh.log: tests/pdb_categories_test.sh
+	@p='tests/pdb_categories_test.sh'; \
+	b='tests/pdb_categories_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/pdb_record_test.sh.log: tests/pdb_record_test.sh
+	@p='tests/pdb_record_test.sh'; \
+	b='tests/pdb_record_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/palm_sync_daemon_test.sh.log: tests/palm_sync_daemon_test.sh
 	@p='tests/palm_sync_daemon_test.sh'; \
 	b='tests/palm_sync_daemon_test.sh'; \
@@ -1234,6 +1324,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/$(am__dirstamp)
+	-rm -f src/pdb/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/pdb/$(am__dirstamp)
 	-rm -f tests/$(DEPDIR)/$(am__dirstamp)
 	-rm -f tests/$(am__dirstamp)
 
@@ -1250,7 +1342,11 @@ distclean: distclean-am
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
+	-rm -f src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f tests/$(DEPDIR)/log_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_categories_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_record_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_test.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -1301,7 +1397,11 @@ maintainer-clean: maintainer-clean-am
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
+	-rm -f src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f tests/$(DEPDIR)/log_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_categories_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_record_test.Po
+	-rm -f tests/$(DEPDIR)/pdb_test.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

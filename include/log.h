@@ -27,4 +27,11 @@ void log_write(int priority, const char * format, ...);
 */
 void log_close();
 
+/**
+   Check is debug mode enabled
+
+   @return Non-zero value of debug mode is enabled
+*/
+int log_is_debug();
+
 #endif
