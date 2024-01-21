@@ -25,6 +25,7 @@
 \usepackage{amsfonts}
 \usepackage{mathtools}
 \usepackage{icomma}
+\usepackage{longtable}
 
 \usepackage{graphicx}
 \graphicspath{{images/}}
@@ -59,7 +60,7 @@
 
 \usepackage[backend=biber,
     abbreviate=false,
-    style=numeric]{biblatex}
+    style=alphabetic]{biblatex}
 \addbibresource{bibliography.bib}
 
 
@@ -108,7 +109,6 @@
 \begin{tabular}{|l|l|l|}
   \hline
   \textbf{Date} & \textbf{Document version} & \textbf{Changes} \\
-  \hline
   \hline
   2024-01-14 & 1.0 & First version \\
   \hline
@@ -387,6 +387,146 @@ Algorithm of synchronization process can look like this:
     application.
   \end{enumerate}
 \end{enumerate}
+
+\section{Technical details}
+\label{sec:technical-details}
+
+List of libraries which used by palm-sync-daemon:
+
+\begin{description}
+\item[libpopt] Used to parse commandline options.
+\item[libpisock] Used to communicate with Palm PDA. This library is part of
+  \texttt{pilot-xfer}
+  project\footnote{\url{https://github.com/jichu4n/pilot-link/}} and can be
+  installed with it.
+\end{description}
+
+\subsection{Processing PDB files}
+\label{sec:parsing-pdb-files}
+
+Data from Palm appilcations stored in PDB files. Binary format for application
+record not specified and may vary from application to application. But header
+for PDB file is standardized~\cite{PalmFileFormatSpec}.
+
+\textbf{NB!} All mutli-byte data are big-endian.
+
+\subsubsection{PDB header}
+\label{sec:pdb-header}
+
+All offsets in next tables are counted from the start of the file.
+
+\begin{longtable}{|p{2cm}|p{4cm}|p{7cm}|}
+  \hline
+  \textbf{Offset} & \textbf{Length (bytes)} & \textbf{Description} \\
+  \hline
+  \texttt{0x0000} & 32 & Null-terminated string with ASCII symbols~--- name of database on the Palm PDA. \\
+  \hline
+  \texttt{0x0020} & 2 & Attributes \\
+  \hline
+  \texttt{0x0022} & 2 & Application specific version number of database \\
+  \hline
+  \texttt{0x0024} & 4 & Creation date (seconds from 1st January 1904 00:00:00) \\
+  \hline
+  \texttt{0x0028} & 4 & Modification date (seconds from 1st January 1904 00:00:00). Changed by Palm OS application when database is modified. \\
+  \hline
+  \texttt{0x002C} & 4 & Last backup date (seconds from 1st January 1904 00:00:00) \\
+  \hline
+  \texttt{0x0030} & 4 & Modification number of database \\
+  \hline
+  \texttt{0x0034} & 4 & Application info offset. Can be zero (NULL) \\
+  \hline
+  \texttt{0x0038} & 4 & Sort info offset. Can be zero (NULL) \\
+  \hline
+  \texttt{0x003C} & 4 & Database type identifier. Set by Palm application. \\
+  \hline
+  \texttt{0x0040} & 4 & Creator identifier. Usually set by Palm application to application name, all lowercase. \\
+  \hline
+  \texttt{0x0044} & 4 & Unique ID seed. Unique identifier set and used by Palm OS \\
+  \hline
+  \texttt{0x0048} & -- & Start of record list (see table~\ref{tab:record-list-format}) \\
+  \hline
+  \caption{PDB header format}
+  \label{tab:pdb-header-format}
+\end{longtable}
+
+Record list has header and variable-length sequence of records. Each record is 8
+byte length. In the table below there is only one record, just for example:
+\begin{longtable}{|p{2cm}|p{4cm}|p{7cm}|}
+  \hline
+  \textbf{Offset} & \textbf{Length (bytes)} & \textbf{Description} \\
+  \hline
+  \texttt{0x0048} & 4 & Offset to the next record list. \textbf{Should be zero} for Palm OS 4.0 and later! \\
+  \hline
+  \texttt{0x004c} & 2 & Count of records \\
+  \hline
+  \texttt{0x004e} & 4 & Offset to record's data \\
+  \hline
+  \texttt{0x0052} & 1 & Record attributes \\
+  \hline
+  \texttt{0x0053} & 3 & Record unique ID \\
+  \hline
+  \caption{Record list format (one sample entry)}
+  \label{tab:record-list-format}
+\end{longtable}
+
+Record attributes store the next data:
+\begin{itemize}
+\item First four bits (from 0 to 3) store the number of category, related to the
+  record. See description of standard Palm OS categories below.
+\item Last four bits (from 4 to 7) store record attributes itself (see
+  page~\#605 in~\cite{PalmOSAPIRef}):
+  \begin{description}
+  \item[\texttt{0x10}] Secret record. Password protected.
+  \item[\texttt{0x20}] Application locked access to the record. Or record can be
+    changed only by Palm OS.
+  \item[\texttt{0x40}] Dirty record. Set whenever user modify record data on
+    Palm OS.
+  \item[\texttt{0x80}] Deleted record. Set when user delete record data on Palm
+    OS. Should be deleted on the next synchronization with the PC.
+  \end{description}
+
+  All record attributes can be bit OR-ed if multiple attributes are used.
+\end{itemize}
+
+End of record list may has two zero bytes after last record unique ID as
+placeholder. Or more bytes, or no placeholder at all~--- so it's preferably to
+navigate between PDB sections using offsets.
+
+If application use standard Palm OS categories then application info filled by
+categories info. It is standardized too:
+\begin{longtable}{|p{2cm}|p{4cm}|p{7cm}|}
+  \hline
+  \textbf{Relative offset} & \textbf{Length (bytes)} & \textbf{Description} \\
+  \hline
+  \texttt{0x0000} & 2 & Renamed categories \\
+  \hline
+  \texttt{0x0002} & 16 & Category \#1 name (null-terminated) \\
+  \hline
+  \texttt{0x0012} & 16 & Category \#2 name \\
+  \hline
+  \texttt{0x0022} & 16 & Category \#3 name \\
+  \hline
+  \hline
+  \texttt{0x00f2} & 16 & Category \#16 name \\
+  \hline
+  \texttt{0x102} & 1 & Category \#1 ID \\
+  \hline
+  \texttt{0x103} & 1 & Category \#2 ID \\
+  \hline
+  \hline
+  \texttt{0x111} & 1 & Category \#16 ID \\
+  \hline
+  \texttt{0x112} & 1 & Last unique ID (\texttt{0x0f}) \\
+  \hline
+  \texttt{0x113} & 1 & Zero byte for padding \\
+  \hline
+  \caption{Application info with categories}
+  \label{tab:application-info-categories}
+\end{longtable}
+
+There are up to 16 categories, each have 15 symbols length name plus
+\texttt{'\textbackslash{}0'} at the end. If user has less categories~--- fill
+corresponding fields with zeroes. Categories IDs start from zero.
 
 % ---------------------------------------------------------------------------
 
