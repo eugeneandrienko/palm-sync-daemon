@@ -5,6 +5,11 @@ AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for external programs
+AC_CHECK_PROG([DOXYGEN], [doxygen], [yes], [no])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test "$DOXYGEN" == "yes"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_SUBST([MAYBE_DOXYGEN], [docs/doxygen])],
+                           [AC_MSG_WARN([Continue without source code documentation])])
+
 AC_CHECK_PROG([PDFLATEX], [pdflatex], [yes], [no])
 AC_CHECK_PROG([BIBER], [biber], [yes], [no])
 AC_CHECK_PROG([LATEXMK], [latexmk], [yes], [no])
@@ -12,7 +17,8 @@ AM_CONDITIONAL([HAVE_PDFLATEX], [test "$PDFLATEX" == "yes" && test "$BIBER" == "
 AM_COND_IF([HAVE_PDFLATEX], [AC_SUBST([MAYBE_TEX], [docs/tex])],
                             [AC_MSG_WARN([Continue without PDF documentation])])
 
-AC_CONFIG_FILES([Makefile docs/tex/Makefile docs/man/Makefile tests/Makefile])
+AC_CONFIG_FILES([Makefile tests/Makefile])
+AC_CONFIG_FILES([docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile docs/man/Makefile])
 
 # Checks for programs.
 AC_PROG_CC

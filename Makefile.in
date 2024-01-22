@@ -272,6 +272,7 @@ CTAGS = @CTAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+DOXYGEN = @DOXYGEN@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -290,6 +291,7 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_DOXYGEN = @MAYBE_DOXYGEN@
 MAYBE_TEX = @MAYBE_TEX@
 MKDIR_P = @MKDIR_P@
 OBJEXT = @OBJEXT@
@@ -349,8 +351,19 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = $(MAYBE_TEX) docs/man . tests
-DIST_SUBDIRS = docs/tex docs/man tests
+SUBDIRS = \
+	$(MAYBE_TEX) \
+	$(MAYBE_DOXYGEN) \
+	docs/man \
+	. \
+	tests
+
+DIST_SUBDIRS = \
+	docs/tex \
+	docs/man \
+	docs/doxygen \
+	tests
+
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \

@@ -1,6 +1,20 @@
 /**
    @author Eugene Andrienko
-   @brief Main file of palm-sync-daemon
+   @brief Main palm-sync-daemon module.
+   @file palm-sync-daemon.c
+
+   This module realize parsing of command-line options, reading configuration
+   and other Unix-process-specific actions. After that main loop which
+   synchronize Palm with PC will start.
+*/
+
+/**
+   @mainpage palm-sync-daemon
+
+   Main module of palm-sync-daemon.
+
+   This daemon intended to synchornize between Palm PDA and files on PC when the
+   user press sync button on the cable or cradle.
 */
 
 #include <stdio.h>
@@ -16,11 +30,26 @@
 #include "palm.h"
 
 
-#define ARGUMENT_BUFFER_SIZE 50                    /** Buffer size for command-line argument */
-#define PID_BUFFER_SIZE 10                         /** Buffer size for PID as string */
-#define ENV_NOTES_FILE "PALM_SYNC_NOTES_ORG"       /** Environment variable with path to notes org-file */
-#define ENV_TODO_FILE "PALM_SYNC_TODO_ORG"         /** Environment variable with path to todo/calendar org-file */
-#define LOCK_FILE_PATH "/tmp/" PACKAGE_NAME ".pid" /** Path to lock-file */
+/**
+   Buffer size for command-line argument
+*/
+#define ARGUMENT_BUFFER_SIZE 50
+/**
+   Buffer size for PID as string
+*/
+#define PID_BUFFER_SIZE 10
+/**
+   Environment variable with path to notes org-file
+*/
+#define ENV_NOTES_FILE "PALM_SYNC_NOTES_ORG"
+/**
+   Environment variable with path to todo/calendar org-file
+*/
+#define ENV_TODO_FILE "PALM_SYNC_TODO_ORG"
+/**
+   Path to lock-file
+*/
+#define LOCK_FILE_PATH "/tmp/" PACKAGE_NAME ".pid"
 
 
 static int _process_init(int foreground);
@@ -29,17 +58,17 @@ static void _process_unlock();
 static void _process_on_exit_actions();
 static void _process_sig_handler(int signum);
 static int _process_setup_sig_handler();
-volatile static int _processTerminate = 0; /** Flag shows necessity of program termination */
+volatile static int _processTerminate = 0; /* Flag shows necessity of program termination */
 
 
 /**
    Read path to file from given environment variable.
 
    Reads path to file from environment variable. Also checks is file exists and
-   process can read and write to it.
+   readable/writeable.
 
-   @param env Environment variable name
-   @return Path to file or NULL if function failed
+   @param env[in] Environment variable name.
+   @return Path to file or NULL if failed.
 */
 static char * _get_file_path(char * env)
 {
@@ -57,6 +86,7 @@ static char * _get_file_path(char * env)
 	return path;
 }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 int main(int argc, const char * argv[])
 {
 	/* Parse command-line arguments */
@@ -149,12 +179,16 @@ int main(int argc, const char * argv[])
 
 	return 0;
 }
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**
-   Initialize process.
+   Process initialization.
 
-   @param foreground 1 if program should run in foreground, 0 to daemonize
-   @return 0 if process successfully initialized, otherwise -1.
+   This function daemonize process (if necessary), acquire lockfile, setup
+   signal handlers and set function to call at process exit.
+
+   @param foreground Set to 1 if program should run in foreground, set to 0 if we need a daemon.
+   @return Returns 0 if process successfully initialized, otherwise -1.
 */
 static int _process_init(int foreground)
 {
@@ -190,13 +224,12 @@ static int _process_init(int foreground)
 }
 
 /**
-   Lock process to not execute another one instance of daemon.
+   Create lockfile for process.
 
    Creates lock-file in LOCK_FILE_PATH which prevents execution of another
-   daemon instance.
-   If lock-file already exists - prevent program execution.
+   processd instance. If lock-file already exists — returns an error.
 
-   @return 0 is lock-file created, 1 if lock-file exists or some error happened.
+   @return Returns 0 is lockfile successfully created. Returns 1 if lock-file exists or error happened.
 */
 static int _process_lock()
 {
@@ -237,10 +270,13 @@ static int _process_lock()
 }
 
 /**
-   Unlock process.
+   Remove process lockfile.
 
-   Remove lock-file and unlocks process.
+   Remove lockfile and unlocks process.
+
    This function should be called right before program exit (or termination).
+
+   @return Void.
 */
 static void _process_unlock()
 {
@@ -248,7 +284,9 @@ static void _process_unlock()
 }
 
 /**
-   Actions, which should be called on program exit.
+   Function to call on program exit.
+
+   @return Void.
 */
 static void _process_on_exit_actions()
 {
@@ -258,7 +296,12 @@ static void _process_on_exit_actions()
 }
 
 /**
-   Signal handler
+   Signal handler.
+
+   Set special flag, which shows necessity of program termination.
+
+   @param[in] signum Signal number.
+   @return Void.
 */
 static void _process_sig_handler(int signum)
 {
@@ -270,7 +313,7 @@ static void _process_sig_handler(int signum)
 
    Setup signal handler for SIGINT, SIGQUIT and SIGTERM.
 
-   @return 0 if handler successfully set, 1 if error happened
+   @return Returns 0 if handler successfully set, returns 1 if error happened.
 */
 static int _process_setup_sig_handler()
 {

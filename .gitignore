@@ -67,6 +67,10 @@ docs/tex/auto/
 *.synctex.gz
 *.toc
 
+# Doxygen
+docs/doxygen/Doxyfile
+docs/doxygen/html/
+
 # Autoconf
 .deps/
 .dirstamp

@@ -1,8 +1,3 @@
-/**
-   @brief Process PDB standard structures
-   @author Eugene Andrienko
-*/
-
 #include <endian.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -14,10 +9,14 @@
 #include "pdb.h"
 
 
-#define PDB_RECORD_LIST_OFFSET         0x0048     /** Record list offset */
-#define PDB_RECORD_SIZE                8          /** Record item size. 32 + 8 + 3 * 8 = 64 bits / 8 bytes */
-#define PDB_MAC_UNIX_EPOCH_START_DIFF  2082844800 /** Seconds between start of Mac epoch and start of Unix epoch */
-#define PDB_RECORD_LIST_HEADER_SIZE    6          /** Record list header size */
+/* Record list offset */
+#define PDB_RECORD_LIST_OFFSET         0x0048
+/* Record item size. 32 + 8 + 3 * 8 = 64 bits / 8 bytes */
+#define PDB_RECORD_SIZE                8
+/* Seconds between start of Mac epoch and start of Unix epoch */
+#define PDB_MAC_UNIX_EPOCH_START_DIFF  2082844800
+/* Record list header size */
+#define PDB_RECORD_LIST_HEADER_SIZE    6
 
 
 static int _read8_field(int fd, uint8_t * buf, char * description);
@@ -36,12 +35,6 @@ static time_t _time_palm_to_unix(uint32_t time);
 static uint32_t _time_unix_to_palm(time_t time);
 
 
-/**
-   Open PDB file.
-
-   @param path Path to PDB file
-   @return PDB file descriptor or -1 if error
-*/
 int pdb_open(const char * path)
 {
 	int fd = 0;
@@ -53,23 +46,6 @@ int pdb_open(const char * path)
 	return fd;
 }
 
-/**
-   Read header and other standard info from PDB file.
-
-   Reads PDB file from given descriptor. Then allocate memory for header and
-   records to fill it with actual data. Categories may by NULL if we do not use
-   standard Palm OS categories in given PDB file.
-
-   Allocated memory should be freed outside of this function.
-
-   All multi-byte numbers already converted to right endianess by libpisock. All
-   timestamps will be converted to Unix timestamps.
-
-   @param fd PDB file descriptor
-   @param PDBFile Pointer to PDBFile structure. It will be filled inside this function.
-   @param stdCatInfo Set to non-zero if there is standard Palm OS category information.
-   @return Zero if read successfull, otherwise non-zero value will be returned
-*/
 int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo)
 {
 	TAILQ_INIT(&pdbFile->records);
@@ -141,16 +117,6 @@ int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo)
 	return 0;
 }
 
-/**
-   Write header and other standard info to PDB file.
-
-   All multi-byte numbers will be converted to right endianess by libpisock. All
-   timestamps will be converted to Mac timestamps.
-
-   @param fd File descriptor
-   @param pdbFile Pointer to filled PDBFile structure
-   @return Zero if write successfull, otherwise non-zero
-*/
 int pdb_write(int fd, PDBFile * pdbFile)
 {
 	/* Check and fix some fields if necessary */
@@ -246,11 +212,6 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	return 0;
 }
 
-/**
-   Close opened PDB file
-
-   @param fd File descriptor
-*/
 void pdb_close(int fd)
 {
 	if(close(fd) == -1)
@@ -259,11 +220,6 @@ void pdb_close(int fd)
 	}
 }
 
-/**
-   Free allocated memory for standard PDB file structures.
-
-   @param pdbFile PDBFile structure to free
-*/
 void pdb_free(PDBFile * pdbFile)
 {
 	if(pdbFile == NULL)
@@ -286,13 +242,6 @@ void pdb_free(PDBFile * pdbFile)
 	}
 }
 
-/**
-   Add new record to the end of the list
-
-   @param pdbFile Pointer to PDBFile structure
-   @param record New record to insert
-   @return 0 if success or non-zero value on error
-*/
 int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
 {
 	PDBRecord * newRecord = calloc(1, sizeof(PDBRecord));
@@ -332,15 +281,6 @@ int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
 	return 0;
 }
 
-/**
-   Returns pointer to PDBRecord from records list.
-
-   Get Nth record from record list where N is index.
-
-   @param pdbFile Pointer to PDBFile structure
-   @param index Number of record to get. Starts from zero.
-   @return Pointer to PDBRecord or NULL on error
-*/
 PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index)
 {
 	if(pdbFile == NULL)
@@ -371,13 +311,6 @@ PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index)
 	return record;
 }
 
-/**
-   Delete given record from the list
-
-   @param pdbFile Pointer to PDBFile structure
-   @param record Record to delete
-   @return 0 if success or non-zero value on error
-*/
 int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record)
 {
 	if(pdbFile == NULL)
@@ -404,13 +337,6 @@ int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record)
 	return 0;
 }
 
-/**
-   Returns pointer to category name
-
-   @param pdbFile Pointer to PDBFile structure
-   @param id Category ID. Starts from zero.
-   @return Pointer to category name or NULL on error
-*/
 char * pdb_category_get(PDBFile * pdbFile, uint8_t id)
 {
 	if(pdbFile == NULL)
@@ -428,14 +354,6 @@ char * pdb_category_get(PDBFile * pdbFile, uint8_t id)
 	return pdbFile->categories->names[id];
 }
 
-/**
-   Add new category
-
-   @param pdbFile Pointer to PDBFile structure
-   @param id New category ID. Starts from zero.
-   @param name Name of new category
-   @return Zero on successfull or non-zero on error
-*/
 int pdb_category_add(PDBFile * pdbFile, uint8_t id, char * name)
 {
 	if(pdbFile == NULL)
@@ -475,14 +393,6 @@ int pdb_category_add(PDBFile * pdbFile, uint8_t id, char * name)
 	return 0;
 }
 
-/**
-   Edit existsing category.
-
-   @param category Pointer to category name
-   @param newName New category name
-   @param length Length of new category name
-   @return Zero on successfull or non-zero on error
-*/
 int pdb_category_edit(char * category, char * newName, size_t length)
 {
 	if(category == NULL)
@@ -501,13 +411,6 @@ int pdb_category_edit(char * category, char * newName, size_t length)
 	return 0;
 }
 
-/**
-   Delete category
-
-   @param pdbFile Pointer to PDBFile structure
-   @param id Category ID to delete. Starts from zero.
-   @return Zero on successfull or non-zero on error
-*/
 int pdb_category_delete(PDBFile * pdbFile, uint8_t id)
 {
 	if(pdbFile == NULL)

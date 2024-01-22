@@ -1,8 +1,3 @@
-/**
-   @author Eugene Andrienko
-   @brief Functions to read/write from/to Palm device.
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -16,10 +11,10 @@
 #include "palm.h"
 #include "pdb.h"
 
-#define PALM_PDB_FNAME_BUFFER_LEN 128 /** Maximal length for PDB filename */
-#define PALM_PDB_TMP_DIR "/tmp"       /** Directory to store temporary PDB files */
-#define PALM_SYNCLOG_ENTRY_LEN 512    /** Maximal length for synclog string */
-#define PALM_CLOSE_WAIT_SEC 5         /** Seconds to wait while device disappering after close */
+#define PALM_PDB_FNAME_BUFFER_LEN 128 /* Maximal length for PDB filename */
+#define PALM_PDB_TMP_DIR "/tmp"       /* Directory to store temporary PDB files */
+#define PALM_SYNCLOG_ENTRY_LEN 512    /* Maximal length for synclog string */
+#define PALM_CLOSE_WAIT_SEC 5         /* Seconds to wait while device disappering after close */
 
 
 static void _palm_log_system_info(struct SysInfo * info);
@@ -27,12 +22,6 @@ static void _palm_read_database(int sd, const char * dbname, char ** path);
 static void _palm_write_database(int sd, const char * dbname, const char * path);
 
 
-/**
-   Open connection to Palm device
-
-   @param device Path to symbolic device on the system
-   @return Device descriptor or -1 if error happens
-*/
 int palm_open(char * device)
 {
 	int sd = -1;
@@ -93,16 +82,6 @@ int palm_open(char * device)
 	return sd;
 }
 
-/**
-   Read Palm databases from Palm PDA.
-
-   Read next databases: DatebookDB, MemoDB, ToDoDB.
-   Fill initialized PalmData structure with paths to PDB files.
-
-   @param sd Palm device descriptor
-   @param data Initialized PalmData structure
-   @return 0 if read successfull, otherwise -1.
-*/
 int palm_read(int sd, PalmData * data)
 {
 	if(sd < 0)
@@ -123,16 +102,6 @@ int palm_read(int sd, PalmData * data)
 	return 0;
 }
 
-/**
-   Write Palm databases to Palm PDA.
-
-   Write next databases: DatebookDB, MemoDB, ToDoDB.
-   Paths to PDB files taken from initialized PalmData structure.
-
-   @param sd Palm device descriptor
-   @param data Initialized and filled PalmData structure
-   @return 0 if write successfull, otherwise -1.
-*/
 int palm_write(int sd, PalmData * data)
 {
 	if(sd < 0)
@@ -160,13 +129,6 @@ int palm_write(int sd, PalmData * data)
 	return 0;
 }
 
-/**
-   Close connection to Palm device.
-
-   @param sd Device descriptor
-   @param device Path to file with Palm device
-   @return 0 if successfull. Return -1 if failed to close connection - got timeout.
-*/
 int palm_close(int sd, char * device)
 {
 	pi_close(sd);
@@ -191,11 +153,6 @@ int palm_close(int sd, char * device)
 	}
 }
 
-/**
-   Clear PalmData structure and associated files.
-
-   @param data Initialized PalmData structure
-*/
 void palm_free(PalmData * data)
 {
 	if(data->datebookDBPath == NULL &&
@@ -241,7 +198,7 @@ void palm_free(PalmData * data)
 /**
    Prints Palm system info.
 
-   @param info System info from Palm device
+   @param[in] info System info from Palm device.
 */
 static void _palm_log_system_info(struct SysInfo * info)
 {
@@ -258,11 +215,12 @@ static void _palm_log_system_info(struct SysInfo * info)
 }
 
 /**
-   Read database from Palm.
+   Read database from Palm to temporary file.
 
-   @param sd Palm device descriptor.
-   @param dbname Name of database to fetch
-   @param path Pointer to path of temporary file where Palm DB is saved
+   @param[in] sd Palm device descriptor.
+   @param[in] dbname Name of database to fetch.
+   @param[out] path Path to temporary PDB-file where Palm DB is saved.
+   @return Void.
 */
 static void _palm_read_database(int sd, const char * dbname, char ** path)
 {
@@ -322,11 +280,12 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 }
 
 /**
-   Write Palm database from file to Palm device.
+   Write Palm database from given file to Palm device.
 
-   @param sd Palm device descriptor
-   @param dbname Database name to write
-   @param path String with path to PDB file with database data
+   @param[in] sd Palm device descriptor.
+   @param[in] dbname Database name to write.
+   @param[in] path Path to PDB file with database data.
+   @return Void.
 */
 static void _palm_write_database(int sd, const char * dbname, const char * path)
 {

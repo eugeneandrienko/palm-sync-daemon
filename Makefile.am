@@ -1,5 +1,14 @@
-SUBDIRS = $(MAYBE_TEX) docs/man . tests
-DIST_SUBDIRS = docs/tex docs/man tests
+SUBDIRS = \
+	$(MAYBE_TEX) \
+	$(MAYBE_DOXYGEN) \
+	docs/man \
+	. \
+	tests
+DIST_SUBDIRS = \
+	docs/tex \
+	docs/man \
+	docs/doxygen \
+	tests
 
 bin_PROGRAMS = palm-sync-daemon
 palm_sync_daemon_SOURCES = \
