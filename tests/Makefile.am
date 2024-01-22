@@ -34,4 +34,4 @@ palm_sync_daemon_test_SOURCES = \
 	../src/palm.c \
 	../src/pdb/pdb.c
 
-dist_bin_SCRIPTS = $(TESTS)
+EXTRA_DIST = $(TESTS)

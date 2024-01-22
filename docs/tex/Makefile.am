@@ -1,8 +1,3 @@
-dist_pkgdata_DATA = \
-	$(srcdir)/bibliography.bib \
-	$(srcdir)/technical_description.tex \
-	$(srcdir)/images/*
-
 if HAVE_PDFLATEX
 all-local:
 	if [ "$(srcdir)" != "$(builddir)" ]; then \
@@ -36,5 +31,13 @@ distclean-local:
 	fi
 
 EXTRA_DIST = \
+	$(srcdir)/bibliography.bib \
+	$(srcdir)/images/* \
+	$(srcdir)/technical_description.tex \
 	$(srcdir)/technical_description.pdf
+else
+EXTRA_DIST = \
+	$(srcdir)/bibliography.bib \
+	$(srcdir)/images/* \
+	$(srcdir)/technical_description.tex
 endif
