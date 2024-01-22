@@ -76,7 +76,7 @@ int palm_open(char * device);
 
    @param[in] sd Palm device descriptor.
    @param[out] data palm_data structure, which will be filled wuth paths to temporary PDB-files.
-   @return Returns 0 if read successfull, otherwise -1.
+   @return 0 if read successfull, otherwise -1.
 */
 int palm_read(int sd, PalmData * data);
 
@@ -89,7 +89,7 @@ int palm_read(int sd, PalmData * data);
 
    @param[in] sd Palm device descriptor.
    @param[in] data PalmData structure with paths to PDB files.
-   @return Returns 0 if write successfull, otherwise -1.
+   @return 0 if write successfull, otherwise -1.
 */
 int palm_write(int sd, PalmData * data);
 
@@ -105,7 +105,7 @@ int palm_write(int sd, PalmData * data);
 
    @param[in] sd Palm device descriptor.
    @param[in] device Path to symbolic device connected to Palm PDA.
-   @return Returns 0 if successfull or -1 if failed to close connection or got timeout when waiting.
+   @return 0 if successfull or -1 if failed to close connection or got timeout when waiting.
 */
 int palm_close(int sd, char * device);
 
