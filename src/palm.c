@@ -15,12 +15,13 @@
 #define PALM_PDB_TMP_DIR "/tmp"       /* Directory to store temporary PDB files */
 #define PALM_SYNCLOG_ENTRY_LEN 512    /* Maximal length for synclog string */
 #define PALM_CLOSE_WAIT_SEC 5         /* Seconds to wait while device disappering after close */
-
+#define PALM_CANNOT_BIND_MAX_ERRORS 3 /* Count of sequental logged errors from pi_bind */
 
 static void _palm_log_system_info(struct SysInfo * info);
 static void _palm_read_database(int sd, const char * dbname, char ** path);
 static void _palm_write_database(int sd, const char * dbname, const char * path);
 
+static unsigned char cannotBindErrorsCount = 0;
 
 int palm_open(char * device)
 {
@@ -35,17 +36,22 @@ int palm_open(char * device)
 
 	if((result = pi_bind(sd, device)) < 0)
 	{
-		log_write(LOG_DEBUG, "Cannot bind %s", device);
-		if(result == PI_ERR_SOCK_INVALID)
+		if(cannotBindErrorsCount < PALM_CANNOT_BIND_MAX_ERRORS)
 		{
-			log_write(LOG_ERR, "Socket is invalid for %s", device);
+			log_write(LOG_DEBUG, "Cannot bind %s", device);
+			if(result == PI_ERR_SOCK_INVALID)
+			{
+				log_write(LOG_ERR, "Socket is invalid for %s", device);
+			}
+			cannotBindErrorsCount++;
 		}
-		else
+		if(result != PI_ERR_SOCK_INVALID)
 		{
 			pi_close(sd);
 		}
 		return -1;
 	}
+	cannotBindErrorsCount = 0;
 
 	if(pi_listen(sd, 1) < 0)
 	{

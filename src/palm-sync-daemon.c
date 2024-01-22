@@ -145,7 +145,6 @@ int main(int argc, const char * argv[])
 		PalmData palmData = {NULL, NULL, NULL};
 		if((palmfd = palm_open(palmDeviceFile)) == -1)
 		{
-			log_write(LOG_DEBUG, "Cannot open connection to Palm device: %s", palmDeviceFile);
 			continue;
 		}
 		if(palm_read(palmfd, &palmData))
