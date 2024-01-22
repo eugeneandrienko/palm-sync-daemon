@@ -142,11 +142,13 @@ int main(int argc, const char * argv[])
 		}
 
 		int palmfd = 0;
-		PalmData palmData = {NULL, NULL, NULL};
 		if((palmfd = palm_open(palmDeviceFile)) == -1)
 		{
+			sleep(1);
 			continue;
 		}
+
+		PalmData palmData = {NULL, NULL, NULL};
 		if(palm_read(palmfd, &palmData))
 		{
 			palm_free(&palmData);
