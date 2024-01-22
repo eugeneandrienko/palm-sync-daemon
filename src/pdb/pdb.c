@@ -49,6 +49,7 @@ int pdb_open(const char * path)
 int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo)
 {
 	TAILQ_INIT(&pdbFile->records);
+	pdbFile->categories = NULL;
 
 	if(read(fd, pdbFile->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
@@ -94,6 +95,7 @@ int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo)
 		pdbFile->recordListPadding = 0x0000;
 	}
 
+	/* Read standard Palm OS categories info if necessary */
 	if(pdbFile->appInfoOffset && stdCatInfo)
 	{
 		if(pdbFile->appInfoOffset != lseek(fd, pdbFile->appInfoOffset, SEEK_SET))
@@ -124,15 +126,38 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	pdbFile->mtime = _time_unix_to_palm(pdbFile->mtime);
 	pdbFile->btime = _time_unix_to_palm(pdbFile->btime);
 
+	if(pdbFile->nextRecordListOffset != 0)
+	{
+		log_write(LOG_ERR, "Malformed PDB data, next record list offset = %d",
+				  pdbFile->nextRecordListOffset);
+		return -1;
+	}
+
+	/* Check records qty */
+	PDBRecord * record;
+	uint16_t recordsQty = 0;
+	if(!TAILQ_EMPTY(&pdbFile->records))
+	{
+		TAILQ_FOREACH(record, &pdbFile->records, pointers)
+		{
+			recordsQty++;
+		}
+	}
+	if(recordsQty != pdbFile->recordsQty)
+	{
+		log_write(LOG_NOTICE, "Fix records qty. Old: %d, new: %d",
+				  pdbFile->recordsQty, recordsQty);
+		pdbFile->recordsQty = recordsQty;
+	}
+
+	/* Check offset to application info */
 	if(pdbFile->categories != NULL)
 	{
 		PDBRecord * record;
-		uint32_t appInfoOffset = PDB_RECORD_LIST_OFFSET + PDB_RECORD_LIST_HEADER_SIZE;
-		TAILQ_FOREACH(record, &pdbFile->records, pointers)
-		{
-			appInfoOffset += PDB_RECORD_SIZE;
-		}
-		appInfoOffset += sizeof(pdbFile->recordListPadding);
+		uint32_t appInfoOffset = PDB_RECORD_LIST_OFFSET +
+			PDB_RECORD_LIST_HEADER_SIZE +
+			pdbFile->recordsQty * PDB_RECORD_SIZE +
+			sizeof(pdbFile->recordListPadding);
 		if(appInfoOffset != pdbFile->appInfoOffset)
 		{
 			log_write(LOG_NOTICE, "Fix application info offset. Old: %lu, new: %lu",
@@ -169,26 +194,18 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	result += _write32_field(fd, &pdbFile->seed, "unique ID seed");
 	result += _write32_field(fd, &pdbFile->nextRecordListOffset, "next record list offset");
 	result += _write16_field(fd, &pdbFile->recordsQty, "qty of records");
-
 	if(result)
 	{
 		return -1;
 	}
 
-	if(pdbFile->nextRecordListOffset != 0)
-	{
-		log_write(LOG_ERR, "Malformed PDB data, next record list offset = %d",
-				  pdbFile->nextRecordListOffset);
-		return -1;
-	}
-
+    /* Write records list if it is not empty */
 	if(pdbFile->recordsQty > 0 && _write_record_list(fd, &pdbFile->records))
 	{
 		log_write(LOG_ERR, "Cannot write records list");
 		return -1;
 	}
-	else if(pdbFile->recordsQty > 0 &&
-			_write16_field(fd, &pdbFile->recordListPadding, "record list padding bytes"))
+	if(_write16_field(fd, &pdbFile->recordListPadding, "record list padding bytes"))
 	{
 		log_write(LOG_ERR, "Cannot write padding bytes after record list");
 		return -1;
@@ -244,15 +261,14 @@ void pdb_free(PDBFile * pdbFile)
 
 int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
 {
-	PDBRecord * newRecord = calloc(1, sizeof(PDBRecord));
-
 	if(pdbFile == NULL)
 	{
 		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_record_add");
 		return -1;
 	}
 
-	if(newRecord == NULL)
+	PDBRecord * newRecord;
+	if((newRecord = calloc(1, sizeof(PDBRecord))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new PDB record: %s",
 				  strerror(errno));
@@ -296,12 +312,12 @@ PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index)
 		return NULL;
 	}
 
-	PDBRecord * record = TAILQ_FIRST(&pdbFile->records);
 	if(index == pdbFile->recordsQty - 1)
 	{
-		record = TAILQ_LAST(&pdbFile->records, RecordQueue);
+		return TAILQ_LAST(&pdbFile->records, RecordQueue);
 	}
-	else if(index > 0)
+	PDBRecord * record = TAILQ_FIRST(&pdbFile->records);
+	if(index > 0)
 	{
 		for(int i = 0; i < index; i++)
 		{
@@ -530,8 +546,8 @@ static int _read_record_list(int fd, int qty, struct RecordQueue * records)
 	for(int i = 0; i < qty; i++)
 	{
 		int result = 0;
-		PDBRecord * record = calloc(1, sizeof(PDBRecord));
-		if(record == NULL)
+		PDBRecord * record;
+		if((record = calloc(1, sizeof(PDBRecord))) == NULL)
 		{
 			log_write(LOG_ERR, "Cannot allocate memory for PDB record: %s",
 					  strerror(errno));

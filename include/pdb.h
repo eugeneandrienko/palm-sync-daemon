@@ -225,7 +225,7 @@ int pdb_record_add(PDBFile * pdbFile, PDBRecord record);
 
    @param[in] pdbFile Pointer to PDBFile structure.
    @param[in] index Number of record to get. Starts from zero.
-   @return Pointer to PDBRecord or NULL on error.
+   @return Pointer to PDBRecord or NULL if not found or on error.
 */
 PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index);
 
