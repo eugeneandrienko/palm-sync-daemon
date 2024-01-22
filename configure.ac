@@ -3,7 +3,16 @@ AC_INIT([palm-sync-daemon],[0.1],[evg.andrienko@gmail.com])
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror -Wportability])
 AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile])
+
+# Checks for external programs
+AC_CHECK_PROG([PDFLATEX], [pdflatex], [yes], [no])
+AC_CHECK_PROG([BIBER], [biber], [yes], [no])
+AC_CHECK_PROG([LATEXMK], [latexmk], [yes], [no])
+AM_CONDITIONAL([HAVE_PDFLATEX], [test "$PDFLATEX" == "yes" && test "$BIBER" == "yes" && test "$LATEXMK" == "yes"])
+AM_COND_IF([HAVE_PDFLATEX], [AC_SUBST([MAYBE_TEX], [docs/tex])],
+                            [AC_MSG_WARN([Continue without PDF documentation])])
+
+AC_CONFIG_FILES([Makefile docs/tex/Makefile docs/man/Makefile tests/Makefile])
 
 # Checks for programs.
 AC_PROG_CC
@@ -21,6 +30,8 @@ AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([cannot find glibc data structur
 AC_CHECK_HEADER([popt.h], [], AC_MSG_ERROR([cannot find popt.h]))
 AC_CHECK_HEADER([libpisock/pi-header.h], [], AC_MSG_ERROR([cannot find libpisock/pi-header.h]))
 AC_CHECK_HEADER([libpisock/pi-socket.h], [], AC_MSG_ERROR([cannot find libpisock/pi-socket.h]))
+AC_CHECK_HEADER([libpisock/pi-dlp.h], [], AC_MSG_ERROR([cannot find libpisock/pi-dlp.h]))
+AC_CHECK_HEADER([libpisock/pi-file.h], [], AC_MSG_ERROR([cannot find libpisock/pi-file.h]))
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

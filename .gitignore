@@ -52,11 +52,13 @@ Mkfile.old
 dkms.conf
 
 # LaTeX
-docs/auto/
+docs/tex/auto/
 *.aux
 *.bbl
 *.bcf
 *.blg
+*.fdb_latexmk
+*.fls
 *.lof
 *.log
 *.lot
@@ -79,12 +81,18 @@ stamp-h1
 compile
 depcomp
 install-sh
-log_test
 missing
 palm-sync-daemon
-palm_sync_daemon_test
+tests/log_test
+tests/palm-sync-daemon
+tests/palm_sync_daemon_test
+tests/pdb_categories_test
+tests/pdb_record_test
+tests/pdb_test
 test-driver
 
 # Tests
 *.trs
 
+# Distribution
+*.tar.gz

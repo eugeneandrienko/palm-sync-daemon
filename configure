@@ -671,6 +671,12 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+MAYBE_TEX
+HAVE_PDFLATEX_FALSE
+HAVE_PDFLATEX_TRUE
+LATEXMK
+BIBER
+PDFLATEX
 AM_BACKSLASH
 AM_DEFAULT_VERBOSITY
 AM_DEFAULT_V
@@ -2992,7 +2998,154 @@ fi
 
 ac_config_headers="$ac_config_headers config.h"
 
-ac_config_files="$ac_config_files Makefile"
+
+# Checks for external programs
+# Extract the first word of "pdflatex", so it can be a program name with args.
+set dummy pdflatex; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_PDFLATEX+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$PDFLATEX"; then
+  ac_cv_prog_PDFLATEX="$PDFLATEX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_PDFLATEX="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_PDFLATEX" && ac_cv_prog_PDFLATEX="no"
+fi
+fi
+PDFLATEX=$ac_cv_prog_PDFLATEX
+if test -n "$PDFLATEX"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $PDFLATEX" >&5
+printf "%s\n" "$PDFLATEX" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+# Extract the first word of "biber", so it can be a program name with args.
+set dummy biber; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_BIBER+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$BIBER"; then
+  ac_cv_prog_BIBER="$BIBER" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_BIBER="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_BIBER" && ac_cv_prog_BIBER="no"
+fi
+fi
+BIBER=$ac_cv_prog_BIBER
+if test -n "$BIBER"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $BIBER" >&5
+printf "%s\n" "$BIBER" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+# Extract the first word of "latexmk", so it can be a program name with args.
+set dummy latexmk; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_LATEXMK+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$LATEXMK"; then
+  ac_cv_prog_LATEXMK="$LATEXMK" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_LATEXMK="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_LATEXMK" && ac_cv_prog_LATEXMK="no"
+fi
+fi
+LATEXMK=$ac_cv_prog_LATEXMK
+if test -n "$LATEXMK"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LATEXMK" >&5
+printf "%s\n" "$LATEXMK" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+ if test "$PDFLATEX" == "yes" && test "$BIBER" == "yes" && test "$LATEXMK" == "yes"; then
+  HAVE_PDFLATEX_TRUE=
+  HAVE_PDFLATEX_FALSE='#'
+else
+  HAVE_PDFLATEX_TRUE='#'
+  HAVE_PDFLATEX_FALSE=
+fi
+
+if test -z "$HAVE_PDFLATEX_TRUE"; then :
+  MAYBE_TEX=docs/tex
+
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Continue without PDF documentation" >&5
+printf "%s\n" "$as_me: WARNING: Continue without PDF documentation" >&2;}
+fi
+
+ac_config_files="$ac_config_files Makefile docs/tex/Makefile docs/man/Makefile tests/Makefile"
 
 
 # Checks for programs.
@@ -4571,6 +4724,22 @@ else $as_nop
   as_fn_error $? "cannot find libpisock/pi-socket.h" "$LINENO" 5
 fi
 
+ac_fn_c_check_header_compile "$LINENO" "libpisock/pi-dlp.h" "ac_cv_header_libpisock_pi_dlp_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpisock_pi_dlp_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find libpisock/pi-dlp.h" "$LINENO" 5
+fi
+
+ac_fn_c_check_header_compile "$LINENO" "libpisock/pi-file.h" "ac_cv_header_libpisock_pi_file_h" "$ac_includes_default"
+if test "x$ac_cv_header_libpisock_pi_file_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find libpisock/pi-file.h" "$LINENO" 5
+fi
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for an ANSI C-conforming const" >&5
@@ -4826,6 +4995,10 @@ else
   am__EXEEXT_FALSE=
 fi
 
+if test -z "${HAVE_PDFLATEX_TRUE}" && test -z "${HAVE_PDFLATEX_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_PDFLATEX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
   as_fn_error $? "conditional \"AMDEP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -5423,6 +5596,9 @@ do
   case $ac_config_target in
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "docs/tex/Makefile") CONFIG_FILES="$CONFIG_FILES docs/tex/Makefile" ;;
+    "docs/man/Makefile") CONFIG_FILES="$CONFIG_FILES docs/man/Makefile" ;;
+    "tests/Makefile") CONFIG_FILES="$CONFIG_FILES tests/Makefile" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
