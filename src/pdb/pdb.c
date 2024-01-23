@@ -46,77 +46,91 @@ int pdb_open(const char * path)
 	return fd;
 }
 
-int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo)
+PDBFile * pdb_read(int fd, int stdCatInfo)
 {
-	TAILQ_INIT(&pdbFile->records);
-	pdbFile->categories = NULL;
+	PDBFile * header;
+	if((header = calloc(1, sizeof(PDBFile))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for PDB header: %s",
+				  strerror(errno));
+		return NULL;
+	}
 
-	if(read(fd, pdbFile->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
+	TAILQ_INIT(&header->records);
+	header->categories = NULL;
+
+	if(read(fd, header->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
 		log_write(LOG_ERR, "Cannot read database name from PDB header: %s", strerror(errno));
-		return -1;
+		free(header);
+		return NULL;
 	}
 
 	int result = 0;
-	result += _read16_field(fd, &pdbFile->attributes, "attributes");
-	result += _read16_field(fd, &pdbFile->version, "version");
-	result += _read32_field(fd, &pdbFile->ctime, "creation datetime");
-	result += _read32_field(fd, &pdbFile->mtime, "modification datetime");
-	result += _read32_field(fd, &pdbFile->btime, "last backup datetime");
-	result += _read32_field(fd, &pdbFile->modificationNumber, "modification number");
-	result += _read32_field(fd, &pdbFile->appInfoOffset, "application info offset");
-	result += _read32_field(fd, &pdbFile->sortInfoOffset, "sort info offset");
-	result += _read32_field(fd, &pdbFile->databaseTypeID, "database type ID");
-	result += _read32_field(fd, &pdbFile->creatorID, "creator ID");
-	result += _read32_field(fd, &pdbFile->seed, "unique ID seed");
-	result += _read32_field(fd, &pdbFile->nextRecordListOffset, "next record list offset");
-	result += _read16_field(fd, &pdbFile->recordsQty, "qty of records");
+	result += _read16_field(fd, &header->attributes, "attributes");
+	result += _read16_field(fd, &header->version, "version");
+	result += _read32_field(fd, &header->ctime, "creation datetime");
+	result += _read32_field(fd, &header->mtime, "modification datetime");
+	result += _read32_field(fd, &header->btime, "last backup datetime");
+	result += _read32_field(fd, &header->modificationNumber, "modification number");
+	result += _read32_field(fd, &header->appInfoOffset, "application info offset");
+	result += _read32_field(fd, &header->sortInfoOffset, "sort info offset");
+	result += _read32_field(fd, &header->databaseTypeID, "database type ID");
+	result += _read32_field(fd, &header->creatorID, "creator ID");
+	result += _read32_field(fd, &header->seed, "unique ID seed");
+	result += _read32_field(fd, &header->nextRecordListOffset, "next record list offset");
+	result += _read16_field(fd, &header->recordsQty, "qty of records");
 
 	if(result)
 	{
-		return -1;
+		free(header);
+		return NULL;
 	}
 
-	if(pdbFile->nextRecordListOffset != 0)
+	if(header->nextRecordListOffset != 0)
 	{
 		log_write(LOG_ERR, "Malformed PDB file, next record list offset = %d",
-				  pdbFile->nextRecordListOffset);
-		return -1;
+				  header->nextRecordListOffset);
+		free(header);
+		return NULL;
 	}
 
-	if(pdbFile->recordsQty > 0 &&
-	   _read_record_list(fd, pdbFile->recordsQty, &pdbFile->records))
+	if(header->recordsQty > 0 &&
+	   _read_record_list(fd, header->recordsQty, &header->records))
 	{
 		log_write(LOG_ERR, "Cannot read records list");
-		return -1;
+		pdb_free(header);
+		return NULL;
 	}
-	else if(pdbFile->recordsQty > 0)
+	else if(header->recordsQty > 0)
 	{
-		pdbFile->recordListPadding = 0x0000;
+		header->recordListPadding = 0x0000;
 	}
 
 	/* Read standard Palm OS categories info if necessary */
-	if(pdbFile->appInfoOffset && stdCatInfo)
+	if(header->appInfoOffset && stdCatInfo)
 	{
-		if(pdbFile->appInfoOffset != lseek(fd, pdbFile->appInfoOffset, SEEK_SET))
+		if(header->appInfoOffset != lseek(fd, header->appInfoOffset, SEEK_SET))
 		{
 			log_write(LOG_ERR, "Failed to reposition to application info in PDB file: %s",
 					  strerror(errno));
-			return -1;
+			pdb_free(header);
+			return NULL;
 		}
-		if(_read_categories(fd, &pdbFile->categories))
+		if(_read_categories(fd, &header->categories))
 		{
 			log_write(LOG_ERR, "Cannot read categories from application info");
-			return -1;
+			pdb_free(header);
+			return NULL;
 		}
 	}
 
 	/* Fix some fields */
-	pdbFile->ctime = _time_palm_to_unix(pdbFile->ctime);
-	pdbFile->mtime = _time_palm_to_unix(pdbFile->mtime);
-	pdbFile->btime = _time_palm_to_unix(pdbFile->btime);
+	header->ctime = _time_palm_to_unix(header->ctime);
+	header->mtime = _time_palm_to_unix(header->mtime);
+	header->btime = _time_palm_to_unix(header->btime);
 
-	return 0;
+	return header;
 }
 
 int pdb_write(int fd, PDBFile * pdbFile)
@@ -257,6 +271,7 @@ void pdb_free(PDBFile * pdbFile)
 	{
 		free(pdbFile->categories);
 	}
+	free(pdbFile);
 }
 
 int pdb_record_add(PDBFile * pdbFile, PDBRecord record)

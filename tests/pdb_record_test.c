@@ -14,8 +14,8 @@ int main(int argc, char * argv[])
 	{
 		return 1;
 	}
-	PDBFile pdbFile;
-	if(pdb_read(fd, &pdbFile, 1))
+	PDBFile * pdbFile;
+	if((pdbFile = pdb_read(fd, 1)) == NULL)
 	{
 		return 1;
 	}
@@ -24,7 +24,7 @@ int main(int argc, char * argv[])
 	PDBRecord newRecord;
 	newRecord.offset = 0x01;
 	newRecord.attributes = PDB_RECORD_ATTR_DIRTY | 2;
-	if(pdb_record_add(&pdbFile, newRecord))
+	if(pdb_record_add(pdbFile, newRecord))
 	{
 		log_write(LOG_ERR, "Failed to write new record #1");
 		return 1;
@@ -32,24 +32,24 @@ int main(int argc, char * argv[])
 
 	newRecord.offset = 0x02;
 	newRecord.attributes = PDB_RECORD_ATTR_DELETED | 3;
-	if(pdb_record_add(&pdbFile, newRecord))
+	if(pdb_record_add(pdbFile, newRecord))
 	{
 		log_write(LOG_ERR, "Failed to write new record #2");
 		return 1;
 	}
 
-	PDBRecord * record = pdb_record_get(&pdbFile, 2);
+	PDBRecord * record = pdb_record_get(pdbFile, 2);
 	if(record == NULL)
 	{
 		log_write(LOG_ERR, "Failed to get record #%d", 2);
 		return 1;
 	}
-	if(pdb_record_delete(&pdbFile, record))
+	if(pdb_record_delete(pdbFile, record))
 	{
 		log_write(LOG_ERR, "Failed to delete record #%d", 2);
 		return 1;
 	}
-	record = pdb_record_get(&pdbFile, 2);
+	record = pdb_record_get(pdbFile, 2);
 	if(record == NULL)
 	{
 		log_write(LOG_ERR, "Failed to ger record #%d [2]", 2);
@@ -57,10 +57,10 @@ int main(int argc, char * argv[])
 	}
 	record->attributes = PDB_RECORD_ATTR_DIRTY | 4;
 
-	log_write(LOG_INFO, "Application info offset: 0x%02x", pdbFile.appInfoOffset);
-	log_write(LOG_INFO, "Qty of records: %d", pdbFile.recordsQty);
+	log_write(LOG_INFO, "Application info offset: 0x%02x", pdbFile->appInfoOffset);
+	log_write(LOG_INFO, "Qty of records: %d", pdbFile->recordsQty);
 
-	TAILQ_FOREACH(record, &(pdbFile.records), pointers)
+	TAILQ_FOREACH(record, &pdbFile->records, pointers)
 	{
 		log_write(LOG_INFO, "Offset: 0x%08x", record->offset);
 		log_write(LOG_INFO, "Attribute: 0x%02x", record->attributes);
@@ -69,7 +69,7 @@ int main(int argc, char * argv[])
 	}
 
 	pdb_close(fd);
-	pdb_free(&pdbFile);
+	pdb_free(pdbFile);
 	log_close();
 	return 0;
 }

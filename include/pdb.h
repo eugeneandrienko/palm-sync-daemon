@@ -8,18 +8,19 @@
    other modules.
 
    To open PDB file use pdb_open() function. Then, pass file descriptor to
-   pdb_read() which fills PDBFile structure with data from header.
+   pdb_read() which allocate memory for PDBFile structure and fills it with data
+   from header.
 
    All mutli-byte numbers (offsets, timestamps, etc) will be saved to PDBFile in
    host system endianess!
 
    After modification of in-memory data, it can be written back to
-   PDB-file. Call pdb_write() for this.
+   PDB file. Call pdb_write() for this.
 
-   All multi-byte numbers (offsets, timestamps, etc) will be written to PDB-file
+   All multi-byte numbers (offsets, timestamps, etc) will be written to PDB file
    on disk as big-endian!
 
-   After that you can call pdb_close() to close opened PDB-file. File descriptor
+   After that you can call pdb_close() to close opened PDB file. File descriptor
    mustn't be used after that call. Also, call pdb_free() to free allocated
    memory for PDBFile structure.
 
@@ -175,12 +176,11 @@ int pdb_open(const char * path);
    All multi-byte numbers will be converted to host system endianess. All
    timestamps will be converted to Unix timestamps.
 
-   @param fd PDB file descriptor.
-   @param[out] pdbFile Pointer to PDBFile structure. It will be filled inside this function.
+   @param[in] fd PDB file descriptor.
    @param[in] stdCatInfo Set to non-zero if there is a standard Palm OS category information.
-   @return Zero if read successfull, otherwise non-zero value will be returned.
+   @return Pointer to initialized PDBFile structure or NULL if error.
 */
-int pdb_read(int fd, PDBFile * pdbFile, int stdCatInfo);
+PDBFile * pdb_read(int fd, int stdCatInfo);
 
 /**
    Write header and other standard information to PDB file.
