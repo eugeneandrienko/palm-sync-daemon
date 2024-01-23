@@ -87,7 +87,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 check_PROGRAMS = log_test$(EXEEXT) pdb_test$(EXEEXT) \
 	pdb_categories_test$(EXEEXT) pdb_record_test$(EXEEXT) \
-	palm_sync_daemon_test$(EXEEXT)
+	pdb_memos_test$(EXEEXT) palm_sync_daemon_test$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -111,6 +111,11 @@ am_pdb_categories_test_OBJECTS = ../src/log.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) pdb_categories_test.$(OBJEXT)
 pdb_categories_test_OBJECTS = $(am_pdb_categories_test_OBJECTS)
 pdb_categories_test_LDADD = $(LDADD)
+am_pdb_memos_test_OBJECTS = ../src/log.$(OBJEXT) \
+	../src/pdb/pdb.$(OBJEXT) ../src/pdb/pdb_memos.$(OBJEXT) \
+	pdb_memos_test.$(OBJEXT)
+pdb_memos_test_OBJECTS = $(am_pdb_memos_test_OBJECTS)
+pdb_memos_test_LDADD = $(LDADD)
 am_pdb_record_test_OBJECTS = ../src/log.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) pdb_record_test.$(OBJEXT)
 pdb_record_test_OBJECTS = $(am_pdb_record_test_OBJECTS)
@@ -136,9 +141,10 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../src/$(DEPDIR)/log.Po \
 	../src/$(DEPDIR)/palm-sync-daemon.Po ../src/$(DEPDIR)/palm.Po \
-	../src/pdb/$(DEPDIR)/pdb.Po ./$(DEPDIR)/log_test.Po \
-	./$(DEPDIR)/pdb_categories_test.Po \
-	./$(DEPDIR)/pdb_record_test.Po ./$(DEPDIR)/pdb_test.Po
+	../src/pdb/$(DEPDIR)/pdb.Po ../src/pdb/$(DEPDIR)/pdb_memos.Po \
+	./$(DEPDIR)/log_test.Po ./$(DEPDIR)/pdb_categories_test.Po \
+	./$(DEPDIR)/pdb_memos_test.Po ./$(DEPDIR)/pdb_record_test.Po \
+	./$(DEPDIR)/pdb_test.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -153,11 +159,11 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) $(pdb_record_test_SOURCES) \
-	$(pdb_test_SOURCES)
+	$(pdb_categories_test_SOURCES) $(pdb_memos_test_SOURCES) \
+	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 DIST_SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) $(pdb_record_test_SOURCES) \
-	$(pdb_test_SOURCES)
+	$(pdb_categories_test_SOURCES) $(pdb_memos_test_SOURCES) \
+	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -492,6 +498,7 @@ TESTS = \
 	pdb_test.sh \
 	pdb_categories_test.sh \
 	pdb_record_test.sh \
+	pdb_memos_test.sh \
 	palm_sync_daemon_test.sh
 
 log_test_SOURCES = \
@@ -512,6 +519,12 @@ pdb_record_test_SOURCES = \
 	../src/log.c \
 	../src/pdb/pdb.c \
 	pdb_record_test.c
+
+pdb_memos_test_SOURCES = \
+	../src/log.c \
+	../src/pdb/pdb.c \
+	../src/pdb/pdb_memos.c \
+	pdb_memos_test.c
 
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
@@ -588,6 +601,12 @@ palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_dae
 pdb_categories_test$(EXEEXT): $(pdb_categories_test_OBJECTS) $(pdb_categories_test_DEPENDENCIES) $(EXTRA_pdb_categories_test_DEPENDENCIES) 
 	@rm -f pdb_categories_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pdb_categories_test_OBJECTS) $(pdb_categories_test_LDADD) $(LIBS)
+../src/pdb/pdb_memos.$(OBJEXT): ../src/pdb/$(am__dirstamp) \
+	../src/pdb/$(DEPDIR)/$(am__dirstamp)
+
+pdb_memos_test$(EXEEXT): $(pdb_memos_test_OBJECTS) $(pdb_memos_test_DEPENDENCIES) $(EXTRA_pdb_memos_test_DEPENDENCIES) 
+	@rm -f pdb_memos_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pdb_memos_test_OBJECTS) $(pdb_memos_test_LDADD) $(LIBS)
 
 pdb_record_test$(EXEEXT): $(pdb_record_test_OBJECTS) $(pdb_record_test_DEPENDENCIES) $(EXTRA_pdb_record_test_DEPENDENCIES) 
 	@rm -f pdb_record_test$(EXEEXT)
@@ -609,8 +628,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/pdb/$(DEPDIR)/pdb.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@../src/pdb/$(DEPDIR)/pdb_memos.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_categories_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_memos_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_record_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_test.Po@am__quote@ # am--include-marker
 
@@ -857,6 +878,13 @@ pdb_record_test.sh.log: pdb_record_test.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pdb_memos_test.sh.log: pdb_memos_test.sh
+	@p='pdb_memos_test.sh'; \
+	b='pdb_memos_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 palm_sync_daemon_test.sh.log: palm_sync_daemon_test.sh
 	@p='palm_sync_daemon_test.sh'; \
 	b='palm_sync_daemon_test.sh'; \
@@ -963,8 +991,10 @@ distclean: distclean-am
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb.Po
+	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
+	-rm -f ./$(DEPDIR)/pdb_memos_test.Po
 	-rm -f ./$(DEPDIR)/pdb_record_test.Po
 	-rm -f ./$(DEPDIR)/pdb_test.Po
 	-rm -f Makefile
@@ -1016,8 +1046,10 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb.Po
+	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
+	-rm -f ./$(DEPDIR)/pdb_memos_test.Po
 	-rm -f ./$(DEPDIR)/pdb_record_test.Po
 	-rm -f ./$(DEPDIR)/pdb_test.Po
 	-rm -f Makefile
