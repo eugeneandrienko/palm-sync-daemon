@@ -148,10 +148,9 @@ int main(int argc, const char * argv[])
 			continue;
 		}
 
-		PalmData palmData = {NULL, NULL, NULL};
-		if(palm_read(palmfd, &palmData))
+		PalmData * palmData;
+		if((palmData = palm_read(palmfd)) == NULL)
 		{
-			palm_free(&palmData);
 			if(palm_close(palmfd, palmDeviceFile))
 			{
 				exit(1);
@@ -159,9 +158,9 @@ int main(int argc, const char * argv[])
 			continue;
 		}
 
-		if(palm_write(palmfd, &palmData))
+		if(palm_write(palmfd, palmData))
 		{
-			palm_free(&palmData);
+			palm_free(palmData);
 			if(palm_close(palmfd, palmDeviceFile))
 			{
 				exit(1);
@@ -169,7 +168,7 @@ int main(int argc, const char * argv[])
 			continue;
 		}
 
-		palm_free(&palmData);
+		palm_free(palmData);
 		if(palm_close(palmfd, palmDeviceFile))
 		{
 			exit(1);

@@ -88,17 +88,19 @@ int palm_open(char * device)
 	return sd;
 }
 
-int palm_read(int sd, PalmData * data)
+PalmData * palm_read(int sd)
 {
 	if(sd < 0)
 	{
 		log_write(LOG_ERR, "Wrong Palm descriptor: %d", sd);
-		return -1;
+		return NULL;
 	}
-	if(data == NULL)
+	PalmData * data;
+	if((data = calloc(1, sizeof(PalmData))) == NULL)
 	{
-		log_write(LOG_ERR, "Uninitialized PalmData structure");
-		return -1;
+		log_write(LOG_ERR, "Cannot allocate memory for PalmData structure: %s",
+				  strerror(errno));
+		return NULL;
 	}
 
 	_palm_read_database(sd, "DatebookDB", &data->datebookDBPath);
@@ -165,6 +167,7 @@ void palm_free(PalmData * data)
 	   data->memoDBPath == NULL &&
 	   data->todoDBPath == NULL)
 	{
+		free(data);
 		// Nothing to clean.
 		return;
 	}
@@ -199,6 +202,8 @@ void palm_free(PalmData * data)
 		free(data->todoDBPath);
 		data->todoDBPath = NULL;
 	}
+
+	free(data);
 }
 
 /**

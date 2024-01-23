@@ -75,10 +75,9 @@ int palm_open(char * device);
    temporary files and fill PalmData structure with paths to these files.
 
    @param[in] sd Palm device descriptor.
-   @param[out] data palm_data structure, which will be filled wuth paths to temporary PDB-files.
-   @return 0 if read successfull, otherwise -1.
+   @return Initialized PalmData structure or NULL on error.
 */
-int palm_read(int sd, PalmData * data);
+PalmData * palm_read(int sd);
 
 /**
    Write Palm databases to Palm PDA.
