@@ -1,15 +1,48 @@
 /**
    @author Eugene Andrienko
-   @brief Module to operate with PDB from Memos
+   @brief Module to operate with Memos database in PDB file.
    @file pdb_memos.h
 
-   TODO
+   To open PDB file and read it's structure to PDBMemos structure — use
+   pdb_memos_read() function. It takes path, opens file, read it's contents and
+   close the file. This function and other functions in module doesn't operate
+   with file descriptors. File will be immediately closed after read/write or
+   error.
+
+   Memory for PDBMemos will be allocated inside pdb_memos_read() function.
+
+   To write PDB file — use pdb_memos_write() function. Memory for PDBMemos
+   structure will be freed inside this function.
+
+   If we do not write PDBMemos structure to file — call pdb_memos_free()
+   function. **This function must be used in this and only in this case!**
+
+   To work with PDBMemos structure use pdb_memos_memo_get(),
+   pdb_memos_memo_add(), pdb_memos_memo_edit() or pdb_memos_memo_delete()
+   functions.
 */
 
 /**
    @page pdb_memos Edit PDB data from Memos
 
-   TODO
+   This module can operate with memos from PDB file with Memos database inside.
+
+   There are two main functions:
+   - pdb_memos_read() - reads memos from given file to PDBMemos structure
+   - pdb_memos_write() - writes memos from PDBMemos structure to given file.
+
+   Memory for PDBMemos structure will be allocated inside pdb_memos_read() and
+   will be freed inside pdb_memos_write() functions.
+
+   If we do not want write PDBMemos structure to file and want to free it — used
+   pdb_memos_free() function. **This function must be used in that and only in
+   that case!**
+
+   To operate with PDBMemos structure there the next functions:
+   - pdb_memos_memo_get()
+   - pdb_memos_memo_add()
+   - pdb_memos_memo_edit()
+   - pdb_memos_memo_delete()
 */
 
 
