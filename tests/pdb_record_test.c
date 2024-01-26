@@ -21,38 +21,27 @@ int main(int argc, char * argv[])
 	}
 
 	/* Add two records, delete middle record and edit last record */
-	PDBRecord newRecord;
-	newRecord.offset = 0x01;
-	newRecord.attributes = PDB_RECORD_ATTR_DIRTY | 2;
-	if(pdb_record_add(pdbFile, newRecord))
+	PDBRecord * record;
+	if((record = pdb_record_add(pdbFile, 0x01, PDB_RECORD_ATTR_DIRTY | 2)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to write new record #1");
 		return 1;
 	}
 
-	newRecord.offset = 0x02;
-	newRecord.attributes = PDB_RECORD_ATTR_DELETED | 3;
-	if(pdb_record_add(pdbFile, newRecord))
+	if(pdb_record_add(pdbFile, 0x02, PDB_RECORD_ATTR_DELETED | 3) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to write new record #2");
 		return 1;
 	}
-
-	PDBRecord * record = pdb_record_get(pdbFile, 2);
-	if(record == NULL)
-	{
-		log_write(LOG_ERR, "Failed to get record #%d", 2);
-		return 1;
-	}
 	if(pdb_record_delete(pdbFile, record))
 	{
-		log_write(LOG_ERR, "Failed to delete record #%d", 2);
+		log_write(LOG_ERR, "Failed to delete record #2");
 		return 1;
 	}
 	record = pdb_record_get(pdbFile, 2);
 	if(record == NULL)
 	{
-		log_write(LOG_ERR, "Failed to ger record #%d [2]", 2);
+		log_write(LOG_ERR, "Failed to ger record #2");
 		return 1;
 	}
 	record->attributes = PDB_RECORD_ATTR_DIRTY | 4;

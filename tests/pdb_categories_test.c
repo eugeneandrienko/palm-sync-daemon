@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
 		log_write(LOG_ERR, "Failed to delete category #%d", 3);
 		return 1;
 	}
-	char * name = pdb_category_get(pdbFile, 0);
+	char * name = pdb_category_get_name(pdbFile, 0);
 	if(name == NULL)
 	{
 		log_write(LOG_ERR, "Failed to read category #%d", 0);

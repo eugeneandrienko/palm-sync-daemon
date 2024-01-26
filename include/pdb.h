@@ -51,7 +51,8 @@
    - pdb_record_delete()
 
    To operate with standard Palm OS categories:
-   - pdb_category_get()
+   - pdb_category_get_id()
+   - pdb_category_get_name()
    - pdb_category_add()
    - pdb_category_edit()
    - pdb_category_delete()
@@ -96,6 +97,15 @@
    Length of category string, including null-termination byte.
 */
 #define PDB_CATEGORY_LEN       16
+/** Record item size.
+
+	- Offset to data: 32 bits
+	- Attributes: 8 bits
+	- Record unique ID: 24 bits
+
+	Overall size: 64 bits = 8 bytes.
+*/
+#define PDB_RECORD_ITEM_SIZE        8
 
 
 /**
@@ -212,10 +222,11 @@ void pdb_free(PDBFile * pdbFile);
    Add new record to the record list end.
 
    @param[in] pdbFile Pointer to PDBFile structure.
-   @param[in] record New PDBRecord to insert.
-   @return Zero if success or non-zero value on error.
+   @param[in] offset offset field for new record.
+   @param[in] attributes attributes field for new record.
+   @return Pointer to new record or NULL of error.
 */
-int pdb_record_add(PDBFile * pdbFile, PDBRecord record);
+PDBRecord * pdb_record_add(PDBFile * pdbFile, uint32_t offset, uint8_t attributes);
 
 /**
    Returns pointer to PDBRecord from record list.
@@ -247,7 +258,18 @@ int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record);
    @param[in] id Category ID. Starts from zero.
    @return Pointer to category name or NULL on error.
 */
-char * pdb_category_get(PDBFile * pdbFile, uint8_t id);
+char * pdb_category_get_name(PDBFile * pdbFile, uint8_t id);
+
+/**
+   Returns category ID.
+
+   Category ID to search.
+
+   @param[in] pdbFile Pointer to PDBFile structure.
+   @param[in] name Category name.
+   @return Category ID. Returns -1 if not found.
+*/
+uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name);
 
 /**
    Add new category.

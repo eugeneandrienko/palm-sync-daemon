@@ -87,7 +87,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 check_PROGRAMS = log_test$(EXEEXT) pdb_test$(EXEEXT) \
 	pdb_categories_test$(EXEEXT) pdb_record_test$(EXEEXT) \
-	pdb_memos_test$(EXEEXT) palm_sync_daemon_test$(EXEEXT)
+	pdb_memos_test$(EXEEXT) pdb_memos_data_edit_test$(EXEEXT) \
+	palm_sync_daemon_test$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -104,13 +105,19 @@ log_test_OBJECTS = $(am_log_test_OBJECTS)
 log_test_LDADD = $(LDADD)
 am_palm_sync_daemon_test_OBJECTS = ../src/palm-sync-daemon.$(OBJEXT) \
 	../src/log.$(OBJEXT) ../src/palm.$(OBJEXT) \
-	../src/pdb/pdb.$(OBJEXT)
+	../src/pdb/pdb.$(OBJEXT) ../src/pdb/pdb_memos.$(OBJEXT)
 palm_sync_daemon_test_OBJECTS = $(am_palm_sync_daemon_test_OBJECTS)
 palm_sync_daemon_test_LDADD = $(LDADD)
 am_pdb_categories_test_OBJECTS = ../src/log.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) pdb_categories_test.$(OBJEXT)
 pdb_categories_test_OBJECTS = $(am_pdb_categories_test_OBJECTS)
 pdb_categories_test_LDADD = $(LDADD)
+am_pdb_memos_data_edit_test_OBJECTS = ../src/log.$(OBJEXT) \
+	../src/pdb/pdb.$(OBJEXT) ../src/pdb/pdb_memos.$(OBJEXT) \
+	pdb_memos_data_edit_test.$(OBJEXT)
+pdb_memos_data_edit_test_OBJECTS =  \
+	$(am_pdb_memos_data_edit_test_OBJECTS)
+pdb_memos_data_edit_test_LDADD = $(LDADD)
 am_pdb_memos_test_OBJECTS = ../src/log.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) ../src/pdb/pdb_memos.$(OBJEXT) \
 	pdb_memos_test.$(OBJEXT)
@@ -143,6 +150,7 @@ am__depfiles_remade = ../src/$(DEPDIR)/log.Po \
 	../src/$(DEPDIR)/palm-sync-daemon.Po ../src/$(DEPDIR)/palm.Po \
 	../src/pdb/$(DEPDIR)/pdb.Po ../src/pdb/$(DEPDIR)/pdb_memos.Po \
 	./$(DEPDIR)/log_test.Po ./$(DEPDIR)/pdb_categories_test.Po \
+	./$(DEPDIR)/pdb_memos_data_edit_test.Po \
 	./$(DEPDIR)/pdb_memos_test.Po ./$(DEPDIR)/pdb_record_test.Po \
 	./$(DEPDIR)/pdb_test.Po
 am__mv = mv -f
@@ -159,10 +167,12 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) $(pdb_memos_test_SOURCES) \
+	$(pdb_categories_test_SOURCES) \
+	$(pdb_memos_data_edit_test_SOURCES) $(pdb_memos_test_SOURCES) \
 	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 DIST_SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) $(pdb_memos_test_SOURCES) \
+	$(pdb_categories_test_SOURCES) \
+	$(pdb_memos_data_edit_test_SOURCES) $(pdb_memos_test_SOURCES) \
 	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -499,6 +509,7 @@ TESTS = \
 	pdb_categories_test.sh \
 	pdb_record_test.sh \
 	pdb_memos_test.sh \
+	pdb_memos_data_edit_test.sh \
 	palm_sync_daemon_test.sh
 
 log_test_SOURCES = \
@@ -526,11 +537,18 @@ pdb_memos_test_SOURCES = \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_test.c
 
+pdb_memos_data_edit_test_SOURCES = \
+	../src/log.c \
+	../src/pdb/pdb.c \
+	../src/pdb/pdb_memos.c \
+	pdb_memos_data_edit_test.c
+
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
 	../src/log.c \
 	../src/palm.c \
-	../src/pdb/pdb.c
+	../src/pdb/pdb.c \
+	../src/pdb/pdb_memos.c
 
 EXTRA_DIST = $(TESTS)
 all: all-am
@@ -593,6 +611,8 @@ log_test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 	@: > ../src/pdb/$(DEPDIR)/$(am__dirstamp)
 ../src/pdb/pdb.$(OBJEXT): ../src/pdb/$(am__dirstamp) \
 	../src/pdb/$(DEPDIR)/$(am__dirstamp)
+../src/pdb/pdb_memos.$(OBJEXT): ../src/pdb/$(am__dirstamp) \
+	../src/pdb/$(DEPDIR)/$(am__dirstamp)
 
 palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_DEPENDENCIES) $(EXTRA_palm_sync_daemon_test_DEPENDENCIES) 
 	@rm -f palm_sync_daemon_test$(EXEEXT)
@@ -601,8 +621,10 @@ palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_dae
 pdb_categories_test$(EXEEXT): $(pdb_categories_test_OBJECTS) $(pdb_categories_test_DEPENDENCIES) $(EXTRA_pdb_categories_test_DEPENDENCIES) 
 	@rm -f pdb_categories_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pdb_categories_test_OBJECTS) $(pdb_categories_test_LDADD) $(LIBS)
-../src/pdb/pdb_memos.$(OBJEXT): ../src/pdb/$(am__dirstamp) \
-	../src/pdb/$(DEPDIR)/$(am__dirstamp)
+
+pdb_memos_data_edit_test$(EXEEXT): $(pdb_memos_data_edit_test_OBJECTS) $(pdb_memos_data_edit_test_DEPENDENCIES) $(EXTRA_pdb_memos_data_edit_test_DEPENDENCIES) 
+	@rm -f pdb_memos_data_edit_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pdb_memos_data_edit_test_OBJECTS) $(pdb_memos_data_edit_test_LDADD) $(LIBS)
 
 pdb_memos_test$(EXEEXT): $(pdb_memos_test_OBJECTS) $(pdb_memos_test_DEPENDENCIES) $(EXTRA_pdb_memos_test_DEPENDENCIES) 
 	@rm -f pdb_memos_test$(EXEEXT)
@@ -631,6 +653,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/pdb/$(DEPDIR)/pdb_memos.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_categories_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_memos_data_edit_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_memos_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_record_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_test.Po@am__quote@ # am--include-marker
@@ -885,6 +908,13 @@ pdb_memos_test.sh.log: pdb_memos_test.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+pdb_memos_data_edit_test.sh.log: pdb_memos_data_edit_test.sh
+	@p='pdb_memos_data_edit_test.sh'; \
+	b='pdb_memos_data_edit_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 palm_sync_daemon_test.sh.log: palm_sync_daemon_test.sh
 	@p='palm_sync_daemon_test.sh'; \
 	b='palm_sync_daemon_test.sh'; \
@@ -994,6 +1024,7 @@ distclean: distclean-am
 	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
+	-rm -f ./$(DEPDIR)/pdb_memos_data_edit_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_test.Po
 	-rm -f ./$(DEPDIR)/pdb_record_test.Po
 	-rm -f ./$(DEPDIR)/pdb_test.Po
@@ -1049,6 +1080,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
+	-rm -f ./$(DEPDIR)/pdb_memos_data_edit_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_test.Po
 	-rm -f ./$(DEPDIR)/pdb_record_test.Po
 	-rm -f ./$(DEPDIR)/pdb_test.Po

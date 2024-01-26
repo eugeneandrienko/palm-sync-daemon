@@ -19,7 +19,8 @@
 
    To work with PDBMemos structure use pdb_memos_memo_get(),
    pdb_memos_memo_add(), pdb_memos_memo_edit() or pdb_memos_memo_delete()
-   functions.
+   functions. These functions will not break the underlying data strctures if
+   they return some errors!
 */
 
 /**
@@ -38,7 +39,7 @@
    pdb_memos_free() function. **This function must be used in that and only in
    that case!**
 
-   To operate with PDBMemos structure there the next functions:
+   To operate with PDBMemos structure there are the next functions:
    - pdb_memos_memo_get()
    - pdb_memos_memo_add()
    - pdb_memos_memo_edit()
@@ -58,10 +59,9 @@
 */
 struct PDBMemo
 {
+	PDBRecord * record;                  /**< Pointer to record from PDB file header */
 	char * header;                       /**< Header of memo */
 	char * text;                         /**< Memo text */
-	int categoryId;                      /**< ID of category (taken from header). Used only for simplicity — to do not work with header every time */
-	char * categoryName;                 /**< Category name (points to category name from PDBRecord structure). */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(PDBMemo) pointers;       /**< Connection between elements in queue */
 #endif
@@ -141,29 +141,38 @@ PDBMemo * pdb_memos_memo_get(PDBMemos * memos, char * header);
    — it will be added to PDB header. If there are no memory for new category —
    function returns an error.
 
+   New memo will be added to the end of existing memos list.
+
+   If adding memo is failed — underlying structures will not be changed!
+
    @param[in] memos Pointer to initialized PDBMemos structure.
    @param[in] header Header of new memo.
    @param[in] text Text of new memo.
    @param[in] category Category name for memo.
-   @return 0 on success or non-zero value on error.
+   @return Pointer to new memo of NULL of error.
 */
-int pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
-				  char category[PDB_CATEGORY_LEN]);
+PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
+							 char * category);
 
 /**
    Edit existing memo inside PDBMemos structure.
 
+   If error is happened — no any underlying structures will be changed.
+
+   @param[in] memos Pointer to PDBMemos structure to which new memo will be added.
    @param[in] memo Pointer to memo to edit.
    @param[in] header New header or NULL if we shouldn't change header.
    @param[in] text New text or NULL if we shouldn't change text.
    @param[in] category Category name or NULL if we shouldn't change category.
    @return 0 on success or non-zero value on error.
 */
-int pdb_memos_memo_edit(PDBMemo * memo, char * header, char * text,
-				   char * category);
+int pdb_memos_memo_edit(PDBMemos * memos, PDBMemo * memo, char * header,
+						char * text, char * category);
 
 /**
    Delete existing memo.
+
+   If error is happened — no any underlying structures will be changed.
 
    @param[in] memos Pointer to PDBMemos structure.
    @param[in] memo Pointer to memo to delete.

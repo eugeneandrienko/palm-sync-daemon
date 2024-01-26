@@ -93,6 +93,7 @@ tests/palm_sync_daemon_test
 tests/pdb_categories_test
 tests/pdb_record_test
 tests/pdb_memos_test
+tests/pdb_memos_data_edit_test
 tests/pdb_test
 test-driver
 

@@ -7,6 +7,7 @@ TESTS = \
 	pdb_categories_test.sh \
 	pdb_record_test.sh \
 	pdb_memos_test.sh \
+	pdb_memos_data_edit_test.sh \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
 	log_test \
@@ -14,6 +15,7 @@ check_PROGRAMS = \
 	pdb_categories_test \
 	pdb_record_test \
 	pdb_memos_test \
+	pdb_memos_data_edit_test \
 	palm_sync_daemon_test
 log_test_SOURCES = \
 	../src/log.c \
@@ -35,10 +37,16 @@ pdb_memos_test_SOURCES = \
 	../src/pdb/pdb.c \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_test.c
+pdb_memos_data_edit_test_SOURCES = \
+	../src/log.c \
+	../src/pdb/pdb.c \
+	../src/pdb/pdb_memos.c \
+	pdb_memos_data_edit_test.c
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
 	../src/log.c \
 	../src/palm.c \
-	../src/pdb/pdb.c
+	../src/pdb/pdb.c \
+	../src/pdb/pdb_memos.c
 
 EXTRA_DIST = $(TESTS)

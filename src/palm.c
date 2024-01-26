@@ -107,7 +107,7 @@ PalmData * palm_read(int sd)
 	_palm_read_database(sd, "MemoDB",     &data->memoDBPath);
 	_palm_read_database(sd, "ToDoDB",     &data->todoDBPath);
 
-	return 0;
+	return data;
 }
 
 int palm_write(int sd, PalmData * data)

@@ -11,8 +11,6 @@
 
 /* Record list offset */
 #define PDB_RECORD_LIST_OFFSET         0x0048
-/* Record item size. 32 + 8 + 3 * 8 = 64 bits / 8 bytes */
-#define PDB_RECORD_SIZE                8
 /* Seconds between start of Mac epoch and start of Unix epoch */
 #define PDB_MAC_UNIX_EPOCH_START_DIFF  2082844800
 /* Record list header size */
@@ -170,7 +168,7 @@ int pdb_write(int fd, PDBFile * pdbFile)
 		PDBRecord * record;
 		uint32_t appInfoOffset = PDB_RECORD_LIST_OFFSET +
 			PDB_RECORD_LIST_HEADER_SIZE +
-			pdbFile->recordsQty * PDB_RECORD_SIZE +
+			pdbFile->recordsQty * PDB_RECORD_ITEM_SIZE +
 			sizeof(pdbFile->recordListPadding);
 		if(appInfoOffset != pdbFile->appInfoOffset)
 		{
@@ -274,12 +272,12 @@ void pdb_free(PDBFile * pdbFile)
 	free(pdbFile);
 }
 
-int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
+PDBRecord * pdb_record_add(PDBFile * pdbFile, uint32_t offset, uint8_t attributes)
 {
 	if(pdbFile == NULL)
 	{
 		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_record_add");
-		return -1;
+		return NULL;
 	}
 
 	PDBRecord * newRecord;
@@ -287,11 +285,11 @@ int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new PDB record: %s",
 				  strerror(errno));
-		return -1;
+		return NULL;
 	}
 
-	newRecord->offset = record.offset;
-	newRecord->attributes = record.attributes;
+	newRecord->offset = offset;
+	newRecord->attributes = attributes;
 	srand(time(NULL) + getpid());
 	newRecord->id[0] = (uint8_t)(rand() & 0x000000ff);
 	newRecord->id[1] = (uint8_t)(rand() & 0x000000ff);
@@ -306,10 +304,10 @@ int pdb_record_add(PDBFile * pdbFile, PDBRecord record)
 		TAILQ_INSERT_TAIL(&pdbFile->records, newRecord, pointers);
 	}
 
-	pdbFile->appInfoOffset += pdbFile->appInfoOffset != 0 ? PDB_RECORD_SIZE : 0;
-	pdbFile->sortInfoOffset += pdbFile->sortInfoOffset != 0 ? PDB_RECORD_SIZE : 0;
+	pdbFile->appInfoOffset += pdbFile->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdbFile->sortInfoOffset += pdbFile->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
 	pdbFile->recordsQty++;
-	return 0;
+	return newRecord;
 }
 
 PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index)
@@ -354,21 +352,21 @@ int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record)
 		log_write(LOG_ERR, "NULL record (%s)", "pdb_record_delete");
 		return -1;
 	}
+
 	if(TAILQ_EMPTY(&pdbFile->records))
 	{
 		log_write(LOG_WARNING, "Empty queue, nothing to delete (%s)", "pdb_record_delete");
 		return -1;
 	}
-
 	TAILQ_REMOVE(&pdbFile->records, record, pointers);
 
-	pdbFile->appInfoOffset -= pdbFile->appInfoOffset != 0 ? PDB_RECORD_SIZE : 0;
-	pdbFile->sortInfoOffset -= pdbFile->sortInfoOffset != 0 ? PDB_RECORD_SIZE : 0;
+	pdbFile->appInfoOffset -= pdbFile->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdbFile->sortInfoOffset -= pdbFile->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
 	pdbFile->recordsQty--;
 	return 0;
 }
 
-char * pdb_category_get(PDBFile * pdbFile, uint8_t id)
+char * pdb_category_get_name(PDBFile * pdbFile, uint8_t id)
 {
 	if(pdbFile == NULL)
 	{
@@ -383,6 +381,46 @@ char * pdb_category_get(PDBFile * pdbFile, uint8_t id)
 	}
 
 	return pdbFile->categories->names[id];
+}
+
+uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name)
+{
+	if(pdbFile == NULL)
+	{
+		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_category_get2");
+		return -1;
+	}
+	if(name == NULL)
+	{
+		log_write(LOG_ERR, "NULL category name to search (%s)", "pdb_category_get_id");
+		return -1;
+	}
+
+	struct SortedCategory
+	{
+		uint8_t * id;
+		char * name;
+	} sortedCategories[PDB_CATEGORIES_STD_LEN];
+
+	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	{
+		sortedCategories[i].id = &pdbFile->categories->ids[i];
+		sortedCategories[i].name = pdbFile->categories->names[i];
+	}
+
+	int __compare_categories(const void * cat1, const void * cat2)
+	{
+		return strcmp(
+			((const struct SortedCategory *)cat1)->name,
+			((const struct SortedCategory *)cat2)->name);
+	}
+	qsort(&sortedCategories, PDB_CATEGORIES_STD_LEN, sizeof(struct SortedCategory),
+		  __compare_categories);
+	struct SortedCategory searchFor = {NULL, name};
+	struct SortedCategory * searchResult = bsearch(
+		&searchFor, &sortedCategories, PDB_CATEGORIES_STD_LEN,
+		sizeof(struct SortedCategory), __compare_categories);
+	return searchResult != NULL ? *searchResult->id : -1;
 }
 
 int pdb_category_add(PDBFile * pdbFile, uint8_t id, char * name)
