@@ -61,6 +61,7 @@ docs/tex/auto/
 *.fls
 *.lof
 *.log
+*.lol
 *.lot
 *.pdf
 *.run.xml

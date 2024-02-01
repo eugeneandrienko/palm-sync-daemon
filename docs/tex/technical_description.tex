@@ -44,7 +44,7 @@
 
 \usepackage{listingsutf8}
 \lstset{escapechar=|,
-  frame=single,
+  frame=tb,
   showstringspaces=false,
   inputencoding=utf8,
   extendedchars=true,
@@ -55,6 +55,10 @@
 
 \lstdefinelanguage{org}{
   keywords={TODO, VERIFIED, DONE, CANCELLED, SCHEDULED, DEADLINE},
+  keywordstyle=\bfseries
+}
+\lstdefinelanguage{flex}{
+  keywords={return},
   keywordstyle=\bfseries
 }
 
@@ -103,6 +107,7 @@
 \tableofcontents
 \listoffigures
 \listoftables
+\lstlistoflistings
 
 \newpage
 
@@ -725,7 +730,93 @@ note contents.
 Codepage for symbols is CP1251 (if you use PaPiRus cyrillic extension for Palm
 OS). Otherwise there are a plain ASCII symbols.
 
+\subsection{Parsing OrgMode files}
+\label{sec:pars-orgm-files}
+
+\texttt{palm-sync-daemon} needs to parse only small subset of OrgMode syntax
+(see section~\ref{sec:desired-orgmode-file}). To achieve that and do not spend a
+lot of time to write own parser from zero~--- \texttt{flex} and \texttt{bison}
+is used.
+
+Tokens for OrgMode syntax is described in \texttt{src/orgmode/parser/scanner.l}:
+\begin{itemize}
+\item Start of first level headline
+\item TODO-keyword
+\item Priority
+\item Tag
+\item Datetime from \texttt{SCHEDULED} and \texttt{DEADLINE} directives
+\item Words~--- from headline of from text below.
+\end{itemize}
+
+\begin{lstlisting}[language=flex,
+  caption={Tokens, defined in \texttt{scanner.l}.},
+  escapechar=]
+  U             [\x80-\xbf]
+  U2            [\xc2-\xdf]
+  U3            [\xe0-\xef]
+  U4            [\xf0-\xf4]
+  UTF8SYMBOL    [[:alnum:][:punct:]]|{U2}{U}|{U3}{U}{U}|{U4}{U}{U}{U}
+  TODO_KEYWORD  (TODO|VERIFIED|DONE|CANCELLED)" "
+  PRIORITY      [#(A|B|C)]" "
+  TAG           :[[:alnum:]]+:
+  DATETIME      <[-+: [:alnum:]]+>
+
+  %%
+  ^\#\+.+\n                { /* Skip OrgMode directives */ }
+  ^\*" "                   { return T_HEADLINE_STAR; }
+  {TODO_KEYWORD}           { return T_TODO_KEYWORD; }
+  {PRIORITY}               { return T_PRIORITY; }
+  {TAG}                    { return T_TAG; }
+  (SCHEDULED|DEADLINE):" " { return T_SCHEDULED; }
+  {DATETIME}               { return T_DATETIME; }
+  {UTF8SYMBOL}+            { return T_WORD; }
+  [[:blank:]]              { /* Skip spaces */ }
+  ^[\n]+                   { return T_NEWLINE; }
+  [\n]                     { return T_NEWLINE; }
+  %%
+\end{lstlisting}
+
 % ---------------------------------------------------------------------------
+
+After definition of tokens, basic syntax of OrgMode is defined. See
+\texttt{src/orgmode/parser/parser.y}.
+
+\begin{lstlisting}[language=flex,
+  caption={OrgMode grammar from \texttt{parser.y}.},
+  escapechar=]
+  %%
+  entries : entry
+        | entries entry
+        ;
+
+  entry : header
+      | header text
+      ;
+
+  header : headline T_NEWLINE
+         | headline T_NEWLINE T_SCHEDULED T_DATETIME T_NEWLINE
+         ;
+
+  headline : T_HEADLINE_STAR line
+           | T_HEADLINE_STAR line T_TAG
+           | T_HEADLINE_STAR T_TODO_KEYWORD line
+           | T_HEADLINE_STAR T_TODO_KEYWORD line T_TAG
+           | T_HEADLINE_STAR T_PRIORITY line
+           | T_HEADLINE_STAR T_PRIORITY line T_TAG
+           | T_HEADLINE_STAR T_TODO_KEYWORD T_PRIORITY line
+           | T_HEADLINE_STAR T_TODO_KEYWORD T_PRIORITY line T_TAG
+           ;
+
+  text : line T_NEWLINE
+       | text T_NEWLINE
+       | text line T_NEWLINE
+       ;
+
+  line : T_WORD
+       | line T_WORD
+       ;
+  %%
+\end{lstlisting}
 
 \newpage
 
