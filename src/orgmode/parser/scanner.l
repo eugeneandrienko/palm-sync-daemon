@@ -54,7 +54,7 @@ DATETIME     <[-+: [:alnum:]]+>
     return T_WORD;
 }
 
- [[:blank:]] { /* Skip spaces */ }
+[[:blank:]] { /* Skip spaces */ }
 
 ^[\n]+ {
     yylineno++;
