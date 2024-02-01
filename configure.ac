@@ -24,6 +24,9 @@ AC_CONFIG_FILES([docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile d
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_EGREP
+AC_PROG_YACC
+AC_PROG_LEX(noyywrap)
+AM_PROG_LEX
 
 # Checks for libraries.
 AC_CHECK_LIB([popt], [poptGetContext], [], AC_MSG_ERROR([cannot find libpopt]))

@@ -11,6 +11,17 @@ DIST_SUBDIRS = \
 	tests
 
 bin_PROGRAMS = palm-sync-daemon
+
+BUILT_SOURCES =	\
+	src/orgmode/parser/parser.h \
+	src/orgmode/parser/parser.c \
+	src/orgmode/parser/scanner.c
+
+AM_CFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src/orgmode/parser
+AM_YFLAGS = -d
+
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \
@@ -20,8 +31,10 @@ palm_sync_daemon_SOURCES = \
 	src/pdb/pdb.c \
 	include/pdb_memos.h \
 	src/pdb/pdb_memos.c \
+	src/orgmode/parser/orgmode_parser.h \
+	src/orgmode/parser/parser.y \
+	src/orgmode/parser/scanner.l \
 	src/palm-sync-daemon.c
-AM_CFLAGS = \
-	-I$(top_srcdir)/include
+CLEANFILES = $(BUILT_SOURCES)
 
 dist_doc_DATA = LICENSE

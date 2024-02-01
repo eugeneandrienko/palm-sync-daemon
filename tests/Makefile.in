@@ -88,7 +88,7 @@ POST_UNINSTALL = :
 check_PROGRAMS = log_test$(EXEEXT) pdb_test$(EXEEXT) \
 	pdb_categories_test$(EXEEXT) pdb_record_test$(EXEEXT) \
 	pdb_memos_test$(EXEEXT) pdb_memos_data_edit_test$(EXEEXT) \
-	palm_sync_daemon_test$(EXEEXT)
+	parser_test$(EXEEXT) palm_sync_daemon_test$(EXEEXT)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -108,6 +108,11 @@ am_palm_sync_daemon_test_OBJECTS = ../src/palm-sync-daemon.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) ../src/pdb/pdb_memos.$(OBJEXT)
 palm_sync_daemon_test_OBJECTS = $(am_palm_sync_daemon_test_OBJECTS)
 palm_sync_daemon_test_LDADD = $(LDADD)
+am_parser_test_OBJECTS = ../src/log.$(OBJEXT) \
+	../src/orgmode/parser/parser.$(OBJEXT) \
+	../src/orgmode/parser/scanner.$(OBJEXT) parser_test.$(OBJEXT)
+parser_test_OBJECTS = $(am_parser_test_OBJECTS)
+parser_test_LDADD = $(LDADD)
 am_pdb_categories_test_OBJECTS = ../src/log.$(OBJEXT) \
 	../src/pdb/pdb.$(OBJEXT) pdb_categories_test.$(OBJEXT)
 pdb_categories_test_OBJECTS = $(am_pdb_categories_test_OBJECTS)
@@ -148,8 +153,11 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../src/$(DEPDIR)/log.Po \
 	../src/$(DEPDIR)/palm-sync-daemon.Po ../src/$(DEPDIR)/palm.Po \
+	../src/orgmode/parser/$(DEPDIR)/parser.Po \
+	../src/orgmode/parser/$(DEPDIR)/scanner.Po \
 	../src/pdb/$(DEPDIR)/pdb.Po ../src/pdb/$(DEPDIR)/pdb_memos.Po \
-	./$(DEPDIR)/log_test.Po ./$(DEPDIR)/pdb_categories_test.Po \
+	./$(DEPDIR)/log_test.Po ./$(DEPDIR)/parser_test.Po \
+	./$(DEPDIR)/pdb_categories_test.Po \
 	./$(DEPDIR)/pdb_memos_data_edit_test.Po \
 	./$(DEPDIR)/pdb_memos_test.Po ./$(DEPDIR)/pdb_record_test.Po \
 	./$(DEPDIR)/pdb_test.Po
@@ -166,12 +174,25 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+LEXCOMPILE = $(LEX) $(AM_LFLAGS) $(LFLAGS)
+AM_V_LEX = $(am__v_LEX_@AM_V@)
+am__v_LEX_ = $(am__v_LEX_@AM_DEFAULT_V@)
+am__v_LEX_0 = @echo "  LEX     " $@;
+am__v_LEX_1 = 
+YLWRAP = $(top_srcdir)/ylwrap
+am__yacc_c2h = sed -e s/cc$$/hh/ -e s/cpp$$/hpp/ -e s/cxx$$/hxx/ \
+		   -e s/c++$$/h++/ -e s/c$$/h/
+YACCCOMPILE = $(YACC) $(AM_YFLAGS) $(YFLAGS)
+AM_V_YACC = $(am__v_YACC_@AM_V@)
+am__v_YACC_ = $(am__v_YACC_@AM_DEFAULT_V@)
+am__v_YACC_0 = @echo "  YACC    " $@;
+am__v_YACC_1 = 
 SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) \
+	$(parser_test_SOURCES) $(pdb_categories_test_SOURCES) \
 	$(pdb_memos_data_edit_test_SOURCES) $(pdb_memos_test_SOURCES) \
 	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 DIST_SOURCES = $(log_test_SOURCES) $(palm_sync_daemon_test_SOURCES) \
-	$(pdb_categories_test_SOURCES) \
+	$(parser_test_SOURCES) $(pdb_categories_test_SOURCES) \
 	$(pdb_memos_data_edit_test_SOURCES) $(pdb_memos_test_SOURCES) \
 	$(pdb_record_test_SOURCES) $(pdb_test_SOURCES)
 am__can_run_installinfo = \
@@ -402,7 +423,9 @@ TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/test-driver
 TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
 	$(TEST_LOG_FLAGS)
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/depcomp \
-	$(top_srcdir)/test-driver
+	$(top_srcdir)/test-driver $(top_srcdir)/ylwrap \
+	../src/orgmode/parser/parser.c ../src/orgmode/parser/parser.h \
+	../src/orgmode/parser/scanner.c
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -436,6 +459,9 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LATEXMK = @LATEXMK@
 LDFLAGS = @LDFLAGS@
+LEX = @LEX@
+LEXLIB = @LEXLIB@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
@@ -457,6 +483,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+YACC = @YACC@
+YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -501,8 +529,10 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src/orgmode/parser
 
+AM_YFLAGS = -d
 TESTS = \
 	log_test.sh \
 	pdb_test.sh \
@@ -510,6 +540,7 @@ TESTS = \
 	pdb_record_test.sh \
 	pdb_memos_test.sh \
 	pdb_memos_data_edit_test.sh \
+	parser_test.sh \
 	palm_sync_daemon_test.sh
 
 log_test_SOURCES = \
@@ -543,6 +574,12 @@ pdb_memos_data_edit_test_SOURCES = \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_data_edit_test.c
 
+parser_test_SOURCES = \
+	../src/log.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	parser_test.c
+
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
 	../src/log.c \
@@ -554,7 +591,7 @@ EXTRA_DIST = $(TESTS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .log .o .obj .test .test$(EXEEXT) .trs
+.SUFFIXES: .c .l .log .o .obj .test .test$(EXEEXT) .trs .y
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -617,6 +654,25 @@ log_test$(EXEEXT): $(log_test_OBJECTS) $(log_test_DEPENDENCIES) $(EXTRA_log_test
 palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_DEPENDENCIES) $(EXTRA_palm_sync_daemon_test_DEPENDENCIES) 
 	@rm -f palm_sync_daemon_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_LDADD) $(LIBS)
+../src/orgmode/parser/parser.h: ../src/orgmode/parser/parser.c
+	@if test ! -f $@; then rm -f ../src/orgmode/parser/parser.c; else :; fi
+	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) ../src/orgmode/parser/parser.c; else :; fi
+../src/orgmode/parser/$(am__dirstamp):
+	@$(MKDIR_P) ../src/orgmode/parser
+	@: > ../src/orgmode/parser/$(am__dirstamp)
+../src/orgmode/parser/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/orgmode/parser/$(DEPDIR)
+	@: > ../src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+../src/orgmode/parser/parser.$(OBJEXT):  \
+	../src/orgmode/parser/$(am__dirstamp) \
+	../src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+../src/orgmode/parser/scanner.$(OBJEXT):  \
+	../src/orgmode/parser/$(am__dirstamp) \
+	../src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+
+parser_test$(EXEEXT): $(parser_test_OBJECTS) $(parser_test_DEPENDENCIES) $(EXTRA_parser_test_DEPENDENCIES) 
+	@rm -f parser_test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(parser_test_OBJECTS) $(parser_test_LDADD) $(LIBS)
 
 pdb_categories_test$(EXEEXT): $(pdb_categories_test_OBJECTS) $(pdb_categories_test_DEPENDENCIES) $(EXTRA_pdb_categories_test_DEPENDENCIES) 
 	@rm -f pdb_categories_test$(EXEEXT)
@@ -641,6 +697,7 @@ pdb_test$(EXEEXT): $(pdb_test_OBJECTS) $(pdb_test_DEPENDENCIES) $(EXTRA_pdb_test
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
+	-rm -f ../src/orgmode/parser/*.$(OBJEXT)
 	-rm -f ../src/pdb/*.$(OBJEXT)
 
 distclean-compile:
@@ -649,9 +706,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@../src/orgmode/parser/$(DEPDIR)/parser.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@../src/orgmode/parser/$(DEPDIR)/scanner.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/pdb/$(DEPDIR)/pdb.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/pdb/$(DEPDIR)/pdb_memos.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log_test.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_categories_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_memos_data_edit_test.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdb_memos_test.Po@am__quote@ # am--include-marker
@@ -679,6 +739,12 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.l.c:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)
+
+.y.c:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h `echo $@ | $(am__yacc_c2h)` y.output $*.output -- $(YACCCOMPILE)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -915,6 +981,13 @@ pdb_memos_data_edit_test.sh.log: pdb_memos_data_edit_test.sh
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+parser_test.sh.log: parser_test.sh
+	@p='parser_test.sh'; \
+	b='parser_test.sh'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 palm_sync_daemon_test.sh.log: palm_sync_daemon_test.sh
 	@p='palm_sync_daemon_test.sh'; \
 	b='palm_sync_daemon_test.sh'; \
@@ -1006,12 +1079,17 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/$(am__dirstamp)
+	-rm -f ../src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/orgmode/parser/$(am__dirstamp)
 	-rm -f ../src/pdb/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/pdb/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f ../src/orgmode/parser/parser.c
+	-rm -f ../src/orgmode/parser/parser.h
+	-rm -f ../src/orgmode/parser/scanner.c
 clean: clean-am
 
 clean-am: clean-checkPROGRAMS clean-generic mostlyclean-am
@@ -1020,9 +1098,12 @@ distclean: distclean-am
 		-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
+	-rm -f ../src/orgmode/parser/$(DEPDIR)/parser.Po
+	-rm -f ../src/orgmode/parser/$(DEPDIR)/scanner.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
+	-rm -f ./$(DEPDIR)/parser_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_data_edit_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_test.Po
@@ -1076,9 +1157,12 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
+	-rm -f ../src/orgmode/parser/$(DEPDIR)/parser.Po
+	-rm -f ../src/orgmode/parser/$(DEPDIR)/scanner.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f ../src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f ./$(DEPDIR)/log_test.Po
+	-rm -f ./$(DEPDIR)/parser_test.Po
 	-rm -f ./$(DEPDIR)/pdb_categories_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_data_edit_test.Po
 	-rm -f ./$(DEPDIR)/pdb_memos_test.Po

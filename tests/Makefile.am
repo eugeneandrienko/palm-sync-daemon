@@ -1,5 +1,7 @@
 AM_CFLAGS = \
-	-I$(top_srcdir)/include
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src/orgmode/parser
+AM_YFLAGS = -d
 
 TESTS = \
 	log_test.sh \
@@ -8,6 +10,7 @@ TESTS = \
 	pdb_record_test.sh \
 	pdb_memos_test.sh \
 	pdb_memos_data_edit_test.sh \
+	parser_test.sh \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
 	log_test \
@@ -16,6 +19,7 @@ check_PROGRAMS = \
 	pdb_record_test \
 	pdb_memos_test \
 	pdb_memos_data_edit_test \
+	parser_test \
 	palm_sync_daemon_test
 log_test_SOURCES = \
 	../src/log.c \
@@ -42,6 +46,11 @@ pdb_memos_data_edit_test_SOURCES = \
 	../src/pdb/pdb.c \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_data_edit_test.c
+parser_test_SOURCES = \
+	../src/log.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	parser_test.c
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
 	../src/log.c \
