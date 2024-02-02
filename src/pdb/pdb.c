@@ -146,10 +146,10 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	}
 
 	/* Check records qty */
-	PDBRecord * record;
 	uint16_t recordsQty = 0;
 	if(!TAILQ_EMPTY(&pdbFile->records))
 	{
+		PDBRecord * record;
 		TAILQ_FOREACH(record, &pdbFile->records, pointers)
 		{
 			recordsQty++;
@@ -165,7 +165,6 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	/* Check offset to application info */
 	if(pdbFile->categories != NULL)
 	{
-		PDBRecord * record;
 		uint32_t appInfoOffset = PDB_RECORD_LIST_OFFSET +
 			PDB_RECORD_LIST_HEADER_SIZE +
 			pdbFile->recordsQty * PDB_RECORD_ITEM_SIZE +
@@ -690,10 +689,9 @@ static int _read_categories(int fd, PDBCategories ** categories)
 */
 static int _write8_field(int fd, uint8_t * buf, char * description)
 {
-	off_t offset = 0;
 	if(log_is_debug())
 	{
-		offset = lseek(fd, 0, SEEK_CUR);
+		off_t offset = lseek(fd, 0, SEEK_CUR);
 		log_write(LOG_DEBUG, "Writing %s 0x%02x to 0x%08x offset",
 				  description, *buf, offset);
 	}
@@ -719,10 +717,9 @@ static int _write8_field(int fd, uint8_t * buf, char * description)
 */
 static int _write16_field(int fd, uint16_t * buf, char * description)
 {
-	off_t offset = 0;
 	if(log_is_debug())
 	{
-		offset = lseek(fd, 0, SEEK_CUR);
+		off_t offset = lseek(fd, 0, SEEK_CUR);
 		log_write(LOG_DEBUG, "Writing %s 0x%04x to 0x%08x offset",
 				  description, *buf, offset);
 	}
@@ -749,10 +746,9 @@ static int _write16_field(int fd, uint16_t * buf, char * description)
 */
 static int _write32_field(int fd, uint32_t * buf, char * description)
 {
-	off_t offset = 0;
 	if(log_is_debug())
 	{
-		offset = lseek(fd, 0, SEEK_CUR);
+		off_t offset = lseek(fd, 0, SEEK_CUR);
 		log_write(LOG_DEBUG, "Writing %s 0x%08x to 0x%08x offset",
 				  description, *buf, offset);
 	}

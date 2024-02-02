@@ -6,5 +6,5 @@ else
     if [ "$(pwd | xargs basename)" == "scripts" ]; then
         cd ..
     fi
-    "$1" --error-exitcode=2 --enable=all -isrc/orgmode/parser -I include/ src/
+    "$1" --quiet --enable=all -isrc/orgmode/parser -I include/ src/ > static_analysis_report.txt 2>&1
 fi

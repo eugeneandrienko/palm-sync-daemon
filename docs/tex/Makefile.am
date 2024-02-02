@@ -24,6 +24,7 @@ distclean-local:
 			$(builddir)/*.tex \
 			$(builddir)/*.bib \
 			$(builddir)/*.bbl \
+			$(builddir)/*.lol \
 			$(builddir)/*.run.xml; \
 	else \
 		rm -rfv $(srcdir)/*.bbl \

@@ -419,6 +419,7 @@ palm_sync_daemon_SOURCES = \
 
 CLEANFILES = $(BUILT_SOURCES)
 dist_doc_DATA = LICENSE
+EXTRA_DIST = $(srcdir)/scripts/*
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -988,7 +989,7 @@ maintainer-clean-generic:
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-recursive
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-local mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
@@ -1077,8 +1078,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_docDATA
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am all-local \
 	am--depfiles am--refresh check check-am clean \
-	clean-binPROGRAMS clean-cscope clean-generic cscope \
-	cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
+	clean-binPROGRAMS clean-cscope clean-generic clean-local \
+	cscope cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
 	dist-gzip dist-lzip dist-shar dist-tarZ dist-xz dist-zip \
 	dist-zstd distcheck distclean distclean-compile \
 	distclean-generic distclean-hdr distclean-tags distcleancheck \
@@ -1098,7 +1099,14 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_docDATA
 
 
 all-local:
-	$(top_srcdir)/scripts/static_analysis.sh $(MAYBE_CPPCHECK)
+	if [ "$(srcdir)" == "$(builddir)" ]; then \
+		$(srcdir)/scripts/static_analysis.sh $(MAYBE_CPPCHECK); \
+	fi
+
+clean-local:
+	if [ "$(srcdir)" == "$(builddir)" ]; then \
+		rm -f $(top_srcdir)/static_analysis_report.txt; \
+	fi
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

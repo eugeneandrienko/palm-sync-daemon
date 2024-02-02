@@ -446,6 +446,7 @@ uninstall-am:
 @HAVE_PDFLATEX_TRUE@			$(builddir)/*.tex \
 @HAVE_PDFLATEX_TRUE@			$(builddir)/*.bib \
 @HAVE_PDFLATEX_TRUE@			$(builddir)/*.bbl \
+@HAVE_PDFLATEX_TRUE@			$(builddir)/*.lol \
 @HAVE_PDFLATEX_TRUE@			$(builddir)/*.run.xml; \
 @HAVE_PDFLATEX_TRUE@	else \
 @HAVE_PDFLATEX_TRUE@		rm -rfv $(srcdir)/*.bbl \

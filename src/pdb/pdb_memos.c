@@ -551,10 +551,10 @@ static int _pdb_memos_read_chunks(int fd, char * buf, unsigned int length)
 		return -1;
 	}
 
-	ssize_t readedBytes;
 	while(length > 0)
 	{
 		unsigned int bytesToRead = length < PDB_MEMOS_CHUNK_SIZE ? length : PDB_MEMOS_CHUNK_SIZE;
+		ssize_t readedBytes;
 		if((readedBytes = read(fd, buf, bytesToRead)) < 0)
 		{
 			log_write(LOG_ERR, "Cannot read to buffer: %s", strerror(errno));
@@ -638,10 +638,10 @@ static int _pdb_memos_write_chunks(int fd, char * buf, unsigned int length)
 		return -1;
 	}
 
-	ssize_t writtenBytes;
 	while(length > 0)
 	{
 		unsigned int bytesToWrite = length < PDB_MEMOS_CHUNK_SIZE ? length : PDB_MEMOS_CHUNK_SIZE;
+		ssize_t writtenBytes;
 		if((writtenBytes = write(fd, buf, bytesToWrite)) <= 0)
 		{
 			log_write(LOG_ERR, "Cannot write to buffer: %s", strerror(errno));

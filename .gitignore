@@ -104,9 +104,13 @@ ylwrap
 *.trs
 
 # Distribution
+palm-sync-daemon-*/
 *.tar.gz
 
 # Flex + Bison
 src/orgmode/parser/*.c
 src/orgmode/parser/parser.h
+
+# Static analysis report
+static_analysis_report.txt
 
