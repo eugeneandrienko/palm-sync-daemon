@@ -4,6 +4,10 @@ AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror -Wportability])
 AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
 
+AC_ARG_ENABLE([fanalyzer],
+    AS_HELP_STRING([--enable-fanalyzer], [Use -fanalyzer when compiling sources with GCC]))
+AM_CONDITIONAL([ENABLE_FANALYZER], [test "x$enable_fanalyzer" = "xyes"])
+
 # Checks for external programs
 AC_CHECK_PROG([DOXYGEN], [doxygen], [yes], [no])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "$DOXYGEN" == "yes"])

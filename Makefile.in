@@ -88,6 +88,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = palm-sync-daemon$(EXEEXT)
+@ENABLE_FANALYZER_TRUE@am__append_1 = -fanalyzer
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -396,10 +397,8 @@ BUILT_SOURCES = \
 	src/orgmode/parser/parser.c \
 	src/orgmode/parser/scanner.c
 
-AM_CFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/src/orgmode/parser
-
+AM_CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/src/orgmode/parser \
+	$(am__append_1)
 AM_YFLAGS = -d
 palm_sync_daemon_SOURCES = \
 	include/log.h \

@@ -20,6 +20,9 @@ BUILT_SOURCES =	\
 AM_CFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/src/orgmode/parser
+if ENABLE_FANALYZER
+AM_CFLAGS += -fanalyzer
+endif
 AM_YFLAGS = -d
 
 palm_sync_daemon_SOURCES = \

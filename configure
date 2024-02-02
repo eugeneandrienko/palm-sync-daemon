@@ -690,6 +690,8 @@ MAYBE_DOXYGEN
 HAVE_DOXYGEN_FALSE
 HAVE_DOXYGEN_TRUE
 DOXYGEN
+ENABLE_FANALYZER_FALSE
+ENABLE_FANALYZER_TRUE
 AM_BACKSLASH
 AM_DEFAULT_VERBOSITY
 AM_DEFAULT_V
@@ -764,6 +766,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_silent_rules
+enable_fanalyzer
 enable_dependency_tracking
 '
       ac_precious_vars='build_alias
@@ -1402,6 +1405,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-silent-rules   less verbose build output (undo: "make V=1")
   --disable-silent-rules  verbose build output (undo: "make V=0")
+  --enable-fanalyzer      Use -fanalyzer when compiling sources with GCC
   --enable-dependency-tracking
                           do not reject slow dependency extractors
   --disable-dependency-tracking
@@ -3018,6 +3022,21 @@ fi
 
 
 ac_config_headers="$ac_config_headers config.h"
+
+
+# Check whether --enable-fanalyzer was given.
+if test ${enable_fanalyzer+y}
+then :
+  enableval=$enable_fanalyzer;
+fi
+
+ if test "x$enable_fanalyzer" = "xyes"; then
+  ENABLE_FANALYZER_TRUE=
+  ENABLE_FANALYZER_FALSE='#'
+else
+  ENABLE_FANALYZER_TRUE='#'
+  ENABLE_FANALYZER_FALSE=
+fi
 
 
 # Checks for external programs
@@ -5410,6 +5429,10 @@ else
   am__EXEEXT_FALSE=
 fi
 
+if test -z "${ENABLE_FANALYZER_TRUE}" && test -z "${ENABLE_FANALYZER_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_FANALYZER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${HAVE_DOXYGEN_TRUE}" && test -z "${HAVE_DOXYGEN_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_DOXYGEN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
