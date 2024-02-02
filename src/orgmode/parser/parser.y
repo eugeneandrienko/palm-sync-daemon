@@ -444,7 +444,7 @@ static int __insert_datetime(const char * datetime, int nsub, regmatch_t * regMa
         matchlen = regMatch[1].rm_eo - regMatch[1].rm_so;
         buffer = calloc(matchlen + strlen(zeroTime), sizeof(char));
         strncpy(buffer, datetime + regMatch[1].rm_so, matchlen);
-        strncpy(buffer + matchlen, zeroTime, 6);
+        strncpy(buffer + matchlen, zeroTime, strlen(zeroTime));
 
         localtime_r(&zerotime, &time);
         if(strptime(buffer, "%Y-%m-%d %H:%M", &time) == NULL)
@@ -606,7 +606,7 @@ static int _insert_datetime(const char * datetime)
         regmatch_t * regMatch;
         int regError;
 
-        if(regError = regcomp(&regex, regexToCheck[i], REG_EXTENDED | REG_NEWLINE))
+        if((regError = regcomp(&regex, regexToCheck[i], REG_EXTENDED | REG_NEWLINE)) != 0)
         {
             __regerror(regError, &regex);
             return -1;
@@ -619,7 +619,7 @@ static int _insert_datetime(const char * datetime)
             return -1;
         }
 
-        if(regError = regexec(&regex, datetime, regex.re_nsub + 1, regMatch, 0))
+        if((regError = regexec(&regex, datetime, regex.re_nsub + 1, regMatch, 0)) != 0)
         {
             if(regError == REG_NOMATCH)
             {

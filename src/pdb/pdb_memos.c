@@ -10,7 +10,7 @@
 #define PDB_MEMOS_CHUNK_SIZE 10 /* Buffer size for memo data */
 
 
-static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record, PDBFile * pdbFile);
+static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record);
 static int _pdb_memos_write_memo(int fd, PDBMemo * memo);
 
 static int _pdb_memos_read_chunks(int fd, char * buf, unsigned int length);
@@ -53,7 +53,7 @@ PDBMemos * pdb_memos_read(char * path)
 	TAILQ_FOREACH(record, &memos->header->records, pointers)
 	{
 		PDBMemo * memo;
-		if((memo = _pdb_memos_read_memo(fd, record, memos->header)) == NULL)
+		if((memo = _pdb_memos_read_memo(fd, record)) == NULL)
 		{
 			pdb_memos_free(memos);
 			return NULL;
@@ -128,24 +128,31 @@ void pdb_memos_free(PDBMemos * memos)
 	free(memos);
 }
 
+/**
+   Entry for array of memos.
+
+   Used to sort memos by header and search for desired memo by header.
+*/
+struct SortedMemo
+{
+	char * header;  /**< Pointer to memo header */
+	PDBMemo * memo; /**< Pointer to memo */
+};
+
+int __compare_headers(const void * memo1, const void * memo2)
+{
+	return strcmp(
+		((const struct SortedMemo *)memo1)->header,
+		((const struct SortedMemo *)memo2)->header);
+}
+
 PDBMemo * pdb_memos_memo_get(PDBMemos * memos, char * header)
 {
-	struct SortedMemo
-	{
-		char * header;
-		PDBMemo * memo;
-	};
 	int memosQty = memos->header->recordsQty;
 	struct SortedMemo sortedMemos[memosQty];
 
 	PDBMemo * memo;
 	unsigned short index = 0;
-	int __compare_headers(const void * memo1, const void * memo2)
-	{
-		return strcmp(
-			((const struct SortedMemo *)memo1)->header,
-			((const struct SortedMemo *)memo2)->header);
-	}
 
 	TAILQ_FOREACH(memo, &memos->memos, pointers)
 	{
@@ -288,7 +295,7 @@ int pdb_memos_memo_edit(PDBMemos * memos, PDBMemo * memo, char * header,
 		return -1;
 	}
 
-	uint8_t categoryId;
+	char categoryId = 0;
 	if(category != NULL &&
 	   (categoryId = pdb_category_get_id(memos->header, category)) == -1)
 	{
@@ -401,10 +408,9 @@ int pdb_memos_memo_delete(PDBMemos * memos, PDBMemo * memo)
 
    @param[in] fd File descriptor.
    @param[in] record PDBRecord, which points to memo.
-   @param[in] pdbFile Initialized PDBFile structure to read category info for memo.
    @return Filled PDBMemo or NULL if error.
 */
-static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record, PDBFile * pdbFile)
+static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 {
 	/* Go to memo */
 	if(lseek(fd, record->offset, SEEK_SET) != record->offset)

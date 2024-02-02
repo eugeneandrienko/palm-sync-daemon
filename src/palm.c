@@ -262,7 +262,7 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 		return;
 	}
 	pid_t pid = getpid();
-	sprintf(*path, PALM_PDB_TMP_DIR "/%s.%d.pdb\0", dbname, pid);
+	sprintf(*path, PALM_PDB_TMP_DIR "/%s.%d.pdb", dbname, pid);
 
 	f = pi_file_create(*path, &info);
 	if(f == 0)

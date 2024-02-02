@@ -269,7 +269,7 @@ char * pdb_category_get_name(PDBFile * pdbFile, uint8_t id);
    @param[in] name Category name.
    @return Category ID. Returns -1 if not found.
 */
-uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name);
+char pdb_category_get_id(PDBFile * pdbFile, char * name);
 
 /**
    Add new category.

@@ -382,7 +382,25 @@ char * pdb_category_get_name(PDBFile * pdbFile, uint8_t id)
 	return pdbFile->categories->names[id];
 }
 
-uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name)
+/**
+   Entry for array of categories.
+
+   Used to sort categories by name and search for desired category.
+*/
+struct SortedCategory
+{
+	uint8_t * id; /**< Pointer to category ID */
+	char * name;  /**< Pointer to category name */
+};
+
+int __compare_categories(const void * cat1, const void * cat2)
+{
+	return strcmp(
+		((const struct SortedCategory *)cat1)->name,
+		((const struct SortedCategory *)cat2)->name);
+}
+
+char pdb_category_get_id(PDBFile * pdbFile, char * name)
 {
 	if(pdbFile == NULL)
 	{
@@ -395,11 +413,7 @@ uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name)
 		return -1;
 	}
 
-	struct SortedCategory
-	{
-		uint8_t * id;
-		char * name;
-	} sortedCategories[PDB_CATEGORIES_STD_LEN];
+	struct SortedCategory sortedCategories[PDB_CATEGORIES_STD_LEN];
 
 	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
 	{
@@ -407,12 +421,6 @@ uint8_t pdb_category_get_id(PDBFile * pdbFile, char * name)
 		sortedCategories[i].name = pdbFile->categories->names[i];
 	}
 
-	int __compare_categories(const void * cat1, const void * cat2)
-	{
-		return strcmp(
-			((const struct SortedCategory *)cat1)->name,
-			((const struct SortedCategory *)cat2)->name);
-	}
 	qsort(&sortedCategories, PDB_CATEGORIES_STD_LEN, sizeof(struct SortedCategory),
 		  __compare_categories);
 	struct SortedCategory searchFor = {NULL, name};
