@@ -493,6 +493,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record, PDBFile * pdbF
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for memo text: %s",
 				  strerror(errno));
+		free(memo->header);
 		free(memo);
 		return NULL;
 	}
