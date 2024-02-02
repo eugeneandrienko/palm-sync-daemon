@@ -21,7 +21,7 @@ AM_CFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/src/orgmode/parser
 if ENABLE_FANALYZER
-AM_CFLAGS += -fanalyzer
+AM_CFLAGS += -fanalyzer -Wpedantic -Wall -Wextra
 endif
 AM_YFLAGS = -d
 
