@@ -34,7 +34,12 @@ palm_sync_daemon_SOURCES = \
 	src/orgmode/parser/orgmode_parser.h \
 	src/orgmode/parser/parser.y \
 	src/orgmode/parser/scanner.l \
+	include/org_notes.h \
+	src/orgmode/org_notes.c \
 	src/palm-sync-daemon.c
 CLEANFILES = $(BUILT_SOURCES)
 
 dist_doc_DATA = LICENSE
+
+all-local:
+	$(top_srcdir)/scripts/static_analysis.sh $(MAYBE_CPPCHECK)

@@ -17,6 +17,12 @@ AM_CONDITIONAL([HAVE_PDFLATEX], [test "$PDFLATEX" == "yes" && test "$BIBER" == "
 AM_COND_IF([HAVE_PDFLATEX], [AC_SUBST([MAYBE_TEX], [docs/tex])],
                             [AC_MSG_WARN([Continue without PDF documentation])])
 
+AC_CHECK_PROG([CPPCHECK], [cppcheck], [yes], [no])
+AM_CONDITIONAL([HAVE_CPPCHECK], [test "$CPPCHECK" == "yes"])
+AM_COND_IF([HAVE_CPPCHECK], [], [AC_MSG_WARN([Continue without C static analysis])])
+AM_COND_IF([HAVE_CPPCHECK], [AC_SUBST([MAYBE_CPPCHECK], [cppcheck])],
+                            [AC_SUBST([MAYBE_CPPCHECK], [no])])
+
 AC_CONFIG_FILES([Makefile tests/Makefile])
 AC_CONFIG_FILES([docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile docs/man/Makefile])
 

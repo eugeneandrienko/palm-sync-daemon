@@ -106,7 +106,9 @@ PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/palm.$(OBJEXT) \
 	src/pdb/pdb.$(OBJEXT) src/pdb/pdb_memos.$(OBJEXT) \
-	src/palm-sync-daemon.$(OBJEXT)
+	src/orgmode/parser/parser.$(OBJEXT) \
+	src/orgmode/parser/scanner.$(OBJEXT) \
+	src/orgmode/org_notes.$(OBJEXT) src/palm-sync-daemon.$(OBJEXT)
 palm_sync_daemon_OBJECTS = $(am_palm_sync_daemon_OBJECTS)
 palm_sync_daemon_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -126,6 +128,9 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/log.Po \
 	src/$(DEPDIR)/palm-sync-daemon.Po src/$(DEPDIR)/palm.Po \
+	src/orgmode/$(DEPDIR)/org_notes.Po \
+	src/orgmode/parser/$(DEPDIR)/parser.Po \
+	src/orgmode/parser/$(DEPDIR)/scanner.Po \
 	src/pdb/$(DEPDIR)/pdb.Po src/pdb/$(DEPDIR)/pdb_memos.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -140,6 +145,19 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+LEXCOMPILE = $(LEX) $(AM_LFLAGS) $(LFLAGS)
+AM_V_LEX = $(am__v_LEX_@AM_V@)
+am__v_LEX_ = $(am__v_LEX_@AM_DEFAULT_V@)
+am__v_LEX_0 = @echo "  LEX     " $@;
+am__v_LEX_1 = 
+YLWRAP = $(top_srcdir)/ylwrap
+am__yacc_c2h = sed -e s/cc$$/hh/ -e s/cpp$$/hpp/ -e s/cxx$$/hxx/ \
+		   -e s/c++$$/h++/ -e s/c$$/h/
+YACCCOMPILE = $(YACC) $(AM_YFLAGS) $(YFLAGS)
+AM_V_YACC = $(am__v_YACC_@AM_V@)
+am__v_YACC_ = $(am__v_YACC_@AM_DEFAULT_V@)
+am__v_YACC_0 = @echo "  YACC    " $@;
+am__v_YACC_1 = 
 SOURCES = $(palm_sync_daemon_SOURCES)
 DIST_SOURCES = $(palm_sync_daemon_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
@@ -210,7 +228,9 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in README \
-	compile depcomp install-sh missing
+	compile depcomp install-sh missing src/orgmode/parser/parser.c \
+	src/orgmode/parser/parser.h src/orgmode/parser/scanner.c \
+	ylwrap
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -266,6 +286,7 @@ BIBER = @BIBER@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPPCHECK = @CPPCHECK@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
@@ -287,10 +308,14 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LATEXMK = @LATEXMK@
 LDFLAGS = @LDFLAGS@
+LEX = @LEX@
+LEXLIB = @LEXLIB@
+LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MAYBE_CPPCHECK = @MAYBE_CPPCHECK@
 MAYBE_DOXYGEN = @MAYBE_DOXYGEN@
 MAYBE_TEX = @MAYBE_TEX@
 MKDIR_P = @MKDIR_P@
@@ -308,6 +333,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+YACC = @YACC@
+YFLAGS = @YFLAGS@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -364,6 +391,16 @@ DIST_SUBDIRS = \
 	docs/doxygen \
 	tests
 
+BUILT_SOURCES = \
+	src/orgmode/parser/parser.h \
+	src/orgmode/parser/parser.c \
+	src/orgmode/parser/scanner.c
+
+AM_CFLAGS = \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/src/orgmode/parser
+
+AM_YFLAGS = -d
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \
@@ -373,17 +410,20 @@ palm_sync_daemon_SOURCES = \
 	src/pdb/pdb.c \
 	include/pdb_memos.h \
 	src/pdb/pdb_memos.c \
+	src/orgmode/parser/orgmode_parser.h \
+	src/orgmode/parser/parser.y \
+	src/orgmode/parser/scanner.l \
+	include/org_notes.h \
+	src/orgmode/org_notes.c \
 	src/palm-sync-daemon.c
 
-AM_CFLAGS = \
-	-I$(top_srcdir)/include
-
+CLEANFILES = $(BUILT_SOURCES)
 dist_doc_DATA = LICENSE
-all: config.h
+all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .o .obj
+.SUFFIXES: .c .l .o .obj .y
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -492,6 +532,29 @@ src/pdb/pdb.$(OBJEXT): src/pdb/$(am__dirstamp) \
 	src/pdb/$(DEPDIR)/$(am__dirstamp)
 src/pdb/pdb_memos.$(OBJEXT): src/pdb/$(am__dirstamp) \
 	src/pdb/$(DEPDIR)/$(am__dirstamp)
+src/orgmode/parser/parser.h: src/orgmode/parser/parser.c
+	@if test ! -f $@; then rm -f src/orgmode/parser/parser.c; else :; fi
+	@if test ! -f $@; then $(MAKE) $(AM_MAKEFLAGS) src/orgmode/parser/parser.c; else :; fi
+src/orgmode/parser/$(am__dirstamp):
+	@$(MKDIR_P) src/orgmode/parser
+	@: > src/orgmode/parser/$(am__dirstamp)
+src/orgmode/parser/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/orgmode/parser/$(DEPDIR)
+	@: > src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+src/orgmode/parser/parser.$(OBJEXT):  \
+	src/orgmode/parser/$(am__dirstamp) \
+	src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+src/orgmode/parser/scanner.$(OBJEXT):  \
+	src/orgmode/parser/$(am__dirstamp) \
+	src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+src/orgmode/$(am__dirstamp):
+	@$(MKDIR_P) src/orgmode
+	@: > src/orgmode/$(am__dirstamp)
+src/orgmode/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) src/orgmode/$(DEPDIR)
+	@: > src/orgmode/$(DEPDIR)/$(am__dirstamp)
+src/orgmode/org_notes.$(OBJEXT): src/orgmode/$(am__dirstamp) \
+	src/orgmode/$(DEPDIR)/$(am__dirstamp)
 src/palm-sync-daemon.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 
@@ -502,6 +565,8 @@ palm-sync-daemon$(EXEEXT): $(palm_sync_daemon_OBJECTS) $(palm_sync_daemon_DEPEND
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f src/*.$(OBJEXT)
+	-rm -f src/orgmode/*.$(OBJEXT)
+	-rm -f src/orgmode/parser/*.$(OBJEXT)
 	-rm -f src/pdb/*.$(OBJEXT)
 
 distclean-compile:
@@ -510,6 +575,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/$(DEPDIR)/org_notes.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/parser/$(DEPDIR)/parser.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/parser/$(DEPDIR)/scanner.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/pdb/$(DEPDIR)/pdb.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/pdb/$(DEPDIR)/pdb_memos.Po@am__quote@ # am--include-marker
 
@@ -534,6 +602,12 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.l.c:
+	$(AM_V_LEX)$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)
+
+.y.c:
+	$(AM_V_YACC)$(am__skipyacc) $(SHELL) $(YLWRAP) $< y.tab.c $@ y.tab.h `echo $@ | $(am__yacc_c2h)` y.output $*.output -- $(YACCCOMPILE)
 install-dist_docDATA: $(dist_doc_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(dist_doc_DATA)'; test -n "$(docdir)" || list=; \
@@ -859,15 +933,18 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
-check: check-recursive
-all-am: Makefile $(PROGRAMS) $(DATA) config.h
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-recursive
+all-am: Makefile $(PROGRAMS) $(DATA) config.h all-local
 installdirs: installdirs-recursive
 installdirs-am:
 	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(docdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-recursive
-install-exec: install-exec-recursive
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-recursive
+install-exec: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-recursive
 install-data: install-data-recursive
 uninstall: uninstall-recursive
 
@@ -888,18 +965,27 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/$(am__dirstamp)
+	-rm -f src/orgmode/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/orgmode/$(am__dirstamp)
+	-rm -f src/orgmode/parser/$(DEPDIR)/$(am__dirstamp)
+	-rm -f src/orgmode/parser/$(am__dirstamp)
 	-rm -f src/pdb/$(DEPDIR)/$(am__dirstamp)
 	-rm -f src/pdb/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f src/orgmode/parser/parser.c
+	-rm -f src/orgmode/parser/parser.h
+	-rm -f src/orgmode/parser/scanner.c
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-recursive
 
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
@@ -909,6 +995,9 @@ distclean: distclean-recursive
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
+	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po
+	-rm -f src/orgmode/parser/$(DEPDIR)/parser.Po
+	-rm -f src/orgmode/parser/$(DEPDIR)/scanner.Po
 	-rm -f src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f Makefile
@@ -961,6 +1050,9 @@ maintainer-clean: maintainer-clean-recursive
 		-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
+	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po
+	-rm -f src/orgmode/parser/$(DEPDIR)/parser.Po
+	-rm -f src/orgmode/parser/$(DEPDIR)/scanner.Po
 	-rm -f src/pdb/$(DEPDIR)/pdb.Po
 	-rm -f src/pdb/$(DEPDIR)/pdb_memos.Po
 	-rm -f Makefile
@@ -980,9 +1072,10 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-dist_docDATA
 
-.MAKE: $(am__recursive_targets) all install-am install-strip
+.MAKE: $(am__recursive_targets) all check install install-am \
+	install-exec install-strip
 
-.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
+.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am all-local \
 	am--depfiles am--refresh check check-am clean \
 	clean-binPROGRAMS clean-cscope clean-generic cscope \
 	cscopelist-am ctags ctags-am dist dist-all dist-bzip2 \
@@ -1003,6 +1096,9 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_docDATA
 
 .PRECIOUS: Makefile
 
+
+all-local:
+	$(top_srcdir)/scripts/static_analysis.sh $(MAYBE_CPPCHECK)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -676,6 +676,10 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+MAYBE_CPPCHECK
+HAVE_CPPCHECK_FALSE
+HAVE_CPPCHECK_TRUE
+CPPCHECK
 MAYBE_TEX
 HAVE_PDFLATEX_FALSE
 HAVE_PDFLATEX_TRUE
@@ -3221,6 +3225,70 @@ else
 printf "%s\n" "$as_me: WARNING: Continue without PDF documentation" >&2;}
 fi
 
+# Extract the first word of "cppcheck", so it can be a program name with args.
+set dummy cppcheck; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_CPPCHECK+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$CPPCHECK"; then
+  ac_cv_prog_CPPCHECK="$CPPCHECK" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_CPPCHECK="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_CPPCHECK" && ac_cv_prog_CPPCHECK="no"
+fi
+fi
+CPPCHECK=$ac_cv_prog_CPPCHECK
+if test -n "$CPPCHECK"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPCHECK" >&5
+printf "%s\n" "$CPPCHECK" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+ if test "$CPPCHECK" == "yes"; then
+  HAVE_CPPCHECK_TRUE=
+  HAVE_CPPCHECK_FALSE='#'
+else
+  HAVE_CPPCHECK_TRUE='#'
+  HAVE_CPPCHECK_FALSE=
+fi
+
+if test -z "$HAVE_CPPCHECK_TRUE"; then :
+  else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Continue without C static analysis" >&5
+printf "%s\n" "$as_me: WARNING: Continue without C static analysis" >&2;}
+fi
+if test -z "$HAVE_CPPCHECK_TRUE"; then :
+  MAYBE_CPPCHECK=cppcheck
+
+else
+  MAYBE_CPPCHECK=no
+
+fi
+
 ac_config_files="$ac_config_files Makefile tests/Makefile"
 
 ac_config_files="$ac_config_files docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile docs/man/Makefile"
@@ -5348,6 +5416,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_PDFLATEX_TRUE}" && test -z "${HAVE_PDFLATEX_FALSE}"; then
   as_fn_error $? "conditional \"HAVE_PDFLATEX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_CPPCHECK_TRUE}" && test -z "${HAVE_CPPCHECK_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CPPCHECK\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${AMDEP_TRUE}" && test -z "${AMDEP_FALSE}"; then
