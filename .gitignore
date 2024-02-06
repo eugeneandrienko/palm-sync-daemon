@@ -90,6 +90,8 @@ missing
 palm-sync-daemon
 tests/helper_iconv_test
 tests/log_test
+tests/org_notes_test
+tests/org_notes_write_test
 tests/palm-sync-daemon
 tests/palm_sync_daemon_test
 tests/parser_test

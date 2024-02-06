@@ -12,6 +12,8 @@ TESTS = \
 	pdb_memos_test.sh \
 	pdb_memos_data_edit_test.sh \
 	parser_test.sh \
+	org_notes_test.sh \
+	org_notes_write_test.sh \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
 	helper_iconv_test \
@@ -22,6 +24,8 @@ check_PROGRAMS = \
 	pdb_memos_test \
 	pdb_memos_data_edit_test \
 	parser_test \
+	org_notes_test \
+	org_notes_write_test \
 	palm_sync_daemon_test
 helper_iconv_test_SOURCES = \
 	../src/log.c \
@@ -59,6 +63,20 @@ parser_test_SOURCES = \
 	../src/orgmode/parser/parser.y \
 	../src/orgmode/parser/scanner.l \
 	parser_test.c
+org_notes_test_SOURCES = \
+	../src/helper.c \
+	../src/log.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	../src/orgmode/org_notes.c \
+	org_notes_test.c
+org_notes_write_test_SOURCES = \
+	../src/helper.c \
+	../src/log.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	../src/orgmode/org_notes.c \
+	org_notes_write_test.c
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
 	../src/helper.c \
