@@ -4,6 +4,7 @@ AM_CFLAGS = \
 AM_YFLAGS = -d
 
 TESTS = \
+	helper_iconv_test.sh \
 	log_test.sh \
 	pdb_test.sh \
 	pdb_categories_test.sh \
@@ -13,6 +14,7 @@ TESTS = \
 	parser_test.sh \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
+	helper_iconv_test \
 	log_test \
 	pdb_test \
 	pdb_categories_test \
@@ -21,6 +23,10 @@ check_PROGRAMS = \
 	pdb_memos_data_edit_test \
 	parser_test \
 	palm_sync_daemon_test
+helper_iconv_test_SOURCES = \
+	../src/log.c \
+	../src/helper.c \
+	helper_iconv_test.c
 log_test_SOURCES = \
 	../src/log.c \
 	log_test.c
@@ -37,11 +43,13 @@ pdb_record_test_SOURCES = \
 	../src/pdb/pdb.c \
 	pdb_record_test.c
 pdb_memos_test_SOURCES = \
+	../src/helper.c \
 	../src/log.c \
 	../src/pdb/pdb.c \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_test.c
 pdb_memos_data_edit_test_SOURCES = \
+	../src/helper.c \
 	../src/log.c \
 	../src/pdb/pdb.c \
 	../src/pdb/pdb_memos.c \
@@ -53,6 +61,7 @@ parser_test_SOURCES = \
 	parser_test.c
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
+	../src/helper.c \
 	../src/log.c \
 	../src/palm.c \
 	../src/pdb/pdb.c \

@@ -5134,6 +5134,14 @@ else $as_nop
   as_fn_error $? "cannot find glibc data structures" "$LINENO" 5
 fi
 
+ac_fn_c_check_header_compile "$LINENO" "iconv.h" "ac_cv_header_iconv_h" "$ac_includes_default"
+if test "x$ac_cv_header_iconv_h" = xyes
+then :
+
+else $as_nop
+  as_fn_error $? "cannot find iconv.h from libc" "$LINENO" 5
+fi
+
 ac_fn_c_check_header_compile "$LINENO" "popt.h" "ac_cv_header_popt_h" "$ac_includes_default"
 if test "x$ac_cv_header_popt_h" = xyes
 then :

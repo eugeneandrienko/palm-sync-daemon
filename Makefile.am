@@ -28,6 +28,8 @@ AM_YFLAGS = -d
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \
+	include/helper.h \
+	src/helper.c \
 	include/palm.h \
 	src/palm.c \
 	include/pdb.h \

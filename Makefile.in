@@ -105,8 +105,9 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(docdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/palm.$(OBJEXT) \
-	src/pdb/pdb.$(OBJEXT) src/pdb/pdb_memos.$(OBJEXT) \
+am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/helper.$(OBJEXT) \
+	src/palm.$(OBJEXT) src/pdb/pdb.$(OBJEXT) \
+	src/pdb/pdb_memos.$(OBJEXT) \
 	src/orgmode/parser/parser.$(OBJEXT) \
 	src/orgmode/parser/scanner.$(OBJEXT) \
 	src/orgmode/org_notes.$(OBJEXT) src/palm-sync-daemon.$(OBJEXT)
@@ -127,7 +128,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = src/$(DEPDIR)/log.Po \
+am__depfiles_remade = src/$(DEPDIR)/helper.Po src/$(DEPDIR)/log.Po \
 	src/$(DEPDIR)/palm-sync-daemon.Po src/$(DEPDIR)/palm.Po \
 	src/orgmode/$(DEPDIR)/org_notes.Po \
 	src/orgmode/parser/$(DEPDIR)/parser.Po \
@@ -403,6 +404,8 @@ AM_YFLAGS = -d
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \
+	include/helper.h \
+	src/helper.c \
 	include/palm.h \
 	src/palm.c \
 	include/pdb.h \
@@ -521,6 +524,8 @@ src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
 src/log.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/helper.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 src/palm.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/pdb/$(am__dirstamp):
 	@$(MKDIR_P) src/pdb
@@ -572,6 +577,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/helper.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
@@ -992,7 +998,8 @@ clean-am: clean-binPROGRAMS clean-generic clean-local mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-		-rm -f src/$(DEPDIR)/log.Po
+		-rm -f src/$(DEPDIR)/helper.Po
+	-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po
@@ -1047,7 +1054,8 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-		-rm -f src/$(DEPDIR)/log.Po
+		-rm -f src/$(DEPDIR)/helper.Po
+	-rm -f src/$(DEPDIR)/log.Po
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po

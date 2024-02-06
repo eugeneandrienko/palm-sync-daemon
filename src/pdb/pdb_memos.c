@@ -3,18 +3,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "helper.h"
 #include "log.h"
 #include "pdb_memos.h"
 
 
-#define PDB_MEMOS_CHUNK_SIZE 10 /* Buffer size for memo data */
-
-
 static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record);
 static int _pdb_memos_write_memo(int fd, PDBMemo * memo);
-
-static int _pdb_memos_read_chunks(int fd, char * buf, unsigned int length);
-static int _pdb_memos_write_chunks(int fd, char * buf, unsigned int length);
 
 
 PDBMemos * pdb_memos_read(char * path)
@@ -420,12 +415,12 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 		return NULL;
 	}
 
-	char buffer[PDB_MEMOS_CHUNK_SIZE] = "\0";
+	char buffer[CHUNK_SIZE] = "\0";
 	ssize_t readedBytes = 0;
 
 	/* Calculate header size */
 	unsigned int headerSize = 0;
-	while((readedBytes = read(fd, buffer, PDB_MEMOS_CHUNK_SIZE)) > 0)
+	while((readedBytes = read(fd, buffer, CHUNK_SIZE)) > 0)
 	{
 		char * headerEnd = memchr(buffer, '\n', readedBytes);
 		if(headerEnd != NULL)
@@ -450,7 +445,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 
 	/* Calculate text size */
 	unsigned int textSize = 0;
-	while((readedBytes = read(fd, buffer, PDB_MEMOS_CHUNK_SIZE)) > 0)
+	while((readedBytes = read(fd, buffer, CHUNK_SIZE)) > 0)
 	{
 		char * textEnd = memchr(buffer, '\0', readedBytes);
 		if(textEnd != NULL)
@@ -507,7 +502,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	log_write(LOG_DEBUG, "Header size: %d, text size: %d", headerSize, textSize);
 
 	/* Reading header */
-	if(_pdb_memos_read_chunks(fd, memo->header, headerSize) < 0)
+	if(read_chunks(fd, memo->header, headerSize))
 	{
 		log_write(LOG_ERR, "Cannot read memo header");
 		free(memo->header);
@@ -528,7 +523,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	}
 
 	/* Reading text */
-	if(_pdb_memos_read_chunks(fd, memo->text, textSize))
+	if(read_chunks(fd, memo->text, textSize))
 	{
 		log_write(LOG_ERR, "Cannot read memo text");
 		free(memo->header);
@@ -540,43 +535,6 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	memo->record = record;
 
 	return memo;
-}
-
-/**
-   Read data from file by chunks.
-
-   @param[in] fd File descriptor.
-   @param[in] buf Buffer for readed data.
-   @param[in] length Length of buffer.
-   @return 0 on successfull read or non-zero value if error.
-*/
-static int _pdb_memos_read_chunks(int fd, char * buf, unsigned int length)
-{
-	if(buf == NULL)
-	{
-		log_write(LOG_ERR, "Buffer is null (%s)", "_pdb_memos_read_chunks");
-		return -1;
-	}
-
-	while(length > 0)
-	{
-		unsigned int bytesToRead = length < PDB_MEMOS_CHUNK_SIZE ? length : PDB_MEMOS_CHUNK_SIZE;
-		ssize_t readedBytes;
-		if((readedBytes = read(fd, buf, bytesToRead)) < 0)
-		{
-			log_write(LOG_ERR, "Cannot read to buffer: %s", strerror(errno));
-			return -1;
-		}
-		else if(readedBytes == 0)
-		{
-			log_write(LOG_ERR, "Suddenly reach EOF while reading PDB file!");
-			return -1;
-		}
-		buf += readedBytes;
-		length -= readedBytes;
-	}
-
-	return 0;
 }
 
 /**
@@ -598,7 +556,7 @@ static int _pdb_memos_write_memo(int fd, PDBMemo * memo)
 	}
 
 	/* Insert header */
-	if(_pdb_memos_write_chunks(fd, memo->header, strlen(memo->header)))
+	if(write_chunks(fd, memo->header, strlen(memo->header)))
 	{
 		log_write(LOG_ERR, "Failed to write memo header!");
 		return -1;
@@ -613,7 +571,7 @@ static int _pdb_memos_write_memo(int fd, PDBMemo * memo)
 	}
 
 	/* Insert text */
-	if(_pdb_memos_write_chunks(fd, memo->text, strlen(memo->text)))
+	if(write_chunks(fd, memo->text, strlen(memo->text)))
 	{
 		log_write(LOG_ERR, "Failed to write memo text!");
 		return -1;
@@ -626,37 +584,5 @@ static int _pdb_memos_write_memo(int fd, PDBMemo * memo)
 		log_write(LOG_ERR, "Failed to write \"\\0\" as divider between memos");
 		return -1;
 	}
-	return 0;
-}
-
-/**
-   Write data from file by chunks.
-
-   @param[in] fd File descriptor.
-   @param[in] buf Buffer for data to write.
-   @param[in] length Length of buffer.
-   @return 0 on successfull write or non-zero value if error.
-*/
-static int _pdb_memos_write_chunks(int fd, char * buf, unsigned int length)
-{
-	if(buf == NULL)
-	{
-		log_write(LOG_ERR, "Buffer is null (%s)", "_pdb_memos_write_chunks");
-		return -1;
-	}
-
-	while(length > 0)
-	{
-		unsigned int bytesToWrite = length < PDB_MEMOS_CHUNK_SIZE ? length : PDB_MEMOS_CHUNK_SIZE;
-		ssize_t writtenBytes;
-		if((writtenBytes = write(fd, buf, bytesToWrite)) <= 0)
-		{
-			log_write(LOG_ERR, "Cannot write to buffer: %s", strerror(errno));
-			return -1;
-		}
-		buf += writtenBytes;
-		length -= writtenBytes;
-	}
-
 	return 0;
 }
