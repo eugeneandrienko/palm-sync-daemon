@@ -82,8 +82,7 @@ int org_notes_open(const char * path);
    @param[in] category Text name of category. May be NULL if there is no category.
    @return 0 on success or non-zero value on error.
 */
-int org_notes_write(int fd, const char * header, const char * text,
-					const char * category);
+int org_notes_write(int fd, char * header, char * text, char * category);
 
 /**
    Close OrgMode file, opened for writing.

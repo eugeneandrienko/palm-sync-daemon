@@ -52,6 +52,50 @@ char * iconv_utf8_to_cp1251(char * string)
 	return result;
 }
 
+char * iconv_cp1251_to_utf8(char * string)
+{
+	iconv_t iconvfd;
+	if((iconvfd = iconv_open("UTF8//TRANSLIT", "CP1251")) == (iconv_t)-1)
+	{
+		log_write(LOG_ERR, "Cannot initialize CP1251->UTF8 convertor: %s", strerror(errno));
+		return NULL;
+	}
+
+	char * inString = string;
+	size_t inStringLen = strlen(string);
+	size_t outStringLen = inStringLen * 2;
+	char * outString;
+	if((outString = calloc(outStringLen, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Failed to allocate memory for converted string: %s",
+				  strerror(errno));
+		if(iconv_close(iconvfd) == -1)
+		{
+			log_write(LOG_ERR, "Cannot close iconv: %s", strerror(errno));
+		}
+		return NULL;
+	}
+
+	char * result = outString;
+	if(iconv(iconvfd, &inString, &inStringLen, &outString, &outStringLen) == (size_t)-1)
+	{
+		log_write(LOG_ERR, "Failed to convert CP1251 string \"%s\" to UTF8: %s",
+				  string, strerror(errno));
+		if(iconv_close(iconvfd) == -1)
+		{
+			log_write(LOG_ERR, "Cannot close iconv: %s", strerror(errno));
+		}
+		free(outString);
+		return NULL;
+	}
+
+	if(iconv_close(iconvfd) == -1)
+	{
+		log_write(LOG_ERR, "Cannot close iconv: %s", strerror(errno));
+	}
+	return result;
+}
+
 int read_chunks(int fd, char * buf, unsigned int length)
 {
 	if(buf == NULL)

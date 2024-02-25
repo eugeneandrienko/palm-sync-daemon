@@ -7,7 +7,8 @@
 /**
    @page helper Helper functions
 
-   - iconv_utf8_to_cp1251() - convert given string from UTF8 to CP1251.
+   - iconv_utf8_to_cp1251() - convert given string from UTF8 to CP1251
+   - iconv_cp1251_to_utf8() - convert given string from CP1251 to UTF8.
 */
 
 #ifndef _HELPER_H_
@@ -31,6 +32,18 @@
    this functions. If error - NULL is returned.
 */
 char * iconv_utf8_to_cp1251(char * string);
+
+/**
+   Convert given string from CP1251 to UTF8 encoding.
+
+   Function will allocate (2 * symbols in CP1251 string) bytes for UTF8
+   string. Memory for this string should be freed outside of this function.
+
+   @param[in] string Characters in CP1251 encoding.
+   @return Characters in UTF8 encoding. Memory for string allocated inside
+   this functions. If error - NULL is returned.
+*/
+char * iconv_cp1251_to_utf8(char * string);
 
 /**
    Read text from file by chunks.

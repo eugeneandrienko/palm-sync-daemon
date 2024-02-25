@@ -4,6 +4,10 @@ EXPECTED_RESULT=("[INFO]: UTF8 string: \"Usual string\", len = 12")
 EXPECTED_RESULT+=("[INFO]: CP1251 string: \"Usual string\", len = 12")
 EXPECTED_RESULT+=("[INFO]: UTF8 string: \"РљРёСЂРёР»Р»РёС‡РµСЃРєР°СЏ СЃС‚СЂРѕРєР°\", len = 39")
 EXPECTED_RESULT+=("[INFO]: CP1251 string: \"Кириллическая строка\", len = 20")
+EXPECTED_RESULT+=("[INFO]: CP1251 string: \"Usual string\", len = 12")
+EXPECTED_RESULT+=("[INFO]: UTF8 string: \"Usual string\", len = 12")
+EXPECTED_RESULT+=("[INFO]: CP1251 string: \"РљРёСЂРёР»Р»РёС‡РµСЃРєР°СЏ СЃС‚СЂРѕРєР°\", len = 20")
+EXPECTED_RESULT+=("[INFO]: UTF8 string: \"Кириллическая строка\", len = 39")
 
 mapfile -t ACTUAL_RESULT < <(./helper_iconv_test 2>&1 | iconv -f CP1251 -t UTF8)
 

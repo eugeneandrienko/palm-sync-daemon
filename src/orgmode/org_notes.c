@@ -102,15 +102,17 @@ int org_notes_open(const char * path)
 	return fd;
 }
 
-int org_notes_write(int fd, const char * header, const char * text,
-					const char * category)
+int org_notes_write(int fd, char * header, char * text, char * category)
 {
-	unsigned int noteLen = strlen(header);
-	noteLen += text != NULL ? strlen(text) : 0;
+	char * conv_header = iconv_cp1251_to_utf8(header);
+	char * conv_text = text != NULL ? iconv_cp1251_to_utf8(text) : NULL;
+
+	unsigned int noteLen = strlen(conv_header);
+	noteLen += conv_text != NULL ? strlen(conv_text) : 0;
 	noteLen += category != NULL ? strlen(category) : 0;
 	noteLen += 4                     /* For "* " before header + "\n" after header */
 		+ (category != NULL ? 6 : 0) /* For "\t\t:" before tag + ":" after tag */
-		+ (text != NULL ? 2 : 0);    /* For "\n" after text */
+		+ (conv_text != NULL ? 2 : 0);    /* For "\n" after text */
 
 	char * note;
 
@@ -118,30 +120,40 @@ int org_notes_write(int fd, const char * header, const char * text,
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new OrgMode note: %s",
 				  strerror(errno));
+		free(conv_header);
+		if(conv_text != NULL)
+		{
+			free(conv_text);
+		}
 		return -1;
 	}
 
-	if(text != NULL && category != NULL)
+	if(conv_text != NULL && category != NULL)
 	{
-		snprintf(note, noteLen, "* %s\t\t:%s:\n%s\n", header, category, text);
+		snprintf(note, noteLen, "* %s\t\t:%s:\n%s\n", conv_header, category, conv_text);
 	}
-	else if(text != NULL)
+	else if(conv_text != NULL)
 	{
-		snprintf(note, noteLen, "* %s\n%s\n", header, text);
+		snprintf(note, noteLen, "* %s\n%s\n", conv_header, conv_text);
 	}
 	else if(category != NULL)
 	{
-		snprintf(note, noteLen, "* %s\t\t:%s:\n", header, category);
+		snprintf(note, noteLen, "* %s\t\t:%s:\n", conv_header, category);
 	}
 	else
 	{
-		snprintf(note, noteLen, "* %s\n", header);
+		snprintf(note, noteLen, "* %s\n", conv_header);
 	}
 
 	if(write_chunks(fd, note, strlen(note)))
 	{
 		log_write(LOG_ERR, "Failed to write note to OrgMode file.\nNote: \"%s\"",
 				  note);
+		free(conv_header);
+		if(conv_text != NULL)
+		{
+			free(conv_text);
+		}
 		return -1;
 	}
 	return 0;
