@@ -3,10 +3,18 @@ AC_INIT([palm-sync-daemon],[0.1],[evg.andrienko@gmail.com])
 AM_INIT_AUTOMAKE([foreign subdir-objects -Wall -Werror -Wportability])
 AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 AC_ARG_ENABLE([fanalyzer],
     AS_HELP_STRING([--enable-fanalyzer], [Use -fanalyzer when compiling sources with GCC]))
 AM_CONDITIONAL([ENABLE_FANALYZER], [test "x$enable_fanalyzer" = "xyes"])
+
+AX_CHECK_COMPILE_FLAG([-mpclmul],
+    [AX_APPEND_FLAG([-mpclmul])],
+    [AC_MSG_ERROR([-mpclmul is not supported, cannot use UMASH hash function])])
+AX_CHECK_COMPILE_FLAG([-msse4],
+    [AX_APPEND_FLAG([-msse4])],
+    [AC_MSG_ERROR([-msse4 is not supported, cannot use UMASH hash function])])
 
 # Checks for external programs
 AC_CHECK_PROG([DOXYGEN], [doxygen], [yes], [no])

@@ -91,7 +91,9 @@ bin_PROGRAMS = palm-sync-daemon$(EXEEXT)
 @ENABLE_FANALYZER_TRUE@am__append_1 = -fanalyzer -Wpedantic -Wall -Wextra
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_append_flag.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(top_srcdir)/configure \
@@ -105,8 +107,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(docdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/helper.$(OBJEXT) \
-	src/palm.$(OBJEXT) src/pdb/pdb.$(OBJEXT) \
+am_palm_sync_daemon_OBJECTS = src/log.$(OBJEXT) src/umash.$(OBJEXT) \
+	src/helper.$(OBJEXT) src/palm.$(OBJEXT) src/pdb/pdb.$(OBJEXT) \
 	src/pdb/pdb_memos.$(OBJEXT) \
 	src/orgmode/parser/parser.$(OBJEXT) \
 	src/orgmode/parser/scanner.$(OBJEXT) \
@@ -131,7 +133,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = src/$(DEPDIR)/helper.Po src/$(DEPDIR)/log.Po \
 	src/$(DEPDIR)/palm-sync-daemon.Po src/$(DEPDIR)/palm.Po \
-	src/$(DEPDIR)/sync.Po src/orgmode/$(DEPDIR)/org_notes.Po \
+	src/$(DEPDIR)/sync.Po src/$(DEPDIR)/umash.Po \
+	src/orgmode/$(DEPDIR)/org_notes.Po \
 	src/orgmode/parser/$(DEPDIR)/parser.Po \
 	src/orgmode/parser/$(DEPDIR)/scanner.Po \
 	src/pdb/$(DEPDIR)/pdb.Po src/pdb/$(DEPDIR)/pdb_memos.Po
@@ -405,6 +408,8 @@ AM_YFLAGS = -d
 palm_sync_daemon_SOURCES = \
 	include/log.h \
 	src/log.c \
+	include/umash.h \
+	src/umash.c \
 	include/helper.h \
 	src/helper.c \
 	include/palm.h \
@@ -527,6 +532,7 @@ src/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) src/$(DEPDIR)
 	@: > src/$(DEPDIR)/$(am__dirstamp)
 src/log.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+src/umash.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
 src/helper.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/palm.$(OBJEXT): src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
@@ -586,6 +592,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/sync.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/umash.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/$(DEPDIR)/org_notes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/parser/$(DEPDIR)/parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@src/orgmode/parser/$(DEPDIR)/scanner.Po@am__quote@ # am--include-marker
@@ -1008,6 +1015,7 @@ distclean: distclean-recursive
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f src/$(DEPDIR)/sync.Po
+	-rm -f src/$(DEPDIR)/umash.Po
 	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po
 	-rm -f src/orgmode/parser/$(DEPDIR)/parser.Po
 	-rm -f src/orgmode/parser/$(DEPDIR)/scanner.Po
@@ -1065,6 +1073,7 @@ maintainer-clean: maintainer-clean-recursive
 	-rm -f src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f src/$(DEPDIR)/palm.Po
 	-rm -f src/$(DEPDIR)/sync.Po
+	-rm -f src/$(DEPDIR)/umash.Po
 	-rm -f src/orgmode/$(DEPDIR)/org_notes.Po
 	-rm -f src/orgmode/parser/$(DEPDIR)/parser.Po
 	-rm -f src/orgmode/parser/$(DEPDIR)/scanner.Po
