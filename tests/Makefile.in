@@ -125,7 +125,10 @@ org_notes_write_test_LDADD = $(LDADD)
 am_palm_sync_daemon_test_OBJECTS = ../src/palm-sync-daemon.$(OBJEXT) \
 	../src/helper.$(OBJEXT) ../src/log.$(OBJEXT) \
 	../src/palm.$(OBJEXT) ../src/pdb/pdb.$(OBJEXT) \
-	../src/pdb/pdb_memos.$(OBJEXT)
+	../src/pdb/pdb_memos.$(OBJEXT) \
+	../src/orgmode/parser/parser.$(OBJEXT) \
+	../src/orgmode/parser/scanner.$(OBJEXT) \
+	../src/orgmode/org_notes.$(OBJEXT) ../src/sync.$(OBJEXT)
 palm_sync_daemon_test_OBJECTS = $(am_palm_sync_daemon_test_OBJECTS)
 palm_sync_daemon_test_LDADD = $(LDADD)
 am_parser_test_OBJECTS = ../src/log.$(OBJEXT) \
@@ -174,7 +177,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../src/$(DEPDIR)/helper.Po \
 	../src/$(DEPDIR)/log.Po ../src/$(DEPDIR)/palm-sync-daemon.Po \
-	../src/$(DEPDIR)/palm.Po ../src/orgmode/$(DEPDIR)/org_notes.Po \
+	../src/$(DEPDIR)/palm.Po ../src/$(DEPDIR)/sync.Po \
+	../src/orgmode/$(DEPDIR)/org_notes.Po \
 	../src/orgmode/parser/$(DEPDIR)/parser.Po \
 	../src/orgmode/parser/$(DEPDIR)/scanner.Po \
 	../src/pdb/$(DEPDIR)/pdb.Po ../src/pdb/$(DEPDIR)/pdb_memos.Po \
@@ -642,7 +646,11 @@ palm_sync_daemon_test_SOURCES = \
 	../src/log.c \
 	../src/palm.c \
 	../src/pdb/pdb.c \
-	../src/pdb/pdb_memos.c
+	../src/pdb/pdb_memos.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	../src/orgmode/org_notes.c \
+	../src/sync.c
 
 EXTRA_DIST = $(TESTS)
 all: all-am
@@ -744,6 +752,8 @@ org_notes_write_test$(EXEEXT): $(org_notes_write_test_OBJECTS) $(org_notes_write
 	../src/pdb/$(DEPDIR)/$(am__dirstamp)
 ../src/pdb/pdb_memos.$(OBJEXT): ../src/pdb/$(am__dirstamp) \
 	../src/pdb/$(DEPDIR)/$(am__dirstamp)
+../src/sync.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 
 palm_sync_daemon_test$(EXEEXT): $(palm_sync_daemon_test_OBJECTS) $(palm_sync_daemon_test_DEPENDENCIES) $(EXTRA_palm_sync_daemon_test_DEPENDENCIES) 
 	@rm -f palm_sync_daemon_test$(EXEEXT)
@@ -787,6 +797,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/log.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm-sync-daemon.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/palm.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/sync.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/orgmode/$(DEPDIR)/org_notes.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/orgmode/parser/$(DEPDIR)/parser.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/orgmode/parser/$(DEPDIR)/scanner.Po@am__quote@ # am--include-marker
@@ -1207,6 +1218,7 @@ distclean: distclean-am
 	-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
+	-rm -f ../src/$(DEPDIR)/sync.Po
 	-rm -f ../src/orgmode/$(DEPDIR)/org_notes.Po
 	-rm -f ../src/orgmode/parser/$(DEPDIR)/parser.Po
 	-rm -f ../src/orgmode/parser/$(DEPDIR)/scanner.Po
@@ -1271,6 +1283,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ../src/$(DEPDIR)/log.Po
 	-rm -f ../src/$(DEPDIR)/palm-sync-daemon.Po
 	-rm -f ../src/$(DEPDIR)/palm.Po
+	-rm -f ../src/$(DEPDIR)/sync.Po
 	-rm -f ../src/orgmode/$(DEPDIR)/org_notes.Po
 	-rm -f ../src/orgmode/parser/$(DEPDIR)/parser.Po
 	-rm -f ../src/orgmode/parser/$(DEPDIR)/scanner.Po

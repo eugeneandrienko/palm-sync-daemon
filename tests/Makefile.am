@@ -83,6 +83,10 @@ palm_sync_daemon_test_SOURCES = \
 	../src/log.c \
 	../src/palm.c \
 	../src/pdb/pdb.c \
-	../src/pdb/pdb_memos.c
+	../src/pdb/pdb_memos.c \
+	../src/orgmode/parser/parser.y \
+	../src/orgmode/parser/scanner.l \
+	../src/orgmode/org_notes.c \
+	../src/sync.c
 
 EXTRA_DIST = $(TESTS)

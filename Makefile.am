@@ -41,6 +41,8 @@ palm_sync_daemon_SOURCES = \
 	src/orgmode/parser/scanner.l \
 	include/org_notes.h \
 	src/orgmode/org_notes.c \
+	include/sync.h \
+	src/sync.c \
 	src/palm-sync-daemon.c
 CLEANFILES = $(BUILT_SOURCES)
 

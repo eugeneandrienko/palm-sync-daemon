@@ -27,7 +27,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "log.h"
-#include "palm.h"
+#include "sync.h"
 
 
 /**
@@ -58,7 +58,7 @@ static void _process_unlock();
 static void _process_on_exit_actions();
 static void _process_sig_handler(int signum);
 static int _process_setup_sig_handler();
-volatile static int _processTerminate = 0; /* Flag shows necessity of program termination */
+static volatile int _processTerminate = 0; /* Flag shows necessity of program termination */
 
 
 /**
@@ -92,10 +92,12 @@ int main(int argc, const char * argv[])
 	/* Parse command-line arguments */
 	int foreground = 0;
 	int debug = 0;
+	int dryRun = 0;
 	char palmDeviceFile[ARGUMENT_BUFFER_SIZE] = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
+		{"dry-run", '\0', POPT_ARG_NONE, &dryRun, 0, "Dry run, without real sync", NULL},
 		{"device", 'd', POPT_ARG_STRING, palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
 		{NULL, '\0', POPT_ARG_NONE, NULL, 0, NULL, NULL}
@@ -133,6 +135,10 @@ int main(int argc, const char * argv[])
 	log_write(LOG_DEBUG, "Device: %s", palmDeviceFile);
 	log_write(LOG_DEBUG, "Path to notes org-file: %s", notesFile);
 	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", todoFile);
+	if(dryRun)
+	{
+		log_write(LOG_DEBUG, "--dry-run is enabled. No real sync will be done!");
+	}
 
 	while(1)
 	{
@@ -141,37 +147,17 @@ int main(int argc, const char * argv[])
 			exit(0);
 		}
 
-		int palmfd = 0;
-		if((palmfd = palm_open(palmDeviceFile)) == -1)
+		int syncResult = sync_this(palmDeviceFile, notesFile, todoFile, dryRun);
+		if(syncResult == PALM_NOT_CONNECTED)
 		{
 			sleep(1);
 			continue;
 		}
-
-		PalmData * palmData;
-		if((palmData = palm_read(palmfd)) == NULL)
+		else if(syncResult)
 		{
-			if(palm_close(palmfd, palmDeviceFile))
-			{
-				exit(1);
-			}
+			log_write(LOG_ERR, "Cannot synchronize Palm PDA with PC!");
+			sleep(1);
 			continue;
-		}
-
-		if(palm_write(palmfd, palmData))
-		{
-			palm_free(palmData);
-			if(palm_close(palmfd, palmDeviceFile))
-			{
-				exit(1);
-			}
-			continue;
-		}
-
-		palm_free(palmData);
-		if(palm_close(palmfd, palmDeviceFile))
-		{
-			exit(1);
 		}
 
 		sleep(1);
@@ -303,10 +289,13 @@ static void _process_on_exit_actions()
    @param[in] signum Signal number.
    @return Void.
 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 static void _process_sig_handler(int signum)
 {
 	_processTerminate = 1;
 }
+#pragma GCC diagnostic pop
 
 /**
    Setup handler for signals.
