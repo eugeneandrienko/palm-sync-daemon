@@ -5,6 +5,7 @@ AM_YFLAGS = -d
 
 TESTS = \
 	helper_iconv_test.sh \
+	helper_hash_test.sh \
 	log_test.sh \
 	pdb_test.sh \
 	pdb_categories_test.sh \
@@ -17,6 +18,7 @@ TESTS = \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
 	helper_iconv_test \
+	helper_hash_test \
 	log_test \
 	pdb_test \
 	pdb_categories_test \
@@ -29,8 +31,14 @@ check_PROGRAMS = \
 	palm_sync_daemon_test
 helper_iconv_test_SOURCES = \
 	../src/log.c \
+	../src/umash.c \
 	../src/helper.c \
 	helper_iconv_test.c
+helper_hash_test_SOURCES = \
+	../src/log.c \
+	../src/umash.c \
+	../src/helper.c \
+	helper_hash_test.c
 log_test_SOURCES = \
 	../src/log.c \
 	log_test.c
@@ -47,12 +55,14 @@ pdb_record_test_SOURCES = \
 	../src/pdb/pdb.c \
 	pdb_record_test.c
 pdb_memos_test_SOURCES = \
+	../src/umash.c \
 	../src/helper.c \
 	../src/log.c \
 	../src/pdb/pdb.c \
 	../src/pdb/pdb_memos.c \
 	pdb_memos_test.c
 pdb_memos_data_edit_test_SOURCES = \
+	../src/umash.c \
 	../src/helper.c \
 	../src/log.c \
 	../src/pdb/pdb.c \
@@ -64,6 +74,7 @@ parser_test_SOURCES = \
 	../src/orgmode/parser/scanner.l \
 	parser_test.c
 org_notes_test_SOURCES = \
+	../src/umash.c \
 	../src/helper.c \
 	../src/log.c \
 	../src/orgmode/parser/parser.y \
@@ -71,6 +82,7 @@ org_notes_test_SOURCES = \
 	../src/orgmode/org_notes.c \
 	org_notes_test.c
 org_notes_write_test_SOURCES = \
+	../src/umash.c \
 	../src/helper.c \
 	../src/log.c \
 	../src/orgmode/parser/parser.y \
@@ -79,6 +91,7 @@ org_notes_write_test_SOURCES = \
 	org_notes_write_test.c
 palm_sync_daemon_test_SOURCES = \
 	../src/palm-sync-daemon.c \
+	../src/umash.c \
 	../src/helper.c \
 	../src/log.c \
 	../src/palm.c \

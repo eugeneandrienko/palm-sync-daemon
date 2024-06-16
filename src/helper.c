@@ -149,3 +149,13 @@ int write_chunks(int fd, char * buf, unsigned int length)
 
 	return 0;
 }
+
+uint64_t str_hash(char * buf, size_t length)
+{
+	/* Prepare configuration for UMASH hash-function */
+	static uint64_t seed1 = 0xc328ec6a247b1455;
+	static uint64_t seed2 = 0x18af24e667bbd865;
+	struct umash_params umashp;
+	umash_params_derive(&umashp, seed1, NULL);
+	return umash_full(&umashp, seed2, 0, buf, length);
+}

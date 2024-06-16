@@ -14,6 +14,9 @@
 #ifndef _HELPER_H_
 #define _HELPER_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 
 /**
    Buffer size for one chunk. Used in read_chunks() and write_chunks().
@@ -64,5 +67,14 @@ int read_chunks(int fd, char * buf, unsigned int length);
    @return 0 on successfull write or non-zero value if error.
 */
 int write_chunks(int fd, char * buf, unsigned int length);
+
+/**
+   Compute hash for given string.
+
+   @param[in] buf String to compute hash to.
+   @param[in] length Length of string.
+   @return Resulting hash.
+*/
+uint64_t str_hash(char * buf, size_t length);
 
 #endif
