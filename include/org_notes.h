@@ -24,6 +24,7 @@
 #ifndef _ORG_NOTES_H_
 #define _ORG_NOTES_H_
 
+#include <stdint.h>
 #include <sys/queue.h>
 
 
@@ -32,12 +33,13 @@
 */
 struct OrgNote
 {
-	char * header;       /**< Note header */
-	char * text;         /**< Note text. May be NULL of no text in note. */
-	char * category;     /**< String with note category. May be NULL of category not specified. */
+	char * header;        /**< Note header */
+	char * text;          /**< Note text. May be NULL of no text in note. */
+	char * category;      /**< String with note category. May be NULL of category not specified. */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(OrgNote) pointers;
 #endif
+	uint64_t header_hash; /**< Note header hash */
 };
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(NotesQueue, OrgNote);

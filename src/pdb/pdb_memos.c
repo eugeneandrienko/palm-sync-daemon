@@ -532,6 +532,9 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 		return NULL;
 	}
 
+	/* Calculate hash for memo header */
+	memo->header_hash = str_hash(memo->header, strlen(memo->header));
+
 	memo->record = record;
 
 	return memo;

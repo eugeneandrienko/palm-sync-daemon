@@ -49,6 +49,7 @@ OrgNotes * org_notes_parse(const char * path)
 		note->header = iconv_utf8_to_cp1251(entry->header);
 		note->text = entry->text != NULL ? iconv_utf8_to_cp1251(entry->text) : NULL;
 		note->category = entry->tag != NULL ? strdup(entry->tag) : NULL;
+		note->header_hash = str_hash(note->header, strlen(note->header));
 
 		if(TAILQ_EMPTY(result))
 		{

@@ -65,6 +65,7 @@ struct PDBMemo
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(PDBMemo) pointers;       /**< Connection between elements in queue */
 #endif
+	uint64_t header_hash;                /**< Hash of header */
 };
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(MemosQueue, PDBMemo);
