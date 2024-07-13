@@ -1,3 +1,4 @@
+if ENABLE_TEX_DOC
 if HAVE_PDFLATEX
 all-local:
 	if [ "$(srcdir)" != "$(builddir)" ]; then \
@@ -41,4 +42,5 @@ EXTRA_DIST = \
 	$(srcdir)/bibliography.bib \
 	$(srcdir)/images/* \
 	$(srcdir)/technical_description.tex
+endif
 endif

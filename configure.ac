@@ -8,6 +8,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_ARG_ENABLE([fanalyzer],
     AS_HELP_STRING([--enable-fanalyzer], [Use -fanalyzer when compiling sources with GCC]))
 AM_CONDITIONAL([ENABLE_FANALYZER], [test "x$enable_fanalyzer" = "xyes"])
+AC_ARG_ENABLE([tex-doc],
+    AS_HELP_STRING([--enable-tex-doc], [Build LaTeX documentation with pdflatex]))
+AM_CONDITIONAL([ENABLE_TEX_DOC], [test "x$enable_tex_doc" = "xyes"])
 
 AX_CHECK_COMPILE_FLAG([-mpclmul],
     [AX_APPEND_FLAG([-mpclmul])],
@@ -26,8 +29,10 @@ AC_CHECK_PROG([PDFLATEX], [pdflatex], [yes], [no])
 AC_CHECK_PROG([BIBER], [biber], [yes], [no])
 AC_CHECK_PROG([LATEXMK], [latexmk], [yes], [no])
 AM_CONDITIONAL([HAVE_PDFLATEX], [test "$PDFLATEX" == "yes" && test "$BIBER" == "yes" && test "$LATEXMK" == "yes"])
-AM_COND_IF([HAVE_PDFLATEX], [AC_SUBST([MAYBE_TEX], [docs/tex])],
-                            [AC_MSG_WARN([Continue without PDF documentation])])
+AM_COND_IF([ENABLE_TEX_DOC], [AM_COND_IF([HAVE_PDFLATEX],
+                                 [AC_SUBST([MAYBE_TEX], [docs/tex])],
+                                 [AC_MSG_WARN([Continue without PDF documentation])])],
+                             [])
 
 AC_CHECK_PROG([CPPCHECK], [cppcheck], [yes], [no])
 AM_CONDITIONAL([HAVE_CPPCHECK], [test "$CPPCHECK" == "yes"])
