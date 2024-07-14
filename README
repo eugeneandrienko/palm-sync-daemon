@@ -1,0 +1,36 @@
+Document still under construction.
+
+Dependencies
+------------
+    Dependencies to build palm-sync-daemon:
+    ---------------------------------------
+        autoconf
+        autoreconf
+        automake
+        aclocal
+        m4
+        make
+        bash
+        C compiler (gcc)
+
+    Dependencies for palm-sync-daemon:
+    ----------------------------------
+        libpopt
+        libiconv (necessary for FreeBSD)
+        libpisock - part of pilot-link (https://github.com/jichu4n/pilot-link)
+        libc
+
+Building process
+----------------
+    Run next commands to build palm-sync-daemon:
+        automake --add-missing
+        autoreconf
+        ./configure
+        make
+        make install
+
+Author & License
+----------------
+    Eugene Andrienko <evg.andrienko@gmail.com>
+
+    License: MIT. Look to the LICENSE file for details.

@@ -77,8 +77,16 @@ docs/doxygen/html/
 .dirstamp
 autom4te.cache/
 Makefile
+Makefile.in
+docs/doxygen/Makefile.in
+docs/man/Makefile.in
+docs/tex/Makefile.in
+src/Makefile.in
+tests/Makefile.in
 config.h
+config.h.in
 config.status
+configure
 stamp-h1
 *~
 
@@ -117,4 +125,3 @@ src/orgmode/parser/parser.h
 
 # Static analysis report
 static_analysis_report.txt
-
