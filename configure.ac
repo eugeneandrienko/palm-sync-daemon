@@ -40,7 +40,7 @@ AM_COND_IF([HAVE_CPPCHECK], [], [AC_MSG_WARN([Continue without C static analysis
 AM_COND_IF([HAVE_CPPCHECK], [AC_SUBST([MAYBE_CPPCHECK], [cppcheck])],
                             [AC_SUBST([MAYBE_CPPCHECK], [no])])
 
-AC_CONFIG_FILES([Makefile tests/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
 AC_CONFIG_FILES([docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile docs/man/Makefile])
 
 # Checks for programs.
@@ -52,19 +52,24 @@ AC_PROG_LEX(noyywrap)
 AM_PROG_LEX
 
 # Checks for libraries.
-AC_CHECK_LIB([popt], [poptGetContext], [], AC_MSG_ERROR([cannot find libpopt]))
-AC_CHECK_LIB([pisock], [pi_connect], [], AC_MSG_ERROR([cannot find libpisock]))
+PKG_CHECK_MODULES([POPT], [popt >= 0.0.1])
+AC_SUBST([POPT_CFLAGS])
+AC_SUBST([POPT_LIBS])
+PKG_CHECK_MODULES([PISOCK], [pilot-link >= 0.12.5])
+AC_SUBST([PISOCK_CFLAGS])
+AC_SUBST([PISOCK_LIBS])
+# FreeBSD specific.
+AC_SEARCH_LIBS([iconv_open], [iconv], [AC_SUBST([ICONV_LIB], [-liconv])],
+                                      [AC_SUBST([ICONV_LIB], [])])
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT
 AC_CHECK_HEADERS([errno.h syslog.h stdarg.h stddef.h time.h fcntl.h signal.h endian.h], [], AC_MSG_ERROR([cannot find std headers]))
 AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([cannot find glibc data structures]))
-AC_CHECK_HEADER([iconv.h], [], AC_MSG_ERROR([cannot find iconv.h from libc]))
-AC_CHECK_HEADER([popt.h], [], AC_MSG_ERROR([cannot find popt.h]))
-AC_CHECK_HEADER([libpisock/pi-header.h], [], AC_MSG_ERROR([cannot find libpisock/pi-header.h]))
-AC_CHECK_HEADER([libpisock/pi-socket.h], [], AC_MSG_ERROR([cannot find libpisock/pi-socket.h]))
-AC_CHECK_HEADER([libpisock/pi-dlp.h], [], AC_MSG_ERROR([cannot find libpisock/pi-dlp.h]))
-AC_CHECK_HEADER([libpisock/pi-file.h], [], AC_MSG_ERROR([cannot find libpisock/pi-file.h]))
+AC_CHECK_HEADER([popt.h], [],
+                          AC_CHECK_HEADER([/usr/local/include/popt.h], [],
+                                                                       AC_MSG_ERROR([cannot find popt.h])))
+AC_CHECK_HEADER([iconv.h], [], AC_MSG_ERROR([cannot find iconv.h]))
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

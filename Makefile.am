@@ -2,51 +2,14 @@ SUBDIRS = \
 	$(MAYBE_TEX) \
 	$(MAYBE_DOXYGEN) \
 	docs/man \
-	. \
+	src \
 	tests
 DIST_SUBDIRS = \
 	docs/tex \
 	docs/man \
 	docs/doxygen \
+	src \
 	tests
-
-bin_PROGRAMS = palm-sync-daemon
-
-BUILT_SOURCES =	\
-	src/orgmode/parser/parser.h \
-	src/orgmode/parser/parser.c \
-	src/orgmode/parser/scanner.c
-
-AM_CFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/src/orgmode/parser
-if ENABLE_FANALYZER
-AM_CFLAGS += -fanalyzer -Wpedantic -Wall -Wextra
-endif
-AM_YFLAGS = -d
-
-palm_sync_daemon_SOURCES = \
-	include/log.h \
-	src/log.c \
-	include/umash.h \
-	src/umash.c \
-	include/helper.h \
-	src/helper.c \
-	include/palm.h \
-	src/palm.c \
-	include/pdb.h \
-	src/pdb/pdb.c \
-	include/pdb_memos.h \
-	src/pdb/pdb_memos.c \
-	src/orgmode/parser/orgmode_parser.h \
-	src/orgmode/parser/parser.y \
-	src/orgmode/parser/scanner.l \
-	include/org_notes.h \
-	src/orgmode/org_notes.c \
-	include/sync.h \
-	src/sync.c \
-	src/palm-sync-daemon.c
-CLEANFILES = $(BUILT_SOURCES)
 
 dist_doc_DATA = LICENSE
 EXTRA_DIST = $(srcdir)/scripts/*

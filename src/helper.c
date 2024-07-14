@@ -9,10 +9,18 @@
 #include "umash.h"
 
 
+#if defined (__FreeBSD__)
+#define UTF8 "UTF-8"
+#else
+#define UTF8 "UTF8"
+#endif
+#define CP1251 "CP1251"
+
+
 char * iconv_utf8_to_cp1251(char * string)
 {
 	iconv_t iconvfd;
-	if((iconvfd = iconv_open("CP1251", "UTF8")) == (iconv_t)-1)
+	if((iconvfd = iconv_open(CP1251, UTF8)) == (iconv_t)-1)
 	{
 		log_write(LOG_ERR, "Cannot initialize UTF8->CP1251 convertor: %s", strerror(errno));
 		return NULL;
@@ -56,7 +64,7 @@ char * iconv_utf8_to_cp1251(char * string)
 char * iconv_cp1251_to_utf8(char * string)
 {
 	iconv_t iconvfd;
-	if((iconvfd = iconv_open("UTF8", "CP1251")) == (iconv_t)-1)
+	if((iconvfd = iconv_open(UTF8, CP1251)) == (iconv_t)-1)
 	{
 		log_write(LOG_ERR, "Cannot initialize CP1251->UTF8 convertor: %s", strerror(errno));
 		return NULL;

@@ -1,7 +1,13 @@
+AUTOMAKE_OPTIONS = no-dependencies
 AM_CFLAGS = \
-	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/src/orgmode/parser
+	-I$(top_srcdir)/src/include \
+	-I$(top_srcdir)/src/orgmode/parser \
+	-I @POPT_CFLAGS@ \
+	-I @PISOCK_CFLAGS@
 AM_YFLAGS = -d
+AM_LDFLAGS = @POPT_LIBS@ \
+	@PISOCK_LIBS@ \
+	@ICONV_LIB@
 
 TESTS = \
 	helper_iconv_test.sh \

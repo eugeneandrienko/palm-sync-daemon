@@ -1,7 +1,7 @@
 PROJECT_NAME           = @PACKAGE_NAME@
 PROJECT_NUMBER         = @PACKAGE_VERSION@
 PROJECT_BRIEF          = Simple synchronization between Palm device and OrgMode files
-INPUT                  = @top_srcdir@/include @top_srcdir@/src
+INPUT                  = @top_srcdir@/src
 RECURSIVE              = yes
 EXCLUDE_PATTERNS       = */tests/*
 EXCLUDE_PATTERNS      += */orgmode/parser/parser.*

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-TEST_ORG=$(mktemp /tmp/test.XXXXXX.org)
+TEST_ORG=$(mktemp /tmp/test.XXXXXX)
 function cleanup()
 {
     rm -f "$TEST_ORG"

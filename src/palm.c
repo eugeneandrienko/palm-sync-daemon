@@ -4,9 +4,15 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#if defined(__FreeBSD__)
+#include <pi-dlp.h>
+#include <pi-file.h>
+#include <pi-socket.h>
+#else
 #include <libpisock/pi-dlp.h>
 #include <libpisock/pi-file.h>
 #include <libpisock/pi-socket.h>
+#endif
 #include "log.h"
 #include "palm.h"
 #include "pdb.h"
