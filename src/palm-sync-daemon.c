@@ -31,10 +31,6 @@
 
 
 /**
-   Buffer size for command-line argument
-*/
-#define ARGUMENT_BUFFER_SIZE 50
-/**
    Buffer size for PID as string
 */
 #define PID_BUFFER_SIZE 10
@@ -93,14 +89,14 @@ int main(int argc, const char * argv[])
 	int foreground = 0;
 	int debug = 0;
 	int dryRun = 0;
-	char palmDeviceFile[ARGUMENT_BUFFER_SIZE] = "/dev/ttyUSB1";
+	char * palmDeviceFile = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
 		{"dry-run", '\0', POPT_ARG_NONE, &dryRun, 0, "Dry run, without real sync", NULL},
-		{"device", 'd', POPT_ARG_STRING, palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
+		{"device", 'd', POPT_ARG_STRING, &palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
-		{NULL, '\0', POPT_ARG_NONE, NULL, 0, NULL, NULL}
+		POPT_TABLEEND
 	};
 	poptContext pContext = poptGetContext(PACKAGE_NAME, argc, argv, optionsTable,
 										  POPT_CONTEXT_POSIXMEHARDER);
