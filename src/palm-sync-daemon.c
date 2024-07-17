@@ -94,7 +94,7 @@ int main(int argc, const char * argv[])
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
 		{"dry-run", '\0', POPT_ARG_NONE, &dryRun, 0, "Dry run, without real sync", NULL},
-		{"device", 'd', POPT_ARG_STRING, &palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
+		{"device", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
