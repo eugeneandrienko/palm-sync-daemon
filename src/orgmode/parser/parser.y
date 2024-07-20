@@ -11,7 +11,7 @@
 #include "log.h"
 #include "orgmode_parser.h"
 
-#define LINE_LEN 200
+#define LINE_LEN 500
 #define EMPTY_PRIORITY '-'
 
 
@@ -58,6 +58,8 @@ entries : entry
 
 entry : header
       | header text
+      | T_NEWLINE header
+      | T_NEWLINE header text
       ;
 
 header : headline T_NEWLINE

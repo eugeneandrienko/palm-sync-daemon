@@ -66,4 +66,3 @@ DATETIME     <[-+: [:alnum:]]+>
     return T_NEWLINE;
 }
 %%
-

@@ -6,7 +6,7 @@ function cleanup()
     rm -f "$TEST_ORG"
 }
 trap cleanup EXIT
-tail -n 38 "$0" > "$TEST_ORG"
+tail -n 39 "$0" > "$TEST_ORG"
 
 EXPECTED_RESULT=("[INFO]: ---")
 EXPECTED_RESULT+=("[INFO]: Header: Just a header")
@@ -141,6 +141,7 @@ done
 rm -f "$TEST_ORG"
 exit 0;
 #+COMMENT
+
 * Just a header
 * Header with tag                                                   :testtag:
 * Header with text below
