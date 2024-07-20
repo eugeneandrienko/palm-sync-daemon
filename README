@@ -12,6 +12,8 @@ Dependencies
         make
         bash
         C compiler (gcc)
+        flex
+        bison
 
     Dependencies for palm-sync-daemon:
     ----------------------------------
