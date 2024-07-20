@@ -5,13 +5,20 @@ AC_CONFIG_SRCDIR([src/palm-sync-daemon.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
+# Special ./configure options
 AC_ARG_ENABLE([fanalyzer],
     AS_HELP_STRING([--enable-fanalyzer], [Use -fanalyzer when compiling sources with GCC]))
 AM_CONDITIONAL([ENABLE_FANALYZER], [test "x$enable_fanalyzer" = "xyes"])
 AC_ARG_ENABLE([tex-doc],
     AS_HELP_STRING([--enable-tex-doc], [Build LaTeX documentation with pdflatex]))
 AM_CONDITIONAL([ENABLE_TEX_DOC], [test "x$enable_tex_doc" = "xyes"])
+AC_ARG_ENABLE([gdb-debug],
+    AS_HELP_STRING([--enable-gdb-debug], [Build with debugging symbols for GDB]))
+AM_CONDITIONAL([ENABLE_GDB_DEBUG], [test "x$enable_gdb_debug" = "xyes"])
+AM_COND_IF([ENABLE_GDB_DEBUG], [AX_APPEND_FLAG([-O0]) AX_APPEND_FLAG([-ggdb])],
+                               [AX_APPEND_FLAG([-O0])])
 
+# Special compiler flags for U-MASH
 AX_CHECK_COMPILE_FLAG([-mpclmul],
     [AX_APPEND_FLAG([-mpclmul])],
     [AC_MSG_ERROR([-mpclmul is not supported, cannot use UMASH hash function])])
