@@ -45,13 +45,17 @@
 \usepackage{listingsutf8}
 \lstset{escapechar=|,
   frame=tb,
+  basicstyle=\ttfamily,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  columns=fullflexible,
+  keepspaces=true,
   showstringspaces=false,
   inputencoding=utf8,
   extendedchars=true,
   captionpos=b,
   breaklines=true,
-  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}},
-  stringstyle=\ttfamily}
+  postbreak=\raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}}}
 
 \lstdefinelanguage{org}{
   keywords={TODO, VERIFIED, DONE, CANCELLED, SCHEDULED, DEADLINE},
@@ -249,26 +253,142 @@ For example:
 \label{sec:synchr-scen-first-look}
 
 Primarily, I want to create simple but robust synchronization algorithm. It
-should not delete data on the computer and don't lose new data coming from Palm.
+should neither delete data on the computer, nor lose new data coming from Palm.
 
-As you see from examples above (see section~\ref{sec:desired-orgmode-file}), I
-do not use any special IDs (like UUID) to distinguish records in
-org-files. Also, I do not store dates of creation and modification of headline
-inside drawer~--- I want my files to be visually clean.
+Some useful information about synchronization between Palm handheld and PC can
+be found in~\cite{PalmProgrammingBible}~(chapter~18: <<Building Conduits>>,
+page~617). But these pieces of knowledge are not fully applicable to my case.
 
-Records from Palm and from org-file can be matched by the next rules:
+First, I don't archive entries neither in Emacs OrgMode, nor on Palm handheld.
+
+Second, I cannot distinguish between edited and non-edited entries in
+org-files. As you see from examples above (see
+section~\ref{sec:desired-orgmode-file}), I do not store dates of creation or
+modification inside drawer~--- I want my files to be visually clean.
+
+So, to make the synchronization process robust enough, I will use \textit{three}
+sources of data:
+\begin{enumerate}
+\item PDB files, retrieved from Palm handheld in \textit{this} synchronization
+  cycle.
+\item PDB files, retrieved from handheld from \textit{previous} iteration.
+\item OrgMode files.
+\end{enumerate}
+
+Two sets of PDB files are necessary to determine record statuses on handheld:
+\begin{longtable}[H]{|p{4cm}|p{4cm}|p{6cm}|}
+  \hline
+  \textbf{Record status on handheld}
+  & \textbf{Record status on handheld from previous sync. iteration}
+  & \textbf{Computed record status} \\
+  \hline
+  \hline
+  No record & No record & No record \\
+  \hline
+  Exists & No record & Added \\
+  \hline
+  Exists and dirty\footnote{See about record attributes
+  in~\ref{sec:pdb-header}~section.} & No record & Added \\
+  \hline
+  Exists and deleted & No record & No record \\
+  \hline
+  \hline
+  No record & Exists & Deleted \\
+  \hline
+  Exists & Exists & Not changed \\
+  \hline
+  Exists and dirty & Exists & Changed \\
+  \hline
+  Exists and deleted & Exists & Deleted \\
+  \hline
+  \hline
+  No record & Exists and dirty & Deleted \\
+  \hline
+  Exists & Exists and dirty & Not changed \\
+  \hline
+  Exists and dirty & Exists and dirty & Changed \\
+  \hline
+  Exists and deleted & Exists and dirty & Deleted \\
+  \hline
+  \hline
+  No record & Exists and deleted & Deleted \\
+  \hline
+  Exists & Exists and deleted & Added \\
+  \hline
+  Exists and dirty & Exists and deleted & Added \\
+  \hline
+  Exists and deleted & Exists and deleted & Deleted \\
+  \hline
+  \caption{How to determine record statuses on
+  handheld\label{tab:handheld-record-status}}
+\end{longtable}
+
+Computed status of handheld records and status of org-file record will be used
+in synchronization logic like this:
+\begin{longtable}[H]{{|p{3cm}|p{2cm}|p{9cm}|}}
+  \hline
+  \textbf{Computed record status from handheld}
+  & \textbf{Record status in org-files}
+  & \textbf{Daemon action} \\
+  \hline
+  \hline
+  No record & No record & Do nothing \\
+  \hline
+  Added & No record & Add handheld record to org-files \\
+  \hline
+  Not changed & No record & Add handheld record to org-files \\
+  \hline
+  Changed & No record & Add handheld record to org-files \\
+  \hline
+  Deleted & No record & Do nothing \\
+  \hline
+  \hline
+  No record & Exists & Add desktop record to handheld \\
+  \hline
+  Added & Exists & Copy handheld record to desktop \\
+  \hline
+  Not changed & Exists & Replace handheld record with desktop record \\
+  \hline
+  Changed & Exists & Replace desktop record with handheld record\footnote{
+                     I assume, what user does not have access to PC with Emacs, when
+                     using Palm PDA. And vice versa~--- user do not use Palm PDA when using PC. If
+                     user changes the same record in Palm and in org-file
+                     \textit{simultaneously}~--- that's \textbf{his problem}. In that case changes
+                     in org-file will be lost!} \\
+  \hline
+  Deleted & Exists & Delete record on desktop\footnote{If user changed something
+                     in org-file \textit{simultaneously} with handheld in
+                     usage~--- it's changes will be lost!} \\
+  \hline
+  \caption{Synchronization logic\label{tab:synchronization-logic}}
+\end{longtable}
+
+\textit{Note:} dirty bit should be unset when writing PDB files back to Palm
+handheld.
+
+To match between records from Palm and from org-file I'll use next rules:
 \begin{itemize}
 \item Note from Palm and note in Org-file are the same if it's headers are
   equals.
 \item TODO-item from Palm and TODO-item in Org-file are the same if it's header
   and (if exists) \texttt{SCHEDULED} or \texttt{DEADLINE} properties are same.
 \item Calendar item from Palm and TODO-item in Org-file are the same if it's
-  header and (if exists) \texttt{SCHEDULED} or \texttt{DEADLINE} properties are
-  same.
+  header and \texttt{SCHEDULED} (or \texttt{DEADLINE}) properties are same.
 \end{itemize}
 
-For the matched records synchronization will sync next data:
+Because \texttt{SCHEDULED} or \texttt{DEADLINE} properties can be changed with
+repeater interval~--- it should be matched not via simple string comparison. To
+properly process entries with those properties~--- we should compare date-time
+from handheld entry with date-time from org-file plus/minus $N$ repeater
+interval. If resulting timestamps are the same~--- then corresponding properties
+are the same. If properties are the same and headers of the entries are same~---
+then records from handheld and in org-file are the same.
+
+Next data will be synced between Palm PDA and org-files:
+
 \begin{description}
+\item[headline] Will be synced as headline.
+\item[timestamps] Will be synced as timestamps.
 \item[tags] Should be mapped to categories on the Palm. Category names should
   conform Palm Design Guidelines~\cite{PalmDesignGuide}.
 
@@ -285,41 +405,16 @@ For the matched records synchronization will sync next data:
   \end{itemize}
 
   When synchronizing notes to the Memos application, all TODO keywords should be
-  removed.
-\item Any text after first-level headline (or header of record).
+  ignored.
+\item[text] Any text after first-level headline (or header of record).
 \end{description}
-
-When we change \texttt{TODO} or \texttt{VERIFIED} keyword to the \texttt{DONE}
-or \texttt{CANCELLED} in the Emacs OrgMode~--- scheduled date will increment to
-the corresponding repeater interval by itself. To properly process this change
-when synchronizing with Palm~--- we should compare date of matched record in
-Palm plus $N$ repeater intervals with date in org-file. If these two dates are
-equal and there is the the only difference between records~--- do not sync it.
 
 At a first approximation, I see the synchronization process as follows. User
 comes home, insert Palm into the cradle and press button. After that our daemon
 discovers Palm device in the system and immediately starts synchronization
 process. This process runs in the background and \textbf{should not} require
-user attention:
-
-\begin{enumerate}
-\item Copy new (not matched with records in OrgMode files) from Palm records to
-  PC.
-\item Copy new (not matched with records in Palm) entries from OrgMode files to
-  Palm PDA.
-\item Edit existing (matched with records in OrgMode files) Palm records with
-  updated data from OrgMode.
-\end{enumerate}
-
-I assume, what user does not have access to PC with Emacs, when using Palm
-PDA. And vice versa~--- user do not use Palm PDA when using PC.
-
-If user changes the same record in Palm and in org-file
-\textit{simultaneously}~--- that's \textbf{his problem}. In that case changes
-from Palm will be lost or copied as new record to OrgMode file! If user deletes
-something in Palm~--- corresponding record will not be deleted in the OrgMode
-file, to preserve org-files contents. \textbf{Do not delete anything on Palm~---
-  do this action only on PC}.
+user attention. Synchronization will use algorithm described in
+table~\ref{tab:synchronization-logic}.
 
 \section{Technical details}
 \label{sec:technical-details}
@@ -328,10 +423,12 @@ List of libraries which used by palm-sync-daemon:
 
 \begin{description}
 \item[libpopt] Used to parse commandline options.
-\item[libpisock] Used to communicate with Palm PDA. This library is part of
-  \texttt{pilot-xfer}
+\item[libpisock] Used to communicate with Palm PDA. This library is a part of
+  \texttt{pilot-link}
   project\footnote{\url{https://github.com/jichu4n/pilot-link/}} and can be
   installed with it.
+\item[libiconv] To convert records data between UTF8 and CP1251 (used in
+  FreeBSD).
 \end{description}
 
 \subsection{Processing PDB files}
@@ -742,7 +839,7 @@ Data format, which is used to store Memos data inside field \texttt{data} in
 \subsection{Parsing OrgMode files}
 \label{sec:pars-orgm-files}
 
-\texttt{palm-sync-daemon} needs to parse only small subset of OrgMode syntax
+\texttt{Palm-sync-daemon} needs to parse only small subset of OrgMode syntax
 (see section~\ref{sec:desired-orgmode-file}). To achieve that and do not spend a
 lot of time to write own parser from zero~--- \texttt{flex} and \texttt{bison}
 is used.
@@ -828,6 +925,95 @@ After definition of tokens, basic syntax of OrgMode is defined. See
        ;
   %%
 \end{lstlisting}
+
+Parsed OrgMode entries will be stored in next structure:
+\begin{lstlisting}[language=C, caption={Structure to store OrgMode entries}]
+  /**
+     Priorities for OrgMode headline.
+
+     - A - max priority
+     - B
+     - C - min priority
+  */
+
+  enum Priority
+  {
+	A,          /**< [#A] priority. */
+	B,          /**< [#B] priority. */
+	C,          /**< [#C] priority. */
+	NO_PRIORITY /**< No priority. */
+  };
+
+  /**
+     TODO-keywords for OrgMode headline.
+  */
+  enum TODOKeyword
+  {
+	TODO,
+	VERIFIED,       /**< "VERIFIED" keyword. */
+	DONE,           /**< "DONE" keyword. */
+	CANCELLED,      /**< "CANCELLED" keyword. */
+	NO_TODO_KEYWORD /**< No any of TODO-keywords. */
+  };
+
+  /**
+     Repeater range - letter (h|d|w|m|y) from repeater interval.
+  */
+  enum RepeaterRange
+  {
+	HOUR,    /**< "h" letter in repeater interval. */
+	DAY,     /**< "d" letter in repeater interval. */
+	WEEK,    /**< "w" letter in repeater interval. */
+	MONTH,   /**< "m" letter in repeater interval. */
+	YEAR,    /**< "y" letter in repeater interval. */
+	NO_RANGE /**< No repeater interval. */
+  };
+
+  /**
+     Emacs OrgMode headline contents.
+
+     Includes data from Flex+Bison parser. If some data is not exists in
+     first-level headline - here will be NULL in corresponding field.
+  */
+  struct OrgModeEntry
+  {
+	char * header;                    /**< OrgMode first-level header */
+	enum Priority priority;           /**< First-level header priority */
+	enum TODOKeyword keyword;         /**< TODO-keyword for first-level header. */
+	char * tag;                       /**< Tag of first-level header. May be NULL if no exists. */
+	char * text;                      /**< Text below first-level header. May be NULL if no exists. */
+	time_t datetime1;                 /**< Datetime or first part of time range or (time_t)-1 if no datetime. */
+	time_t datetime2;                 /**< Second part of time range. May be (time_t)-1 if no time range on datetime. */
+	unsigned char repeaterValue;      /**< Repeater value or 0 if no repeater interval. */
+	enum RepeaterRange repeaterRange; /**< Repeater range. */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+	TAILQ_ENTRY(OrgModeEntry) pointers;
+#endif
+  };
+  #ifndef DOXYGEN_SHOULD_SKIP_THIS
+  TAILQ_HEAD(OrgModeEntries, OrgModeEntry);
+  typedef struct OrgModeEntry OrgModeEntry;
+  #endif
+
+  /**
+     Queue of Emacs OrgMode first-level headlines.
+
+     Contains OrgModeEntry entries.
+  */
+  typedef struct OrgModeEntries OrgModeEntries;
+\end{lstlisting}
+
+\subsection{Synchronization}
+\label{sec:synchronization}
+
+On the low level, synchronization process just compare hashes of records'
+headers to match records from Palm PDA with records from OrgMode files. If
+records' hashes matched~--- then check records' text and/or schedule, deadline
+properties, tags to properly synchonize data.
+
+As a hash-function for string I use UMASH from this repository:
+\url{https://github.com/rurban/smhasher}
+(see~\url{https://github.com/rurban/smhasher/blob/master/umash.h}).
 
 \newpage
 
