@@ -33,147 +33,152 @@ static time_t _time_palm_to_unix(uint32_t time);
 static uint32_t _time_unix_to_palm(time_t time);
 
 
-int pdb_open(const char * path)
+int pdb_read(const char * path, int stdCatInfo, PDB ** ppdb)
 {
-	int fd = 0;
+	int fd = -1;
 	if((fd = open(path, O_RDWR, 0644)) == -1)
 	{
 		log_write(LOG_ERR, "Cannot open %s PDB file: %s", path, strerror(errno));
 		return -1;
 	}
-	return fd;
-}
 
-PDBFile * pdb_read(int fd, int stdCatInfo)
-{
-	PDBFile * header;
-	if((header = calloc(1, sizeof(PDBFile))) == NULL)
+	if((*ppdb = calloc(1, sizeof(PDB))) == NULL)
 	{
-		log_write(LOG_ERR, "Cannot allocate memory for PDB header: %s",
+		log_write(LOG_ERR, "Cannot allocate memory for PDB structure: %s",
 				  strerror(errno));
-		return NULL;
+		/* Мне похуй; я так чувствую */
+		goto pdb_read_error;
 	}
 
-	TAILQ_INIT(&header->records);
-	header->categories = NULL;
+	PDB * pdb = *ppdb;
+	TAILQ_INIT(&pdb->records);
+	pdb->categories = NULL;
 
-	if(read(fd, header->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
+	if(read(fd, pdb->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
 		log_write(LOG_ERR, "Cannot read database name from PDB header: %s", strerror(errno));
-		free(header);
-		return NULL;
+		free(pdb);
+		goto pdb_read_error;
 	}
 
 	int result = 0;
-	result += _read16_field(fd, &header->attributes, "attributes");
-	result += _read16_field(fd, &header->version, "version");
-	result += _read32_field(fd, &header->ctime, "creation datetime");
-	result += _read32_field(fd, &header->mtime, "modification datetime");
-	result += _read32_field(fd, &header->btime, "last backup datetime");
-	result += _read32_field(fd, &header->modificationNumber, "modification number");
-	result += _read32_field(fd, &header->appInfoOffset, "application info offset");
-	result += _read32_field(fd, &header->sortInfoOffset, "sort info offset");
-	result += _read32_field(fd, &header->databaseTypeID, "database type ID");
-	result += _read32_field(fd, &header->creatorID, "creator ID");
-	result += _read32_field(fd, &header->seed, "unique ID seed");
-	result += _read32_field(fd, &header->nextRecordListOffset, "next record list offset");
-	result += _read16_field(fd, &header->recordsQty, "qty of records");
+	result += _read16_field(fd, &pdb->attributes, "attributes");
+	result += _read16_field(fd, &pdb->version, "version");
+	result += _read32_field(fd, &pdb->ctime, "creation datetime");
+	result += _read32_field(fd, &pdb->mtime, "modification datetime");
+	result += _read32_field(fd, &pdb->btime, "last backup datetime");
+	result += _read32_field(fd, &pdb->modificationNumber, "modification number");
+	result += _read32_field(fd, &pdb->appInfoOffset, "application info offset");
+	result += _read32_field(fd, &pdb->sortInfoOffset, "sort info offset");
+	result += _read32_field(fd, &pdb->databaseTypeID, "database type ID");
+	result += _read32_field(fd, &pdb->creatorID, "creator ID");
+	result += _read32_field(fd, &pdb->seed, "unique ID seed");
+	result += _read32_field(fd, &pdb->nextRecordListOffset, "next record list offset");
+	result += _read16_field(fd, &pdb->recordsQty, "qty of records");
 
 	if(result)
 	{
-		free(header);
-		return NULL;
+		free(pdb);
+		goto pdb_read_error;
 	}
 
-	if(header->nextRecordListOffset != 0)
+	if(pdb->nextRecordListOffset != 0)
 	{
 		log_write(LOG_ERR, "Malformed PDB file, next record list offset = %d",
-				  header->nextRecordListOffset);
-		free(header);
-		return NULL;
+				  pdb->nextRecordListOffset);
+		free(pdb);
+		goto pdb_read_error;
 	}
 
-	if(header->recordsQty > 0 &&
-	   _read_record_list(fd, header->recordsQty, &header->records))
+	if(pdb->recordsQty > 0 &&
+	   _read_record_list(fd, pdb->recordsQty, &pdb->records))
 	{
 		log_write(LOG_ERR, "Cannot read records list");
-		pdb_free(header);
-		return NULL;
+		pdb_free(fd, pdb);
+		goto pdb_read_error;
 	}
-	else if(header->recordsQty > 0)
+	else if(pdb->recordsQty > 0)
 	{
-		header->recordListPadding = 0x0000;
+		pdb->recordListPadding = 0x0000;
 	}
 
 	/* Read standard Palm OS categories info if necessary */
-	if(header->appInfoOffset && stdCatInfo)
+	if(pdb->appInfoOffset && stdCatInfo)
 	{
-		if(header->appInfoOffset != lseek(fd, header->appInfoOffset, SEEK_SET))
+		if(pdb->appInfoOffset != lseek(fd, pdb->appInfoOffset, SEEK_SET))
 		{
-			log_write(LOG_ERR, "Failed to reposition to application info in PDB file: %s",
-					  strerror(errno));
-			pdb_free(header);
-			return NULL;
+			log_write(LOG_ERR, "Failed to reposition to application info in PDB file %s: %s",
+					  path, strerror(errno));
+			pdb_free(fd, pdb);
+			goto pdb_read_error;
 		}
-		if(_read_categories(fd, &header->categories))
+		if(_read_categories(fd, &pdb->categories))
 		{
-			log_write(LOG_ERR, "Cannot read categories from application info");
-			pdb_free(header);
-			return NULL;
+			log_write(LOG_ERR, "Cannot read categories from application info (PDB file: %s)",
+					  path);;
+			pdb_free(fd, pdb);
+			goto pdb_read_error;
 		}
 	}
 
 	/* Fix some fields */
-	header->ctime = _time_palm_to_unix(header->ctime);
-	header->mtime = _time_palm_to_unix(header->mtime);
-	header->btime = _time_palm_to_unix(header->btime);
+	pdb->ctime = _time_palm_to_unix(pdb->ctime);
+	pdb->mtime = _time_palm_to_unix(pdb->mtime);
+	pdb->btime = _time_palm_to_unix(pdb->btime);
 
-	return header;
+	return fd;
+pdb_read_error:
+	if(close(fd) == -1 && errno != EBADF)
+	{
+		log_write(LOG_ERR, "Cannot close PDB file %s, error message: %s",
+				  path, strerror(errno));
+	}
+	return -1;
 }
 
-int pdb_write(int fd, PDBFile * pdbFile)
+int pdb_write(int fd, PDB * pdb)
 {
 	/* Check and fix some fields if necessary */
-	pdbFile->ctime = _time_unix_to_palm(pdbFile->ctime);
-	pdbFile->mtime = _time_unix_to_palm(pdbFile->mtime);
-	pdbFile->btime = _time_unix_to_palm(pdbFile->btime);
+	pdb->ctime = _time_unix_to_palm(pdb->ctime);
+	pdb->mtime = _time_unix_to_palm(pdb->mtime);
+	pdb->btime = _time_unix_to_palm(pdb->btime);
 
-	if(pdbFile->nextRecordListOffset != 0)
+	if(pdb->nextRecordListOffset != 0)
 	{
 		log_write(LOG_ERR, "Malformed PDB data, next record list offset = %d",
-				  pdbFile->nextRecordListOffset);
-		return -1;
+				  pdb->nextRecordListOffset);
+		goto pdb_write_error;
 	}
 
 	/* Check records qty */
 	uint16_t recordsQty = 0;
-	if(!TAILQ_EMPTY(&pdbFile->records))
+	if(!TAILQ_EMPTY(&pdb->records))
 	{
 		PDBRecord * record;
-		TAILQ_FOREACH(record, &pdbFile->records, pointers)
+		TAILQ_FOREACH(record, &pdb->records, pointers)
 		{
 			recordsQty++;
 		}
 	}
-	if(recordsQty != pdbFile->recordsQty)
+	if(recordsQty != pdb->recordsQty)
 	{
 		log_write(LOG_NOTICE, "Fix records qty. Old: %d, new: %d",
-				  pdbFile->recordsQty, recordsQty);
-		pdbFile->recordsQty = recordsQty;
+				  pdb->recordsQty, recordsQty);
+		pdb->recordsQty = recordsQty;
 	}
 
 	/* Check offset to application info */
-	if(pdbFile->categories != NULL)
+	if(pdb->categories != NULL)
 	{
 		uint32_t appInfoOffset = PDB_RECORD_LIST_OFFSET +
 			PDB_RECORD_LIST_HEADER_SIZE +
-			pdbFile->recordsQty * PDB_RECORD_ITEM_SIZE +
-			sizeof(pdbFile->recordListPadding);
-		if(appInfoOffset != pdbFile->appInfoOffset)
+			pdb->recordsQty * PDB_RECORD_ITEM_SIZE +
+			sizeof(pdb->recordListPadding);
+		if(appInfoOffset != pdb->appInfoOffset)
 		{
 			log_write(LOG_NOTICE, "Fix application info offset. Old: %lu, new: %lu",
-					  pdbFile->appInfoOffset, appInfoOffset);
-			pdbFile->appInfoOffset = appInfoOffset;
+					  pdb->appInfoOffset, appInfoOffset);
+			pdb->appInfoOffset = appInfoOffset;
 		}
 	}
 
@@ -182,100 +187,107 @@ int pdb_write(int fd, PDBFile * pdbFile)
 	{
 		log_write(LOG_ERR, "Cannot go to start of the PDB file for writing: %s",
 				  strerror(errno));
-		return -1;
+		goto pdb_write_error;
 	}
 
-	if(write(fd, pdbFile->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
+	if(write(fd, pdb->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
 		log_write(LOG_ERR, "Cannot write database name to PDB header: %s", strerror(errno));
-		return -1;
+		goto pdb_write_error;
 	}
 
 	int result = 0;
-	result += _write16_field(fd, &pdbFile->attributes, "attributes");
-	result += _write16_field(fd, &pdbFile->version, "version");
-	result += _write32_field(fd, &pdbFile->ctime, "creation datetime");
-	result += _write32_field(fd, &pdbFile->mtime, "modification datetime");
-	result += _write32_field(fd, &pdbFile->btime, "last backup datetime");
-	result += _write32_field(fd, &pdbFile->modificationNumber, "modification number");
-	result += _write32_field(fd, &pdbFile->appInfoOffset, "application info offset");
-	result += _write32_field(fd, &pdbFile->sortInfoOffset, "sort info offset");
-	result += _write32_field(fd, &pdbFile->databaseTypeID, "database type ID");
-	result += _write32_field(fd, &pdbFile->creatorID, "creator ID");
-	result += _write32_field(fd, &pdbFile->seed, "unique ID seed");
-	result += _write32_field(fd, &pdbFile->nextRecordListOffset, "next record list offset");
-	result += _write16_field(fd, &pdbFile->recordsQty, "qty of records");
+	result += _write16_field(fd, &pdb->attributes, "attributes");
+	result += _write16_field(fd, &pdb->version, "version");
+	result += _write32_field(fd, &pdb->ctime, "creation datetime");
+	result += _write32_field(fd, &pdb->mtime, "modification datetime");
+	result += _write32_field(fd, &pdb->btime, "last backup datetime");
+	result += _write32_field(fd, &pdb->modificationNumber, "modification number");
+	result += _write32_field(fd, &pdb->appInfoOffset, "application info offset");
+	result += _write32_field(fd, &pdb->sortInfoOffset, "sort info offset");
+	result += _write32_field(fd, &pdb->databaseTypeID, "database type ID");
+	result += _write32_field(fd, &pdb->creatorID, "creator ID");
+	result += _write32_field(fd, &pdb->seed, "unique ID seed");
+	result += _write32_field(fd, &pdb->nextRecordListOffset, "next record list offset");
+	result += _write16_field(fd, &pdb->recordsQty, "qty of records");
 	if(result)
 	{
-		return -1;
+		goto pdb_write_error;
 	}
 
     /* Write records list if it is not empty */
-	if(pdbFile->recordsQty > 0 && _write_record_list(fd, &pdbFile->records))
+	if(pdb->recordsQty > 0 && _write_record_list(fd, &pdb->records))
 	{
 		log_write(LOG_ERR, "Cannot write records list");
-		return -1;
+		goto pdb_write_error;
 	}
-	if(_write16_field(fd, &pdbFile->recordListPadding, "record list padding bytes"))
+	if(_write16_field(fd, &pdb->recordListPadding, "record list padding bytes"))
 	{
 		log_write(LOG_ERR, "Cannot write padding bytes after record list");
-		return -1;
+		goto pdb_write_error;
 	}
 
-	if(pdbFile->categories != NULL)
+	if(pdb->categories != NULL)
 	{
-		if(pdbFile->appInfoOffset != lseek(fd, pdbFile->appInfoOffset, SEEK_SET))
+		if(pdb->appInfoOffset != lseek(fd, pdb->appInfoOffset, SEEK_SET))
 		{
 			log_write(LOG_ERR, "Failed to reposition to application info in PDB file: %s",
 					  strerror(errno));
-			return -1;
+			goto pdb_write_error;
 		}
-		if(_write_categories(fd, pdbFile->categories))
+		if(_write_categories(fd, pdb->categories))
 		{
 			log_write(LOG_ERR, "Cannot write categories to application info");
-			return -1;
+			goto pdb_write_error;
 		}
 	}
 
 	return 0;
+pdb_write_error:
+	pdb_free(fd, pdb);
+	return -1;
 }
 
-void pdb_close(int fd)
+void pdb_free(int fd, PDB * pdb)
 {
 	if(close(fd) == -1)
 	{
-		log_write(LOG_ERR, "Cannot close PDB file: %s", strerror(errno));
+		log_write(LOG_DEBUG, "Failed to close file descriptor: %s",
+				  strerror(errno));
 	}
-}
 
-void pdb_free(PDBFile * pdbFile)
-{
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
 		return;
 	}
-	struct PDBRecord * record1 = TAILQ_FIRST(&pdbFile->records);
+	struct PDBRecord * record1 = TAILQ_FIRST(&pdb->records);
 	struct PDBRecord * record2;
 	while(record1 != NULL)
 	{
 		record2 = TAILQ_NEXT(record1, pointers);
+		if(record1->data != NULL)
+		{
+			free(record1->data);
+		}
 		free(record1);
 		record1 = record2;
 	}
-	TAILQ_INIT(&pdbFile->records);
+	TAILQ_INIT(&pdb->records);
 
-	if(pdbFile->categories != NULL)
+	if(pdb->categories != NULL)
 	{
-		free(pdbFile->categories);
+		free(pdb->categories);
 	}
-	free(pdbFile);
+	free(pdb);
 }
 
-PDBRecord * pdb_record_add(PDBFile * pdbFile, uint32_t offset, uint8_t attributes)
+/* Operations with records */
+
+PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes)
 {
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_record_add");
+		log_write(LOG_ERR, "NULL PDB structure (%s)", "pdb_record_add");
 		return NULL;
 	}
 
@@ -289,59 +301,31 @@ PDBRecord * pdb_record_add(PDBFile * pdbFile, uint32_t offset, uint8_t attribute
 
 	newRecord->offset = offset;
 	newRecord->attributes = attributes;
+	newRecord->hash = 0;
+	newRecord->data = NULL;
 	srand(time(NULL) + getpid());
 	newRecord->id[0] = (uint8_t)(rand() & 0x000000ff);
 	newRecord->id[1] = (uint8_t)(rand() & 0x000000ff);
 	newRecord->id[2] = (uint8_t)(rand() & 0x000000ff);
 
-	if(TAILQ_EMPTY(&pdbFile->records))
+	if(TAILQ_EMPTY(&pdb->records))
 	{
-		TAILQ_INSERT_HEAD(&pdbFile->records, newRecord, pointers);
+		TAILQ_INSERT_HEAD(&pdb->records, newRecord, pointers);
 	}
 	else
 	{
-		TAILQ_INSERT_TAIL(&pdbFile->records, newRecord, pointers);
+		TAILQ_INSERT_TAIL(&pdb->records, newRecord, pointers);
 	}
 
-	pdbFile->appInfoOffset += pdbFile->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
-	pdbFile->sortInfoOffset += pdbFile->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
-	pdbFile->recordsQty++;
+	pdb->appInfoOffset += pdb->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdb->sortInfoOffset += pdb->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdb->recordsQty++;
 	return newRecord;
 }
 
-PDBRecord * pdb_record_get(PDBFile * pdbFile, uint16_t index)
+int pdb_record_delete(PDB * pdb, PDBRecord * record)
 {
-	if(pdbFile == NULL)
-	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_record_get");
-		return NULL;
-	}
-
-	if(index > pdbFile->recordsQty)
-	{
-		log_write(LOG_ERR, "Wrong index of record %d! Size of record list: %d.",
-				  index, pdbFile->recordsQty);
-		return NULL;
-	}
-
-	if(index == pdbFile->recordsQty - 1)
-	{
-		return TAILQ_LAST(&pdbFile->records, RecordQueue);
-	}
-	PDBRecord * record = TAILQ_FIRST(&pdbFile->records);
-	if(index > 0)
-	{
-		for(int i = 0; i < index; i++)
-		{
-			record = TAILQ_NEXT(record, pointers);
-		}
-	}
-	return record;
-}
-
-int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record)
-{
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
 		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_record_delete");
 		return -1;
@@ -352,34 +336,41 @@ int pdb_record_delete(PDBFile * pdbFile, PDBRecord * record)
 		return -1;
 	}
 
-	if(TAILQ_EMPTY(&pdbFile->records))
+	if(TAILQ_EMPTY(&pdb->records))
 	{
 		log_write(LOG_WARNING, "Empty queue, nothing to delete (%s)", "pdb_record_delete");
 		return -1;
 	}
-	TAILQ_REMOVE(&pdbFile->records, record, pointers);
+	if(record->data != NULL)
+	{
+		free(record->data);
+	}
+	TAILQ_REMOVE(&pdb->records, record, pointers);
+	free(record);
 
-	pdbFile->appInfoOffset -= pdbFile->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
-	pdbFile->sortInfoOffset -= pdbFile->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
-	pdbFile->recordsQty--;
+	pdb->appInfoOffset -= pdb->appInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdb->sortInfoOffset -= pdb->sortInfoOffset != 0 ? PDB_RECORD_ITEM_SIZE : 0;
+	pdb->recordsQty--;
 	return 0;
 }
 
-char * pdb_category_get_name(PDBFile * pdbFile, uint8_t id)
+/* Operations with categories */
+
+char * pdb_category_get_name(PDB * pdb, uint8_t id)
 {
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_category_get");
+		log_write(LOG_ERR, "NULL PDB structure (%s)", "pdb_category_get");
 		return NULL;
 	}
-	if(id >= PDB_CATEGORIES_STD_LEN)
+	if(id >= PDB_CATEGORIES_STD_QTY)
 	{
 		log_write(LOG_ERR, "Wrong category id - cannot be greater than %d",
-				  PDB_CATEGORIES_STD_LEN - 1);
+				  PDB_CATEGORIES_STD_QTY - 1);
 		return NULL;
 	}
 
-	return pdbFile->categories->names[id];
+	return pdb->categories->names[id];
 }
 
 /**
@@ -400,11 +391,11 @@ int __compare_categories(const void * cat1, const void * cat2)
 		((const struct SortedCategory *)cat2)->name);
 }
 
-char pdb_category_get_id(PDBFile * pdbFile, char * name)
+char pdb_category_get_id(PDB * pdb, char * name)
 {
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_category_get2");
+		log_write(LOG_ERR, "NULL PDB structure (%s)", "pdb_category_get_id");
 		return -1;
 	}
 	if(name == NULL)
@@ -413,34 +404,28 @@ char pdb_category_get_id(PDBFile * pdbFile, char * name)
 		return -1;
 	}
 
-	struct SortedCategory sortedCategories[PDB_CATEGORIES_STD_LEN];
+	struct SortedCategory sortedCategories[PDB_CATEGORIES_STD_QTY];
 
-	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
-		sortedCategories[i].id = &pdbFile->categories->ids[i];
-		sortedCategories[i].name = pdbFile->categories->names[i];
+		sortedCategories[i].id = &pdb->categories->ids[i];
+		sortedCategories[i].name = pdb->categories->names[i];
 	}
 
-	qsort(&sortedCategories, PDB_CATEGORIES_STD_LEN, sizeof(struct SortedCategory),
+	qsort(&sortedCategories, PDB_CATEGORIES_STD_QTY, sizeof(struct SortedCategory),
 		  __compare_categories);
 	struct SortedCategory searchFor = {NULL, name};
 	struct SortedCategory * searchResult = bsearch(
-		&searchFor, &sortedCategories, PDB_CATEGORIES_STD_LEN,
+		&searchFor, &sortedCategories, PDB_CATEGORIES_STD_QTY,
 		sizeof(struct SortedCategory), __compare_categories);
 	return searchResult != NULL ? *searchResult->id : -1;
 }
 
-int pdb_category_add(PDBFile * pdbFile, uint8_t id, char * name)
+int pdb_category_add(PDB * pdb, char * name)
 {
-	if(pdbFile == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_category_add");
-		return -1;
-	}
-	if(id >= PDB_CATEGORIES_STD_LEN)
-	{
-		log_write(LOG_ERR, "Wrong category id - cannot be greater than %d",
-				  PDB_CATEGORIES_STD_LEN - 1);
+		log_write(LOG_ERR, "NULL PDB structure (%s)", "pdb_category_add");
 		return -1;
 	}
 	if(name == NULL)
@@ -448,61 +433,53 @@ int pdb_category_add(PDBFile * pdbFile, uint8_t id, char * name)
 		log_write(LOG_ERR, "NULL pointer to new name (%s)", "pdb_category_add");
 		return -1;
 	}
-	if(strlen(name) == 0)
+	size_t length = strlen(name);
+	if(length == 0)
 	{
 		log_write(LOG_ERR, "Empty new name (%s)", "pdb_category_add");
 		return -1;
 	}
+	else if(length > PDB_CATEGORY_LEN - 1)
+	{
+		log_write(LOG_ERR, "New name is too long: it has %d symbols", length);
+		log_write(LOG_ERR, "But in PalmOS allowed only %d symbols", PDB_CATEGORY_LEN);
+		return -1;
+	}
 
-	size_t length = strlen(name);
-	if(length > PDB_CATEGORY_LEN - 1)
+	char freeId = 0;
+	while(freeId < PDB_CATEGORY_LEN && pdb->categories->names[freeId][0] != '\0')
 	{
-		memcpy(pdbFile->categories->names[id], name, PDB_CATEGORY_LEN - 1);
-		pdbFile->categories->names[id][PDB_CATEGORY_LEN - 1] = '\0';
+		freeId++;
 	}
-	else
+	if(freeId >= PDB_CATEGORY_LEN)
 	{
-		memcpy(pdbFile->categories->names[id], name, length);
-		pdbFile->categories->names[id][length] = '\0';
+		log_write(LOG_WARNING, "No space to add new category - all IDs is in use");
+		return -1;
 	}
-	pdbFile->categories->ids[id] = id;
+
+	memcpy(pdb->categories->names[freeId], name, length);
+
+	pdb->categories->names[freeId][length] = '\0';
+	pdb->categories->ids[freeId] = freeId;
 	return 0;
 }
 
-int pdb_category_edit(char * category, char * newName, size_t length)
+int pdb_category_delete(PDB * pdb, uint8_t id)
 {
-	if(category == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "Got NULL category - cannot edit");
+		log_write(LOG_ERR, "NULL PDB structure (%s)", "pdb_category_delete");
 		return -1;
 	}
-	if(newName == NULL)
-	{
-		log_write(LOG_ERR, "Got NULL new category - cannot edit");
-		return -1;
-	}
-
-	explicit_bzero(category, PDB_CATEGORY_LEN);
-	strncpy(category, newName, length);
-	return 0;
-}
-
-int pdb_category_delete(PDBFile * pdbFile, uint8_t id)
-{
-	if(pdbFile == NULL)
-	{
-		log_write(LOG_ERR, "NULL PDBFile structure (%s)", "pdb_category_delete");
-		return -1;
-	}
-	if(id >= PDB_CATEGORIES_STD_LEN)
+	if(id >= PDB_CATEGORIES_STD_QTY)
 	{
 		log_write(LOG_ERR, "Wrong category id - cannot be greater than %d",
-				  PDB_CATEGORIES_STD_LEN - 1);
+				  PDB_CATEGORIES_STD_QTY - 1);
 		return -1;
 	}
 
-	explicit_bzero(pdbFile->categories->names[id], sizeof(char) * PDB_CATEGORY_LEN);
-	pdbFile->categories->ids[id] = 0;
+	explicit_bzero(pdb->categories->names[id], sizeof(char) * PDB_CATEGORY_LEN);
+	pdb->categories->ids[id] = 0;
 	return 0;
 }
 
@@ -625,6 +602,8 @@ static int _read_record_list(int fd, int qty, struct RecordQueue * records)
 			free(record);
 			return -1;
 		}
+		record->hash = 0;
+		record->data = NULL;
 
 		if(TAILQ_EMPTY(records))
 		{
@@ -656,7 +635,7 @@ static int _read_categories(int fd, PDBCategories ** categories)
 
 	int result = 0;
 	result += _read16_field(fd, &((*categories)->renamedCategories), "renamed categories");
-	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
 		if(read(fd, &((*categories)->names[i]), PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
 		{
@@ -665,7 +644,7 @@ static int _read_categories(int fd, PDBCategories ** categories)
 			return -1;
 		}
 	}
-	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
 		result += _read8_field(fd, &((*categories)->ids[i]), "category id");
 	}
@@ -829,7 +808,7 @@ static int _write_categories(int fd, PDBCategories * categories)
 
 	int result = 0;
 	result += _write16_field(fd, &categories->renamedCategories, "renamed categories");
-	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
 		if(write(fd, &(categories->names[i]), PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
 		{
@@ -838,7 +817,7 @@ static int _write_categories(int fd, PDBCategories * categories)
 			return -1;
 		}
 	}
-	for(int i = 0; i < PDB_CATEGORIES_STD_LEN; i++)
+	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
 		result += _write8_field(fd, &(categories->ids[i]), "category id");
 	}

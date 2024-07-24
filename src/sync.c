@@ -64,12 +64,14 @@ int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun
 int _sync_memos(char * pdbPath, char * orgPath, int dryRun)
 {
 	/* Read memos from PDB file */
-	PDBMemos * memos;
-	if((memos = pdb_memos_read(pdbPath)) == NULL)
+	PDB * pdb;
+	if((pdb = pdb_memos_read(pdbPath)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to read MemosDB");
 		return -1;
 	}
+	pdb_memos_free(pdb);
+	pdb_free(-1, pdb);
 
 	/* Read notes from OrgMode file */
 	OrgNotes * notes;

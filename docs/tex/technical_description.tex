@@ -382,6 +382,34 @@ All offsets in next tables are counted from the start of the file.
   \label{tab:pdb-header-format}
 \end{longtable}
 
+This file structure stored in \texttt{PDB} structure, which looks like this:
+\begin{lstlisting}[language=C, caption={C structure to store PDB file contents in
+    memory}]
+  #define PDB_DBNAME_LEN 32
+
+  struct PDB
+  {
+	char dbname[PDB_DBNAME_LEN];
+	uint16_t attributes;
+	uint16_t version;
+	uint32_t ctime;
+	uint32_t mtime;
+	uint32_t btime;
+	uint32_t modificationNumber;
+	uint32_t appInfoOffset;
+	uint32_t sortInfoOffset;
+	uint32_t databaseTypeID;
+	uint32_t creatorID;
+	uint32_t seed;
+	uint32_t nextRecordListOffset;
+	uint16_t recordsQty;
+	struct RecordQueue records;
+	uint16_t recordListPadding;
+	PDBCategories * categories;
+  };
+  typedef struct PDB PDB;
+\end{lstlisting}
+
 Record list has header and variable-length sequence of records. Each record is 8
 byte length. In the table below there is only one record, just for example:
 \begin{longtable}{|p{2cm}|p{4cm}|p{7cm}|}
@@ -401,6 +429,31 @@ byte length. In the table below there is only one record, just for example:
   \caption{Record list format (one sample entry)}
   \label{tab:record-list-format}
 \end{longtable}
+
+In \texttt{PDB} structure this data stored differently. Offset to the next
+record list (not used) and qty of records stored in \texttt{PDB} structure
+itself. And variable list of other elements (including offset to record's data)
+stored in queue\footnote{See manual page for \texttt{queue}, section~\#3. This
+  is a standard part of C library.}. Elements of queue looks like this:
+\begin{lstlisting}[language=C, caption={C structure to store one element of
+    record from PDB file}]
+  struct PDBRecord
+  {
+	uint32_t offset;
+	uint8_t attributes;
+	uint8_t id[3];
+	uint64_t hash;
+	void * data;
+  };
+  typedef struct PDBRecord PDBRecord;
+\end{lstlisting}
+
+Last two elements are just a software abstraction to simplify usage of
+\texttt{PDB} structure by programmer. Field \texttt{hash} used by underlying
+levels of system to match \texttt{data} fields between each other.
+
+Field \texttt{data} stores application related data. Format depends on
+application, which using specific database (PDB) on Palm.
 
 Record attributes store the next data:
 \begin{itemize}
@@ -460,6 +513,23 @@ categories info. It is standardized too:
 There are up to 16 categories, each have 15 symbols length name plus
 \texttt{'\textbackslash{}0'} at the end. If user has less categories~--- fill
 corresponding fields with zeroes. Categories IDs start from zero.
+
+Categories stored as simple structure, linked to \texttt{PDB} structure. Inside
+that structure there are array of IDs and corresponding array of names inside:
+\begin{lstlisting}[language=C, caption={C structure to store categories data}]
+  #define PDB_CATEGORIES_STD_QTY 16
+  #define PDB_CATEGORY_LEN 16
+
+  struct PDBCategories
+  {
+	uint16_t renamedCategories;
+	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN];
+	uint8_t ids[PDB_CATEGORIES_STD_QTY];
+	uint8_t lastUniqueId;
+	uint8_t padding;
+  };
+  typedef struct PDBCategories PDBCategories;
+\end{lstlisting}
 
 \subsubsection{Processing Memos PDB file}
 \label{sec:processing-memos-pdb}
@@ -657,6 +727,17 @@ note contents.
 
 Codepage for symbols is CP1251 (if you use PaPiRus cyrillic extension for Palm
 OS). Otherwise there are a plain ASCII symbols.
+
+Data format, which is used to store Memos data inside field \texttt{data} in
+\texttt{PDB} structure, is simple and looks like this:
+\begin{lstlisting}[language=C, caption={C structure to store memo data}]
+  struct PDBMemo
+  {
+	char * header;
+	char * text;
+  };
+  typedef struct PDBMemo PDBMemo;
+\end{lstlisting}
 
 \subsection{Parsing OrgMode files}
 \label{sec:pars-orgm-files}

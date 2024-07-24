@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,150 +10,129 @@
 
 
 static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record);
-static int _pdb_memos_write_memo(int fd, PDBMemo * memo);
+static int _pdb_memos_write_memo(int fd, PDBRecord * record);
 
 
-PDBMemos * pdb_memos_read(char * path)
+PDB * pdb_memos_read(char * path)
 {
-	int fd = pdb_open(path);
+	PDB * pdb;
+	int fd = pdb_read(path, 1, &pdb);
 	if(fd == -1)
 	{
-		log_write(LOG_ERR, "Cannot open %s PDB file", path);
+		log_write(LOG_ERR, "Cannot open and read %s PDB file", path);
 		return NULL;
-	}
-
-	PDBMemos * memos;
-	if((memos = calloc(1, sizeof(PDBMemos))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for PDBMemos structure: %s",
-				  strerror(errno));
-		pdb_close(fd);
-		return NULL;
-	}
-
-	if((memos->header = pdb_read(fd, 1)) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot read PDB header from %s file", path);
-		free(memos);
-		pdb_close(fd);
-		return NULL;
-	}
-
-	TAILQ_INIT(&memos->memos);
-	if(TAILQ_EMPTY(&memos->header->records))
-	{
-		log_write(LOG_WARNING, "Empty memos list in %s file", path);
 	}
 
 	PDBRecord * record;
-	TAILQ_FOREACH(record, &memos->header->records, pointers)
+	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
 		PDBMemo * memo;
 		if((memo = _pdb_memos_read_memo(fd, record)) == NULL)
 		{
-			pdb_memos_free(memos);
+			pdb_memos_free(pdb);
+			pdb_free(fd, pdb);
+			log_write(LOG_ERR, "Error when reading Memos from PDB file: %s", path);
 			return NULL;
 		}
-		if(TAILQ_EMPTY(&memos->memos))
-		{
-			TAILQ_INSERT_HEAD(&memos->memos, memo, pointers);
-		}
-		else
-		{
-			TAILQ_INSERT_TAIL(&memos->memos, memo, pointers);
-		}
+	}
+	if(close(fd) == -1)
+	{
+		pdb_memos_free(pdb);
+		pdb_free(fd, pdb);
+		log_write(LOG_ERR, "Failed to close %s file after reading Memos", path);
+		return NULL;
 	}
 
-	return memos;
+	return pdb;
 }
 
-int pdb_memos_write(char * path, PDBMemos * memos)
+int pdb_memos_write(char * path, PDB * pdb)
 {
-	int fd = pdb_open(path);
-	if(fd == -1)
+	int fd;
+	if((fd = open(path, O_RDWR, 0644)) == -1)
 	{
-		log_write(LOG_ERR, "Cannot open %s PDB file", path);
-		return -1;
+		log_write(LOG_ERR, "Cannot open %s PDB file with Memos: %s",
+				  path, strerror(errno));
+		goto pdb_memos_write_error;
 	}
 
-	if(pdb_write(fd, memos->header))
+	if(pdb_write(fd, pdb))
 	{
 		log_write(LOG_ERR, "Cannot write header to PDB file: %s", path);
-		return -1;
+		goto pdb_memos_write_error;
 	}
 
-	PDBMemo * memo;
-	unsigned short recordNo = 0;
-	TAILQ_FOREACH(memo, &memos->memos, pointers)
+	PDBRecord * record;
+	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
-		if(_pdb_memos_write_memo(fd, memo))
+		if(_pdb_memos_write_memo(fd, record))
 		{
 			log_write(LOG_ERR, "Failed to write memo with header \"%s\" to file: %s",
-					  memo->header, path);
-			pdb_close(fd);
-			pdb_memos_free(memos);
-			return -1;
+					  ((PDBMemo *)record->data)->header, path);
+			goto pdb_memos_write_error;
 		}
-
-		recordNo++;
 	}
 
-	pdb_close(fd);
-	pdb_memos_free(memos);
+	pdb_memos_free(pdb);
+	pdb_free(fd, pdb);
 	return 0;
+pdb_memos_write_error:
+	pdb_memos_free(pdb);
+	pdb_free(fd, pdb);
+	return -1;
 }
 
-void pdb_memos_free(PDBMemos * memos)
+void pdb_memos_free(PDB * pdb)
 {
-	if(memos == NULL)
+	if(pdb == NULL)
 	{
 		return;
 	}
-	struct PDBMemo * memo1 = TAILQ_FIRST(&memos->memos);
-	struct PDBMemo * memo2;
-	while(memo1 != NULL)
+	struct PDBRecord * record1 = TAILQ_FIRST(&pdb->records);
+	struct PDBRecord * record2;
+	while(record1 != NULL)
 	{
-		memo2 = TAILQ_NEXT(memo1, pointers);
-		free(memo1->header);
-		free(memo1->text);
-		free(memo1);
-		memo1 = memo2;
+		record2 = TAILQ_NEXT(record1, pointers);
+		free(((PDBMemo *)record1->data)->header);
+		free(((PDBMemo *)record1->data)->text);
+		free((PDBMemo *)record1->data);
+		record1->data = NULL;
+		record1 = record2;
 	}
-	TAILQ_INIT(&memos->memos);
-	pdb_free(memos->header);
-	free(memos);
 }
+
+/* Function to operate with memos */
 
 /**
-   Entry for array of memos.
+   Element of array of records with memos.
 
-   Used to sort memos by header and search for desired memo by header.
+   Used to sort memos by header and search for desired memo by it's header.
 */
-struct SortedMemo
+struct SortedMemoRecords
 {
-	char * header;  /**< Pointer to memo header */
-	PDBMemo * memo; /**< Pointer to memo */
+	char * header;  /**< Pointer to desired memo header */
+	PDBRecord * record; /**< Pointer to corresponding record */
 };
 
-int __compare_headers(const void * memo1, const void * memo2)
+int __compare_headers(const void * rec1, const void * rec2)
 {
 	return strcmp(
-		((const struct SortedMemo *)memo1)->header,
-		((const struct SortedMemo *)memo2)->header);
+		((const struct SortedMemoRecords *)rec1)->header,
+		((const struct SortedMemoRecords *)rec2)->header);
 }
 
-PDBMemo * pdb_memos_memo_get(PDBMemos * memos, char * header)
+PDBMemo * pdb_memos_memo_get(PDB * pdb, char * header)
 {
-	int memosQty = memos->header->recordsQty;
-	struct SortedMemo sortedMemos[memosQty];
+	int memosQty = pdb->recordsQty;
+	struct SortedMemoRecords sortedMemos[memosQty];
 
-	PDBMemo * memo;
+	PDBRecord * record;
 	unsigned short index = 0;
 
-	TAILQ_FOREACH(memo, &memos->memos, pointers)
+	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
-		sortedMemos[index].header = memo->header;
-		sortedMemos[index].memo = memo;
+		sortedMemos[index].header = ((PDBMemo *)record->data)->header;
+		sortedMemos[index].record = record;
 		index++;
 	}
 
@@ -163,19 +143,20 @@ PDBMemo * pdb_memos_memo_get(PDBMemos * memos, char * header)
 		return NULL;
 	}
 
-	qsort(&sortedMemos, memosQty, sizeof(struct SortedMemo), __compare_headers);
-	struct SortedMemo searchFor = {header, NULL};
-	struct SortedMemo * searchResult = bsearch(
-		&searchFor, &sortedMemos, memosQty, sizeof(struct SortedMemo), __compare_headers);
-	return searchResult != NULL ? searchResult->memo : NULL;
+	qsort(&sortedMemos, memosQty, sizeof(struct SortedMemoRecords), __compare_headers);
+	struct SortedMemoRecords searchFor = {header, NULL};
+	struct SortedMemoRecords * searchResult = bsearch(
+		&searchFor, &sortedMemos, memosQty, sizeof(struct SortedMemoRecords),
+		__compare_headers);
+	return searchResult != NULL ? (PDBMemo *)searchResult->record->data : NULL;
 }
 
-PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
+PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 							 char * category)
 {
 	/* Search category ID for given category */
 	int categoryId;
-	if((categoryId = pdb_category_get_id(memos->header, category)) == -1)
+	if((categoryId = pdb_category_get_id(pdb, category)) == -1)
 	{
 		log_write(LOG_ERR, "Category with name \"%s\" not found in PDB header!",
 				  category);
@@ -184,7 +165,7 @@ PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
 
 	/* Calculate offset for new memo */
 	PDBRecord * record;
-	if((record = TAILQ_LAST(&memos->header->records, RecordQueue)) == NULL)
+	if((record = TAILQ_LAST(&pdb->records, RecordQueue)) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot get last record from PDB header");
 		return NULL;
@@ -221,9 +202,8 @@ PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
 
 	/* Add new record for new memo */
 	PDBRecord * newRecord;
-	if((newRecord = pdb_record_add(
-			memos->header, offset,
-			PDB_RECORD_ATTR_DIRTY | (0x0f & categoryId))) == NULL)
+	if((newRecord = pdb_record_create(
+			pdb, offset, PDB_RECORD_ATTR_EMPTY | (0x0f & categoryId))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot add new record for new memo");
 		free(newMemo->text);
@@ -233,13 +213,13 @@ PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
 	}
 
 	/* Add new memo */
-	newMemo->record = newRecord;
 	strcpy(newMemo->header, header);
 	strcpy(newMemo->text, text);
+	newRecord->data = newMemo;
 
 	/* Recalculate and update offsets for old memos due to
 	   length of record list change */
-	TAILQ_FOREACH(record, &memos->header->records, pointers)
+	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
 		if(record == newRecord)
 		{
@@ -248,24 +228,28 @@ PDBMemo * pdb_memos_memo_add(PDBMemos * memos, char * header, char * text,
 		record->offset += PDB_RECORD_ITEM_SIZE;
 	}
 
-	/* Insert new memo */
-	TAILQ_INSERT_TAIL(&memos->memos, newMemo, pointers);
-
 	return newMemo;
 }
 
-int pdb_memos_memo_edit(PDBMemos * memos, PDBMemo * memo, char * header,
+int pdb_memos_memo_edit(PDB * pdb, PDBMemo * memo, char * header,
 						char * text, char * category)
 {
-	if(memos == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "Got NULL memos structure");
+		log_write(LOG_ERR, "Got NULL PDB structure [pdb_memos_memo_edit]");
 		return -1;
 	}
 	if(memo == NULL)
 	{
 		log_write(LOG_ERR, "Cannot edit NULL memo");
 		return -1;
+	}
+
+	PDBRecord * record = TAILQ_FIRST(&pdb->records);
+	/* Search for record corresponding for memo in edit */
+	while(record->data != memo)
+	{
+		record = TAILQ_NEXT(record, pointers);
 	}
 
 	/* Allocate memory for new header and text, if necessary */
@@ -292,7 +276,7 @@ int pdb_memos_memo_edit(PDBMemos * memos, PDBMemo * memo, char * header,
 
 	char categoryId = 0;
 	if(category != NULL &&
-	   (categoryId = pdb_category_get_id(memos->header, category)) == -1)
+	   (categoryId = pdb_category_get_id(pdb, category)) == -1)
 	{
 		log_write(LOG_ERR, "Cannot find category ID for category \"%s\"", category);
 		if(newHeader != NULL)
@@ -339,29 +323,28 @@ int pdb_memos_memo_edit(PDBMemos * memos, PDBMemo * memo, char * header,
 
 	if(category != NULL)
 	{
-		memo->record->attributes &= 0xf0;
-		memo->record->attributes |= categoryId;
+		record->attributes &= 0xf0;
+		record->attributes |= categoryId;
 	}
 
 	/* Should recalculate offsets for next memos */
 	if(headerSizeDiff + textSizeDiff != 0)
 	{
-		PDBMemo * next;
-		while((next = TAILQ_NEXT(memo, pointers)) != NULL)
+		/* Edit offset starting from edited record */
+		while((record = TAILQ_NEXT(record, pointers)) != NULL)
 		{
-			next->record->offset += headerSizeDiff + textSizeDiff;
-			memo = next;
+			record->offset += headerSizeDiff + textSizeDiff;
 		}
 	}
 
 	return 0;
 }
 
-int pdb_memos_memo_delete(PDBMemos * memos, PDBMemo * memo)
+int pdb_memos_memo_delete(PDB * pdb, PDBMemo * memo)
 {
-	if(memos == NULL)
+	if(pdb == NULL)
 	{
-		log_write(LOG_ERR, "Got NULL PDBMemos structure");
+		log_write(LOG_ERR, "Got NULL PDB structure [pdb_memos_memo_delete]");
 		return -1;
 	}
 	if(memo == NULL)
@@ -374,32 +357,36 @@ int pdb_memos_memo_delete(PDBMemos * memos, PDBMemo * memo)
 	offset = strlen(memo->header) + sizeof(char); /* header + '\n' */
 	offset += strlen(memo->text) + sizeof(char);  /* text   + '\0' */
 
-	/* Delete memo record */
-	if(pdb_record_delete(memos->header, memo->record))
+	/* Search for corresponding record */
+	PDBRecord * record = TAILQ_FIRST(&pdb->records);
+	while(record->data != memo)
 	{
-		log_write(LOG_ERR, "Cannot delete memo record from record list, memo header: %s",
-				  memo->header);
+		record = TAILQ_NEXT(record, pointers);
+	}
+
+	/* Delete memo record */
+	free(memo->header);
+	free(memo->text);
+	free(memo);
+	if(pdb_record_delete(pdb, record))
+	{
+		log_write(LOG_ERR, "Cannot delete memo record from record list (offset: %x)",
+				  record->offset);
 		return -1;
 	}
 
 	/* Recalculate offsets for next memos */
-	PDBMemo * next;
-	while((next = TAILQ_NEXT(memo, pointers)) != NULL)
+	while((record = TAILQ_NEXT(record, pointers)) != NULL)
 	{
-		next->record->offset -= offset;
+		record->offset -= offset;
 	}
-	log_write(LOG_DEBUG, "recalc offsets");
-
-	/* Delete memo itself */
-	free(memo->header);
-	free(memo->text);
-	TAILQ_REMOVE(&memos->memos, memo, pointers);
 
 	return 0;
 }
 
 /**
-   Read memo, pointed by PDBRecord, from PDB file.
+   Read memo, pointed by PDBRecord, from PDB file and write it to corresponding
+   PDBRecord field.
 
    @param[in] fd File descriptor.
    @param[in] record PDBRecord, which points to memo.
@@ -533,10 +520,8 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	}
 
 	/* Calculate hash for memo header */
-	memo->header_hash = str_hash(memo->header, strlen(memo->header));
-
-	memo->record = record;
-
+	record->hash = str_hash(memo->header, strlen(memo->header));
+	record->data = (void *)memo;
 	return memo;
 }
 
@@ -544,12 +529,12 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
    Writes given memo to file.
 
    @param[in] fd File descriptor.
-   @param[in] memo PDBMemo to write.
+   @param[in] memo PDBRecord to write.
    @return 0 on success or non-zero value if error.
 */
-static int _pdb_memos_write_memo(int fd, PDBMemo * memo)
+static int _pdb_memos_write_memo(int fd, PDBRecord * record)
 {
-	uint32_t offset = memo->record->offset;
+	uint32_t offset = record->offset;
 
 	/* Go to right place */
 	if(lseek(fd, offset, SEEK_SET) != offset)
@@ -559,6 +544,7 @@ static int _pdb_memos_write_memo(int fd, PDBMemo * memo)
 	}
 
 	/* Insert header */
+	PDBMemo * memo = (PDBMemo *)record->data;
 	if(write_chunks(fd, memo->header, strlen(memo->header)))
 	{
 		log_write(LOG_ERR, "Failed to write memo header!");
