@@ -123,18 +123,22 @@ int _check_data_directory(char * dataDir)
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 int main(int argc, const char * argv[])
 {
+	SyncSettings syncSettings = {
+		.device = "/dev/ttyUSB1",
+		.notesOrgFile = NULL,
+		.todoOrgFile = NULL,
+		.dryRun = 0
+	};
 	/* Parse command-line arguments */
 	int foreground = 0;
 	int debug = 0;
-	int dryRun = 0;
 	char * dataDir = "~/.palm-sync-daemon/";
-	char * palmDeviceFile = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
 		{"data-dir", 't', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &dataDir, 0, "Data directory", "DIRECTORY"},
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
-		{"dry-run", '\0', POPT_ARG_NONE, &dryRun, 0, "Dry run, without real sync", NULL},
-		{"device", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &palmDeviceFile, 0, "Palm device to connect", "DEVICE"},
+		{"dry-run", '\0', POPT_ARG_NONE, &syncSettings.dryRun, 0, "Dry run, without real sync", NULL},
+		{"device", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &syncSettings.device, 0, "Palm device to connect", "DEVICE"},
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -192,21 +196,19 @@ int main(int argc, const char * argv[])
 	}
 
 	/* Read necessary environment variables */
-	char * notesFile;
-	char * todoFile;
-	if((notesFile = _get_file_path(ENV_NOTES_FILE)) == NULL ||
-	   (todoFile = _get_file_path(ENV_TODO_FILE)) == NULL)
+	if((syncSettings.notesOrgFile = _get_file_path(ENV_NOTES_FILE)) == NULL ||
+	   (syncSettings.todoOrgFile = _get_file_path(ENV_TODO_FILE)) == NULL)
 	{
 		return 1;
 	}
 
 	/* Main program actions */
 	log_write(LOG_INFO, "%s started successfully", PACKAGE_NAME);
-	log_write(LOG_DEBUG, "Device: %s", palmDeviceFile);
-	log_write(LOG_DEBUG, "Path to notes org-file: %s", notesFile);
-	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", todoFile);
+	log_write(LOG_DEBUG, "Device: %s", syncSettings.device);
+	log_write(LOG_DEBUG, "Path to notes org-file: %s", syncSettings.notesOrgFile);
+	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", syncSettings.todoOrgFile);
 	log_write(LOG_DEBUG, "Data directory: %s", dataDir);
-	if(dryRun)
+	if(syncSettings.dryRun)
 	{
 		log_write(LOG_DEBUG, "--dry-run is enabled. No real sync will be done!");
 	}
@@ -218,7 +220,7 @@ int main(int argc, const char * argv[])
 			exit(0);
 		}
 
-		int syncResult = sync_this(palmDeviceFile, notesFile, todoFile, dryRun);
+		int syncResult = sync_this(&syncSettings);
 		if(syncResult == PALM_NOT_CONNECTED)
 		{
 			sleep(1);

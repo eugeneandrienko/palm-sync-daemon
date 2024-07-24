@@ -8,10 +8,10 @@
 static int _sync_memos(char * pdbPath, char * orgPath, int dryRun);
 
 
-int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun)
+int sync_this(SyncSettings * syncSettings)
 {
 	int palmfd = 0;
-	if((palmfd = palm_open(device)) == -1)
+	if((palmfd = palm_open(syncSettings->device)) == -1)
 	{
 		return PALM_NOT_CONNECTED;
 	}
@@ -20,14 +20,14 @@ int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun
 	if((palmData = palm_read(palmfd)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to read PDBs from Palm");
-		if(palm_close(palmfd, device))
+		if(palm_close(palmfd, syncSettings->device))
 		{
 			log_write(LOG_ERR, "Failed to close Palm device");
 		}
 		return -1;
 	}
 
-	if(_sync_memos(palmData->memoDBPath, notesOrgFile, dryRun))
+	if(_sync_memos(palmData->memoDBPath, syncSettings->notesOrgFile, syncSettings->dryRun))
 	{
 		log_write(LOG_ERR, "Failed to synchronize Memos");
 		palm_free(palmData);
@@ -38,7 +38,7 @@ int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun
 	{
 		log_write(LOG_ERR, "Failed to write PDB files to Palm");
 		palm_free(palmData);
-		if(palm_close(palmfd, device))
+		if(palm_close(palmfd, syncSettings->device))
 		{
 			log_write(LOG_ERR, "Failed to close Palm device");
 		}
@@ -46,7 +46,7 @@ int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun
 	}
 
 	palm_free(palmData);
-	if(palm_close(palmfd, device))
+	if(palm_close(palmfd, syncSettings->device))
 	{
 		return -1;
 	}
@@ -70,8 +70,6 @@ int _sync_memos(char * pdbPath, char * orgPath, int dryRun)
 		log_write(LOG_ERR, "Failed to read MemosDB");
 		return -1;
 	}
-	pdb_memos_free(pdb);
-	pdb_free(-1, pdb);
 
 	/* Read notes from OrgMode file */
 	OrgNotes * notes;

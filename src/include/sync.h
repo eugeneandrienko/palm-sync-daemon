@@ -22,16 +22,26 @@
 */
 #define PALM_NOT_CONNECTED -2
 
-/**
-   TODO
 
-   @param[in] device Path to symbolic device, to which Palm PDA is connected.
-   @param[in] notesOrgFile Path to OrgMode file with notes.
-   @param[in] todoOrgFile Path to OrgMode file with TODOs and calendar events.
-   @param[in] dryRun If non-zero - do not sync data, just simulate process.
+/**
+   Settings for synchronization.
+*/
+struct SyncSettings
+{
+	char * device;       /**< Path to symbolic device, to which Palm PDA is connected. */
+	char * notesOrgFile; /**< Path to OrgMode file with notes. */
+	char * todoOrgFile;  /**< Path to OrgMode file with TODOs and calendar events. */
+	int dryRun;          /**< If non-zero - do not sync data, just simulate process. */
+};
+typedef struct SyncSettings SyncSettings;
+
+/**
+   Performs synchronization task.
+
+   @param[in] syncSettings settings for synchronization.
    @return Zero on success, non-zero value when sync failed.
    Or NOT_CONNECTED if Palm device not connected to system.
 */
-int sync_this(char * device, char * notesOrgFile, char * todoOrgFile, int dryRun);
+int sync_this(SyncSettings * syncSettings);
 
 #endif
