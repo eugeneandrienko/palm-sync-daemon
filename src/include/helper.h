@@ -25,6 +25,16 @@
 
 
 /**
+   \defgroup iconv Character conversion
+
+   Set of functions to perform character conversion for character
+   arrays. Conversion can be performed from CP1251 to UTF8 and
+   backwards, from UTF8 to CP1251.
+
+   @{
+*/
+
+/**
    Convert given string from UTF8 to CP1251 encoding.
 
    Function will allocate (2 * symbols in UTF8 string) bytes for CP1251
@@ -49,6 +59,20 @@ char * iconv_utf8_to_cp1251(char * string);
 char * iconv_cp1251_to_utf8(char * string);
 
 /**
+   @}
+*/
+
+
+/**
+   \defgroup chunk_rdwr Read/write chunks from file
+
+   Functions to read/write chunks of specified size from given file
+   descriptor.
+
+   @{
+*/
+
+/**
    Read text from file by chunks.
 
    @param[in] fd File descriptor.
@@ -67,6 +91,10 @@ int read_chunks(int fd, char * buf, unsigned int length);
    @return 0 on successfull write or non-zero value if error.
 */
 int write_chunks(int fd, char * buf, unsigned int length);
+
+/**
+   @}
+*/
 
 /**
    Compute hash for given string.

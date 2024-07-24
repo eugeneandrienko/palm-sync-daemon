@@ -48,7 +48,6 @@
    To edit record list, when we add/edit/delete some application data in other
    module:
    - pdb_record_create()
-   - pdb_record_add()
    - pdb_record_delete()
 
    To operate with standard Palm OS categories:
@@ -171,6 +170,15 @@ typedef struct PDB PDB;
 
 
 /**
+   \defgroup pdb_file_ops Operate with the whole PDB structure and PDB files
+
+   There are a set of functions to operate with *.pdb files and to
+   read/store it in PDB structure.
+
+   @{
+*/
+
+/**
    Read header and other standard info from PDB file to PDB structure.
 
    Reads PDB file from given path. Then, allocate memory for header and records
@@ -217,6 +225,21 @@ int pdb_write(int fd, PDB * pdb);
 void pdb_free(int fd, PDB * pdb);
 
 /**
+   @}
+*/
+
+
+/**
+   \defgroup pdb_record_ops Operate with records from PDB structure
+
+   There are set of functions to create or delete record in PDB
+   structure. Not including application specific data — it should be
+   stored in application-specific modules
+
+   @{
+*/
+
+/**
    Create new record at the end of record list.
 
    @param[in] pdb Pointer to PDB structure.
@@ -234,6 +257,20 @@ PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes);
    @return Zero if success or non-zero value on error.
 */
 int pdb_record_delete(PDB * pdb, PDBRecord * record);
+
+/**
+   @}
+*/
+
+
+/**
+   \defgroup pdb_categories_ops Operate with categories in PDB structure
+
+   Functions to retrieving category data or create/delete categories,
+   if possible.
+
+   @{
+*/
 
 /**
    Returns pointer to category name.
@@ -277,5 +314,9 @@ int pdb_category_add(PDB * pdb, char * name);
    @return Zero on successfull or non-zero on error.
 */
 int pdb_category_delete(PDB * pdb, uint8_t id);
+
+/**
+   @}
+*/
 
 #endif

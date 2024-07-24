@@ -63,6 +63,16 @@ typedef struct PDBMemo PDBMemo;
 
 
 /**
+   \defgroup pdb_memos_ops Operate with Memos from corresponding PDB
+   structure
+
+   Set of functions to operate with PDB structure specific for Memos
+   Palm application.
+
+   @{
+*/
+
+/**
    Read data from MemosDB file to PDB->PDBRecord->data fields.
 
    Function will open file, and read data from file to data field in
@@ -97,6 +107,20 @@ int pdb_memos_write(char * path, PDB * memos);
    @param[in] pdb PDB structure for emergency cleaning.
 */
 void pdb_memos_free(PDB * pdb);
+
+/**
+   @}
+*/
+
+
+/**
+   \defgroup pdb_memo_ops Actions, specific to one memo entry
+
+   Functions to operate with one memo from Memos application. This
+   memo can be edited, deleted or new memo can be created.
+
+   @{
+*/
 
 /**
    Returns memo from PDB structure, if exists.
@@ -156,5 +180,9 @@ int pdb_memos_memo_edit(PDB * pdb, PDBMemo * memo, char * header,
    @return 0 on success or if memo not found. Returns non-zero value on error.
 */
 int pdb_memos_memo_delete(PDB * pdb, PDBMemo * memo);
+
+/**
+   @}
+*/
 
 #endif
