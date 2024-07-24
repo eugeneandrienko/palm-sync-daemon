@@ -9,6 +9,9 @@ palm-sync-daemon \- synchronize Palm with org-files
 is a daemon to synchronize Palm with given org-files.
 .SH OPTIONS
 .TP
+.BR \-t ", " \-\-data\-dir
+Path to directory with data from previous synchronization.
+.TP
 .BR \-f ", " \-\-foreground
 Run daemon in foreground.
 .TP
@@ -38,6 +41,9 @@ Path to OrgMode file with TODO items and calendar records.
 .TP
 \fI/tmp/palm-sync-daemon.pid\fR
 Daemon's lock file.
+.TP
+\fI ~/.palm-sync-daemon/\fR
+Default directory with data from previous synchronization iteration.
 .SH AUTHOR
 Written by Eugene Andrienko.
 .SH REPORTING BUGS

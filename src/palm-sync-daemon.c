@@ -24,7 +24,9 @@
 #include <popt.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <wordexp.h>
 #include "config.h"
 #include "log.h"
 #include "sync.h"
@@ -82,6 +84,42 @@ static char * _get_file_path(char * env)
 	return path;
 }
 
+/**
+   Checks given data directory path.
+
+   Given directory should be exists and should has read, write and
+   search permissions for current user.
+
+   @param[in] dataDir path to directory with application data.
+   @return Zero on successfull check, otherwise non-zero.
+*/
+int _check_data_directory(char * dataDir)
+{
+	if(dataDir == NULL)
+	{
+		log_write(LOG_EMERG, "Data directory is not specified and is NULL");
+		return -1;
+	}
+	if(access(dataDir, R_OK | W_OK | X_OK))
+	{
+		if(errno == ENOENT)
+		{
+			if(mkdir(dataDir, S_IRWXU))
+			{
+				log_write(LOG_EMERG, "Cannot create %s data directory: %s",
+						  dataDir, strerror(errno));
+				return -1;
+			}
+			log_write(LOG_NOTICE, "Created %s directory", dataDir);
+			return 0;
+		}
+		log_write(LOG_EMERG, "No read, write or execute permission for %s catalog",
+				  dataDir);
+		return -1;
+	}
+	return 0;
+}
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 int main(int argc, const char * argv[])
 {
@@ -89,8 +127,10 @@ int main(int argc, const char * argv[])
 	int foreground = 0;
 	int debug = 0;
 	int dryRun = 0;
+	char * dataDir = "~/.palm-sync-daemon/";
 	char * palmDeviceFile = "/dev/ttyUSB1";
 	struct poptOption optionsTable[] = {
+		{"data-dir", 't', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &dataDir, 0, "Data directory", "DIRECTORY"},
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
 		{"dry-run", '\0', POPT_ARG_NONE, &dryRun, 0, "Dry run, without real sync", NULL},
@@ -117,6 +157,40 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
+	/* Unexpand ~ in directory path */
+	wordexp_t we;
+	if(wordexp(dataDir, &we, WRDE_NOCMD | WRDE_UNDEF))
+	{
+		log_write(LOG_EMERG, "Cannot expand %s string", dataDir);
+		return 1;
+	}
+	unsigned int expandedDataDirLen = 0;
+	for(int i = 0; i < we.we_wordc; i++)
+	{
+		expandedDataDirLen += strlen(we.we_wordv[i]);
+	}
+	if((dataDir = calloc(expandedDataDirLen + we.we_wordc, sizeof(char))) == NULL)
+	{
+		log_write(LOG_EMERG, "Cannot allocate memory for string with data directory");
+		return 1;
+	}
+	char * expandedDataDir = dataDir;
+	for(int i = 0; i < we.we_wordc; i++)
+	{
+		strncpy(expandedDataDir, we.we_wordv[i], strlen(we.we_wordv[i]));
+		expandedDataDir += strlen(we.we_wordv[i]);
+		*expandedDataDir = ' ';
+		expandedDataDir++;
+	}
+	*(--expandedDataDir) = '\0';
+	wordfree(&we);
+	log_write(LOG_DEBUG, "Expanded data directory string: %s", dataDir);
+
+	if(_check_data_directory(dataDir))
+	{
+		return 1;
+	}
+
 	/* Read necessary environment variables */
 	char * notesFile;
 	char * todoFile;
@@ -131,6 +205,7 @@ int main(int argc, const char * argv[])
 	log_write(LOG_DEBUG, "Device: %s", palmDeviceFile);
 	log_write(LOG_DEBUG, "Path to notes org-file: %s", notesFile);
 	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", todoFile);
+	log_write(LOG_DEBUG, "Data directory: %s", dataDir);
 	if(dryRun)
 	{
 		log_write(LOG_DEBUG, "--dry-run is enabled. No real sync will be done!");

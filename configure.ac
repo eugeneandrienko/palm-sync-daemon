@@ -71,12 +71,15 @@ AC_SEARCH_LIBS([iconv_open], [iconv], [AC_SUBST([ICONV_LIB], [-liconv])],
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT
-AC_CHECK_HEADERS([errno.h syslog.h stdarg.h stddef.h time.h fcntl.h signal.h endian.h], [], AC_MSG_ERROR([cannot find std headers]))
+AC_CHECK_HEADERS([errno.h syslog.h stdarg.h stddef.h time.h fcntl.h signal.h endian.h],
+    [], AC_MSG_ERROR([cannot find std headers]))
+AC_CHECK_HEADER([iconv.h], [], AC_MSG_ERROR([cannot find iconv.h]))
 AC_CHECK_HEADER([sys/queue.h], [], AC_MSG_ERROR([cannot find glibc data structures]))
+AC_CHECK_HEADER([sys/stat.h], [], AC_MSG_ERROR([cannot find header with mkdir function]))
 AC_CHECK_HEADER([popt.h], [],
                           AC_CHECK_HEADER([/usr/local/include/popt.h], [],
                                                                        AC_MSG_ERROR([cannot find popt.h])))
-AC_CHECK_HEADER([iconv.h], [], AC_MSG_ERROR([cannot find iconv.h]))
+AC_CHECK_HEADERS([wordexp.h], [], AC_MSG_ERROR([cannot find wordexp header from libc]))
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
