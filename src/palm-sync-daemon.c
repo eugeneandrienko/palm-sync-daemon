@@ -127,14 +127,17 @@ int main(int argc, const char * argv[])
 		.device = "/dev/ttyUSB1",
 		.notesOrgFile = NULL,
 		.todoOrgFile = NULL,
-		.dryRun = 0
+		.dryRun = 0,
+		.dataDir = "~/.palm-sync-daemon/",
+		.prevDatebookPDB = NULL,
+		.prevMemosPDB = NULL,
+		.prevTodoPDB = NULL
 	};
 	/* Parse command-line arguments */
 	int foreground = 0;
 	int debug = 0;
-	char * dataDir = "~/.palm-sync-daemon/";
 	struct poptOption optionsTable[] = {
-		{"data-dir", 't', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &dataDir, 0, "Data directory", "DIRECTORY"},
+		{"data-dir", 't', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &syncSettings.dataDir, 0, "Data directory", "DIRECTORY"},
 		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
 		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
 		{"dry-run", '\0', POPT_ARG_NONE, &syncSettings.dryRun, 0, "Dry run, without real sync", NULL},
@@ -161,11 +164,11 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
-	/* Unexpand ~ in directory path */
+	/* Unexpand ~ in directory path and add trailing slash if not exists */
 	wordexp_t we;
-	if(wordexp(dataDir, &we, WRDE_NOCMD | WRDE_UNDEF))
+	if(wordexp(syncSettings.dataDir, &we, WRDE_NOCMD | WRDE_UNDEF))
 	{
-		log_write(LOG_EMERG, "Cannot expand %s string", dataDir);
+		log_write(LOG_EMERG, "Cannot expand %s string", syncSettings.dataDir);
 		return 1;
 	}
 	unsigned int expandedDataDirLen = 0;
@@ -173,12 +176,13 @@ int main(int argc, const char * argv[])
 	{
 		expandedDataDirLen += strlen(we.we_wordv[i]);
 	}
-	if((dataDir = calloc(expandedDataDirLen + we.we_wordc, sizeof(char))) == NULL)
+	if((syncSettings.dataDir = calloc(
+			expandedDataDirLen + we.we_wordc + 1, sizeof(char))) == NULL)
 	{
 		log_write(LOG_EMERG, "Cannot allocate memory for string with data directory");
 		return 1;
 	}
-	char * expandedDataDir = dataDir;
+	char * expandedDataDir = syncSettings.dataDir;
 	for(int i = 0; i < we.we_wordc; i++)
 	{
 		strncpy(expandedDataDir, we.we_wordv[i], strlen(we.we_wordv[i]));
@@ -186,11 +190,19 @@ int main(int argc, const char * argv[])
 		*expandedDataDir = ' ';
 		expandedDataDir++;
 	}
-	*(--expandedDataDir) = '\0';
+	if(*(expandedDataDir - 2) != '/')
+	{
+		*(--expandedDataDir) = '/';
+		*(++expandedDataDir) = '\0';
+	}
+	else
+	{
+		*(--expandedDataDir) = '\0';
+	}
 	wordfree(&we);
-	log_write(LOG_DEBUG, "Expanded data directory string: %s", dataDir);
+	log_write(LOG_DEBUG, "Expanded data directory string: %s", syncSettings.dataDir);
 
-	if(_check_data_directory(dataDir))
+	if(_check_data_directory(syncSettings.dataDir))
 	{
 		return 1;
 	}
@@ -207,7 +219,7 @@ int main(int argc, const char * argv[])
 	log_write(LOG_DEBUG, "Device: %s", syncSettings.device);
 	log_write(LOG_DEBUG, "Path to notes org-file: %s", syncSettings.notesOrgFile);
 	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", syncSettings.todoOrgFile);
-	log_write(LOG_DEBUG, "Data directory: %s", dataDir);
+	log_write(LOG_DEBUG, "Data directory: %s", syncSettings.dataDir);
 	if(syncSettings.dryRun)
 	{
 		log_write(LOG_DEBUG, "--dry-run is enabled. No real sync will be done!");
