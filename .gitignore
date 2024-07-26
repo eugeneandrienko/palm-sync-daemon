@@ -96,8 +96,10 @@ depcomp
 install-sh
 missing
 palm-sync-daemon
+tests/helper_check_pdbs_test
 tests/helper_iconv_test
 tests/helper_hash_test
+tests/helper_save_pdbs_test
 tests/log_test
 tests/org_notes_test
 tests/org_notes_write_test

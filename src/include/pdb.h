@@ -320,7 +320,7 @@ char pdb_category_get_id(PDB * pdb, char * name);
    @param[in] name Name of new category.
    @return Zero on successfull or non-zero on error.
 */
-int pdb_category_add(PDB * pdb, char * name);
+int pdb_category_add(PDB * pdb, const char * name);
 
 /**
    Delete existing category.

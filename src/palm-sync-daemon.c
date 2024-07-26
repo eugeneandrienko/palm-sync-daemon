@@ -172,7 +172,7 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 	unsigned int expandedDataDirLen = 0;
-	for(int i = 0; i < we.we_wordc; i++)
+	for(size_t i = 0; i < we.we_wordc; i++)
 	{
 		expandedDataDirLen += strlen(we.we_wordv[i]);
 	}
@@ -183,7 +183,7 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 	char * expandedDataDir = syncSettings.dataDir;
-	for(int i = 0; i < we.we_wordc; i++)
+	for(size_t i = 0; i < we.we_wordc; i++)
 	{
 		strncpy(expandedDataDir, we.we_wordv[i], strlen(we.we_wordv[i]));
 		expandedDataDir += strlen(we.we_wordv[i]);

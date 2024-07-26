@@ -8,7 +8,14 @@
    @page helper Helper functions
 
    - iconv_utf8_to_cp1251() - convert given string from UTF8 to CP1251
-   - iconv_cp1251_to_utf8() - convert given string from CP1251 to UTF8.
+   - iconv_cp1251_to_utf8() - convert given string from CP1251 to UTF8
+   - read_chunks() - read bytes from file by chunks
+   - write_chunks() - write bytes to file by chunks
+   - str_hash() - compute hash for given string
+   - check_previous_pdbs() - check PDBs from previous synchronization
+   cycle for existence
+   - save_as_previous_pdbs() - save current set of PDBs as PDBs from previous
+   synchronization cycle.
 */
 
 #ifndef _HELPER_H_
@@ -16,6 +23,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "palm.h"
+#include "sync.h"
 
 
 /**
@@ -73,7 +82,7 @@ char * iconv_cp1251_to_utf8(char * string);
 */
 
 /**
-   Read text from file by chunks.
+   Read bytes from file by chunks.
 
    @param[in] fd File descriptor.
    @param[in] buf Buffer for readed data.
@@ -83,7 +92,7 @@ char * iconv_cp1251_to_utf8(char * string);
 int read_chunks(int fd, char * buf, unsigned int length);
 
 /**
-   Write text to file by chunks.
+   Write bytes to file by chunks.
 
    @param[in] fd File descriptor.
    @param[in] buf Buffer for data to write.
@@ -104,5 +113,45 @@ int write_chunks(int fd, char * buf, unsigned int length);
    @return Resulting hash.
 */
 uint64_t str_hash(char * buf, size_t length);
+
+
+/**
+   \defgroup previous_pdbs Processing PDB files from previous synchronization cycle
+
+   This set of functions intended to check and process PDB files,
+   which are/will be files from previous synchronization cycle.
+
+   @{
+*/
+
+/**
+   Check for PDB files from previous synchronization iteration.
+
+   Function check for PDB files existence and write paths to it in syncSettings
+   structure. Or NULL if file not found.
+
+   @param[in] syncSettings Synchronization settings structure with path to data
+   directory inside.
+   @return Zero on success, non-zero value if some of system calls are failed.
+*/
+int check_previous_pdbs(SyncSettings * syncSettings);
+
+/**
+   Save current PDB file as old PDB file.
+
+   Save PDB file currently downloaded from Palm handheld as PDB file
+   from previous synchronization iteration. File will be stored to
+   daemon data directory.
+
+   @param[in] syncSettings synchronization settings.
+   @param[in] palmData structure with paths to PDB files, downloaded from
+   handheld.
+   @return Zero on success, otherwise non-zero value will be returned.
+*/
+int save_as_previous_pdbs(SyncSettings * syncSettings, PalmData * palmData);
+
+/**
+   @}
+*/
 
 #endif

@@ -26,7 +26,7 @@ PDB * pdb_memos_read(char * path)
 	PDBRecord * record;
 	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
-		PDBMemo * memo;
+		const PDBMemo * memo;
 		if((memo = _pdb_memos_read_memo(fd, record)) == NULL)
 		{
 			pdb_memos_free(pdb);
@@ -409,7 +409,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	unsigned int headerSize = 0;
 	while((readedBytes = read(fd, buffer, CHUNK_SIZE)) > 0)
 	{
-		char * headerEnd = memchr(buffer, '\n', readedBytes);
+		const char * headerEnd = memchr(buffer, '\n', readedBytes);
 		if(headerEnd != NULL)
 		{
 			headerSize += headerEnd - buffer;
@@ -434,7 +434,7 @@ static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record)
 	unsigned int textSize = 0;
 	while((readedBytes = read(fd, buffer, CHUNK_SIZE)) > 0)
 	{
-		char * textEnd = memchr(buffer, '\0', readedBytes);
+		const char * textEnd = memchr(buffer, '\0', readedBytes);
 		if(textEnd != NULL)
 		{
 			textSize += textEnd - buffer;

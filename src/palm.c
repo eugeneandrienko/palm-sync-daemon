@@ -116,7 +116,7 @@ PalmData * palm_read(int sd)
 	return data;
 }
 
-int palm_write(int sd, PalmData * data)
+int palm_write(int sd, const PalmData * data)
 {
 	if(sd < 0)
 	{

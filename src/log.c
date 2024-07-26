@@ -35,7 +35,7 @@ void log_write(int priority, const char * format, ...)
 
 	if(foreground)
 	{
-		char * priorityStr = "";
+		const char * priorityStr = "";
 		char timeStr[LOG_BUFFER_SIZE] = "\0";
 		char messageStr[LOG_BUFFER_SIZE] = "\0";
 		time_t currentTime;

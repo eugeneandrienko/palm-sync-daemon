@@ -10,8 +10,10 @@ AM_LDFLAGS = @POPT_LIBS@ \
 	@ICONV_LIB@
 
 TESTS = \
+	helper_check_pdbs_test.sh \
 	helper_iconv_test.sh \
 	helper_hash_test.sh \
+	helper_save_pdbs_test.sh \
 	log_test.sh \
 	pdb_test.sh \
 	pdb_categories_test.sh \
@@ -23,8 +25,10 @@ TESTS = \
 	org_notes_write_test.sh \
 	palm_sync_daemon_test.sh
 check_PROGRAMS = \
+	helper_check_pdbs_test \
 	helper_iconv_test \
 	helper_hash_test \
+	helper_save_pdbs_test \
 	log_test \
 	pdb_test \
 	pdb_categories_test \
@@ -35,6 +39,11 @@ check_PROGRAMS = \
 	org_notes_test \
 	org_notes_write_test \
 	palm_sync_daemon_test
+helper_check_pdbs_test_SOURCES = \
+	../src/log.c \
+	../src/umash.c \
+	../src/helper.c \
+	helper_check_pdbs_test.c
 helper_iconv_test_SOURCES = \
 	../src/log.c \
 	../src/umash.c \
@@ -45,6 +54,11 @@ helper_hash_test_SOURCES = \
 	../src/umash.c \
 	../src/helper.c \
 	helper_hash_test.c
+helper_save_pdbs_test_SOURCES = \
+	../src/log.c \
+	../src/umash.c \
+	../src/helper.c \
+	helper_save_pdbs_test.c
 log_test_SOURCES = \
 	../src/log.c \
 	log_test.c

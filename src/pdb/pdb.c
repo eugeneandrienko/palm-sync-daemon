@@ -427,7 +427,7 @@ char pdb_category_get_id(PDB * pdb, char * name)
 	return searchResult != NULL ? *searchResult->id : -1;
 }
 
-int pdb_category_add(PDB * pdb, char * name)
+int pdb_category_add(PDB * pdb, const char * name)
 {
 	if(pdb == NULL)
 	{
@@ -452,7 +452,7 @@ int pdb_category_add(PDB * pdb, char * name)
 		return -1;
 	}
 
-	char freeId = 0;
+	unsigned int freeId = 0;
 	while(freeId < PDB_CATEGORY_LEN && pdb->categories->names[freeId][0] != '\0')
 	{
 		freeId++;

@@ -90,7 +90,7 @@ PalmData * palm_read(int sd);
    @param[in] data PalmData structure with paths to PDB files.
    @return 0 if write successfull, otherwise -1.
 */
-int palm_write(int sd, PalmData * data);
+int palm_write(int sd, const PalmData * data);
 
 /**
    Close connection to Palm device.
