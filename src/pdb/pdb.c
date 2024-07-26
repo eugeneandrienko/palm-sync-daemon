@@ -36,6 +36,12 @@ static uint32_t _time_unix_to_palm(time_t time);
 int pdb_read(const char * path, int stdCatInfo, PDB ** ppdb)
 {
 	int fd = -1;
+
+	if(path == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL path to PDB file");
+		return -1;
+	}
 	if((fd = open(path, O_RDWR, 0644)) == -1)
 	{
 		log_write(LOG_ERR, "Cannot open %s PDB file: %s", path, strerror(errno));

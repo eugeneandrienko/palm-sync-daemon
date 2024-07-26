@@ -112,6 +112,21 @@
 
 
 /**
+   Computed statuses for every record.
+
+   See technical_description.pdf (table #1) for description of logic
+   and sync.c for realization, using it.
+*/
+enum RecordStatus
+{
+	RECORD_NO_RECORD,   /**< No record found */
+	RECORD_ADDED,       /**< Record added */
+	RECORD_NOT_CHANGED, /**< Record not changed */
+	RECORD_CHANGED,     /**< Record changed */
+	RECORD_DELETED      /**< Record deleted */
+};
+
+/**
    One record from record queue.
 */
 struct PDBRecord
@@ -124,6 +139,7 @@ struct PDBRecord
 #endif
 	uint64_t hash;                   /**< Hash for fast matching of records */
 	void * data;                     /**< Application specific data */
+	enum RecordStatus recordStatus;  /**< Computed status of this record */
 };
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(RecordQueue, PDBRecord);
