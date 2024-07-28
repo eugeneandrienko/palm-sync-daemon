@@ -61,6 +61,7 @@
 #ifndef _PDB_H_
 #define _PDB_H_
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/queue.h>
@@ -208,11 +209,11 @@ typedef struct PDB PDB;
    timestamps will be converted to Unix timestamps.
 
    @param[in]  path Path to PDB file.
-   @param[in]  stdCatInfo Set to non-zero if there is a standard Palm OS category information.
+   @param[in]  stdCatInfo Set to true if there is a standard Palm OS category information.
    @param[out] pdb Pointer to pointer to PDB structure. This structure will be allocated and initialized inside this function.
    @return PDB file descriptor or -1 if error.
 */
-int pdb_read(const char * path, int stdCatInfo, PDB ** pdb);
+int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
 
 /**
    Write header and other standard information to PDB file.

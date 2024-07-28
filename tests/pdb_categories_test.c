@@ -10,7 +10,7 @@ int main(int argc, char * argv[])
 	log_init(1, 0);
 
 	PDB * pdb;
-	int fd = pdb_read(argv[1], 1, &pdb);
+	int fd = pdb_read(argv[1], true, &pdb);
 	if(fd == -1)
 	{
 		return 1;

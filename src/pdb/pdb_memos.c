@@ -16,7 +16,7 @@ static int _pdb_memos_write_memo(int fd, PDBRecord * record);
 PDB * pdb_memos_read(char * path)
 {
 	PDB * pdb;
-	int fd = pdb_read(path, 1, &pdb);
+	int fd = pdb_read(path, true, &pdb);
 	if(fd == -1)
 	{
 		log_write(LOG_ERR, "Cannot open and read %s PDB file", path);

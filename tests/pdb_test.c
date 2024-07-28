@@ -11,7 +11,7 @@ int main(int argc, char * argv[])
 
 	/* Read and write PDB file */
 	PDB * pdb;
-	int fd = pdb_read(argv[1], 1, &pdb);
+	int fd = pdb_read(argv[1], true, &pdb);
 	if(fd == -1)
 	{
 		return 1;
@@ -24,7 +24,7 @@ int main(int argc, char * argv[])
 
 	/* Check the result */
 	PDB * pdb2;
-	fd = pdb_read(argv[1], 1, &pdb2);
+	fd = pdb_read(argv[1], true, &pdb2);
 	if(fd == -1)
 	{
 		return 1;

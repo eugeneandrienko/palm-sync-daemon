@@ -33,7 +33,7 @@ static time_t _time_palm_to_unix(uint32_t time);
 static uint32_t _time_unix_to_palm(time_t time);
 
 
-int pdb_read(const char * path, int stdCatInfo, PDB ** ppdb)
+int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 {
 	int fd = -1;
 
