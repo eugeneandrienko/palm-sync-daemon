@@ -238,7 +238,7 @@ int check_previous_pdbs(SyncSettings * syncSettings)
    @param[out] result Pointer to string with resulting path.
    @return Zero value on success, otherwise non-zero value will be returned.
 */
-int _check_previous_pdb(char * dataDir, char * pdbFileName,	char ** result)
+static int _check_previous_pdb(char * dataDir, char * pdbFileName,	char ** result)
 {
 	char prevPDBPath[MAX_PATH_LEN] = "\0";
 
@@ -322,7 +322,7 @@ int save_as_previous_pdbs(SyncSettings * syncSettings, PalmData * palmData)
    synchronization cycle.
    @return Zero on success, otherwise non-zero value will be returned.
 */
-int _save_as_previous_pdb(char ** pathToPrevPDB, char * pathToCurrentPDB,
+static int _save_as_previous_pdb(char ** pathToPrevPDB, char * pathToCurrentPDB,
 						  char * dataDir, char * prevPdbFname)
 {
 	if(*pathToPrevPDB == NULL)
@@ -358,7 +358,7 @@ int _save_as_previous_pdb(char ** pathToPrevPDB, char * pathToCurrentPDB,
    @param[in] to Path to copy target.
    @return Zero on success, non-zero value on error.
 */
-int _cp(char * from, char * to)
+static int _cp(char * from, char * to)
 {
 	int fromFd = -1;
 	int toFd = -1;

@@ -83,7 +83,7 @@ sync_this_error:
    @param[in] dryRun If non-zero - do not sync data, just simulate process.
    @return Zero on sucessfull or non-zero on error.
 */
-int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int dryRun)
+static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int dryRun)
 {
 	/* Read memos from PDB file */
 	PDB * pdb;

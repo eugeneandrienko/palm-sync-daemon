@@ -114,7 +114,7 @@ struct SortedMemoRecords
 	PDBRecord * record; /**< Pointer to corresponding record */
 };
 
-int __compare_headers(const void * rec1, const void * rec2)
+static int __compare_headers(const void * rec1, const void * rec2)
 {
 	return strcmp(
 		((const struct SortedMemoRecords *)rec1)->header,
