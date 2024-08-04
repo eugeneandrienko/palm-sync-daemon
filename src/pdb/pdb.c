@@ -3,7 +3,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <unistd.h>
 #include "log.h"
 #include "pdb.h"
@@ -47,6 +46,10 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 		log_write(LOG_ERR, "Cannot open %s PDB file: %s", path, strerror(errno));
 		return -1;
 	}
+
+	/* Initialize random number generator.
+	   It is necessary for pdb_record_create(). */
+	srandomdev();
 
 	if((*ppdb = calloc(1, sizeof(PDB))) == NULL)
 	{
@@ -309,10 +312,11 @@ PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes)
 	newRecord->attributes = attributes;
 	newRecord->hash = 0;
 	newRecord->data = NULL;
-	srand(time(NULL) + getpid());
-	newRecord->id[0] = (uint8_t)(rand() & 0x000000ff);
-	newRecord->id[1] = (uint8_t)(rand() & 0x000000ff);
-	newRecord->id[2] = (uint8_t)(rand() & 0x000000ff);
+
+	long randomId = random();
+	newRecord->id[0] = (uint8_t)(randomId & 0x000000ff);
+	newRecord->id[1] = (uint8_t)((randomId & 0x0000ff00) >> 8);
+	newRecord->id[2] = (uint8_t)((randomId & 0x00ff0000) >> 16);
 
 	if(TAILQ_EMPTY(&pdb->records))
 	{
