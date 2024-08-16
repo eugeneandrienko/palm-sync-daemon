@@ -131,9 +131,9 @@ int _compute_record_statuses(PDB * pdb, char * prevPdbPath)
 		log_write(LOG_NOTICE, "Set all records statuses to ADDED");
 		TAILQ_FOREACH(record, &pdb->records, pointers)
 		{
-			record->recordStatus = RECORD_ADDED;
+			record->status = RECORD_ADDED;
 			log_write(LOG_DEBUG, "Record %02x%02x%02x: %d", record->id[2],
-					  record->id[1], record->id[0], record->recordStatus);
+					  record->id[1], record->id[0], record->status);
 		}
 		return 0;
 	}
@@ -144,7 +144,7 @@ int _compute_record_statuses(PDB * pdb, char * prevPdbPath)
 		if(attribute & PDB_RECORD_ATTR_SECRET ||
 		   attribute & PDB_RECORD_ATTR_LOCKED)
 		{
-			record->recordStatus = RECORD_NO_RECORD;
+			record->status = RECORD_NO_RECORD;
 			continue;
 		}
 
@@ -166,52 +166,52 @@ int _compute_record_statuses(PDB * pdb, char * prevPdbPath)
 				switch(attribute)
 				{
 				case PDB_RECORD_ATTR_DELETED:
-					record->recordStatus = RECORD_DELETED;
+					record->status = RECORD_DELETED;
 					break;
 				case PDB_RECORD_ATTR_DIRTY:
-					record->recordStatus = RECORD_ADDED;
+					record->status = RECORD_ADDED;
 					break;
 				default:
-					record->recordStatus = RECORD_ADDED;
+					record->status = RECORD_ADDED;
 				}
 				break;
 			case PDB_RECORD_ATTR_DIRTY:
 				switch(attribute)
 				{
 				case PDB_RECORD_ATTR_DELETED:
-					record->recordStatus = RECORD_DELETED;
+					record->status = RECORD_DELETED;
 					break;
 				case PDB_RECORD_ATTR_DIRTY:
-					record->recordStatus = RECORD_CHANGED;
+					record->status = RECORD_CHANGED;
 					break;
 				default:
-					record->recordStatus = RECORD_NOT_CHANGED;
+					record->status = RECORD_NOT_CHANGED;
 				}
 				break;
 			default: /* Record just exists */
 				switch(attribute)
 				{
 				case PDB_RECORD_ATTR_DELETED:
-					record->recordStatus = RECORD_DELETED;
+					record->status = RECORD_DELETED;
 					break;
 				case PDB_RECORD_ATTR_DIRTY:
-					record->recordStatus = RECORD_CHANGED;
+					record->status = RECORD_CHANGED;
 					break;
 				default:
-					record->recordStatus = RECORD_NOT_CHANGED;
+					record->status = RECORD_NOT_CHANGED;
 				}
 			}
 		}
 
 		if(!matchedPrevRecordFound)
 		{
-			record->recordStatus = (attribute & PDB_RECORD_ATTR_DELETED) ?
+			record->status = (attribute & PDB_RECORD_ATTR_DELETED) ?
 				RECORD_NO_RECORD :
 				RECORD_ADDED;
 		}
 
 		log_write(LOG_DEBUG, "Record %02x%02x%02x: %d", record->id[2],
-				  record->id[1], record->id[0], record->recordStatus);
+				  record->id[1], record->id[0], record->status);
 	} /* TAILQ_FOREACH(record, &pdb->records, pointers) */
 
 	pdb_free(prevFd, prevPdb);

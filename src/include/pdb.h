@@ -140,7 +140,7 @@ struct PDBRecord
 #endif
 	uint64_t hash;                   /**< Hash for fast matching of records */
 	void * data;                     /**< Application specific data */
-	enum RecordStatus recordStatus;  /**< Computed status of this record */
+	enum RecordStatus status;        /**< Computed status of this record */
 };
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(RecordQueue, PDBRecord);
