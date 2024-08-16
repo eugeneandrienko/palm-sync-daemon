@@ -154,13 +154,33 @@ PDBMemo * pdb_memos_memo_get(PDB * pdb, char * header)
 PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 							 char * category)
 {
+	if(pdb == NULL)
+	{
+		log_write(LOG_ERR, "Given PDB structure is NULL!");
+		return NULL;
+	}
+	if(header == NULL)
+	{
+		log_write(LOG_ERR, "Header of new memo is NULL! Nothing to write to PDB structure");
+		return NULL;
+	}
+
 	/* Search category ID for given category */
+	if(category == NULL)
+	{
+		category = PDB_DEFAULT_CATEGORY;
+	}
 	int categoryId;
 	if((categoryId = pdb_category_get_id(pdb, category)) == -1)
 	{
-		log_write(LOG_ERR, "Category with name \"%s\" not found in PDB header!",
+		log_write(LOG_DEBUG, "Category with name \"%s\" not found in PDB header!",
 				  category);
-		return NULL;
+		if((categoryId = pdb_category_add(pdb, category)))
+		{
+			log_write(LOG_ERR, "Cannot add new category with name \"%s\"",
+					  category);
+			return NULL;
+		}
 	}
 
 	/* Calculate offset for new memo */
@@ -191,7 +211,8 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 		free(newMemo);
 		return NULL;
 	}
-	if((newMemo->text = calloc(strlen(text), sizeof(char))) == NULL)
+	if(text != NULL &&
+	   (newMemo->text = calloc(strlen(text), sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new memo text: %s",
 				  strerror(errno));
@@ -206,7 +227,10 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 			pdb, offset, PDB_RECORD_ATTR_EMPTY | (0x0f & categoryId))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot add new record for new memo");
-		free(newMemo->text);
+		if(text != NULL)
+		{
+			free(newMemo->text);
+		}
 		free(newMemo->header);
 		free(newMemo);
 		return NULL;
@@ -214,7 +238,7 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 
 	/* Add new memo */
 	strcpy(newMemo->header, header);
-	strcpy(newMemo->text, text);
+	newMemo->text = text != NULL ? strcpy(newMemo->text, text) : NULL;
 	newRecord->data = newMemo;
 
 	/* Recalculate and update offsets for old memos due to
@@ -560,12 +584,16 @@ static int _pdb_memos_write_memo(int fd, PDBRecord * record)
 	}
 
 	/* Insert text */
-	if(write_chunks(fd, memo->text, strlen(memo->text)))
+	if(memo->text != NULL)
 	{
-		log_write(LOG_ERR, "Failed to write memo text!");
-		return -1;
+		if(write_chunks(fd, memo->text, strlen(memo->text)))
+		{
+			log_write(LOG_ERR, "Failed to write memo text!");
+			return -1;
+		}
+		log_write(LOG_DEBUG, "Write text (len=%d) for memo",
+				  strlen(memo->text));
 	}
-	log_write(LOG_DEBUG, "Write text (len=%d) for memo", strlen(memo->text));
 
 	/* Insert '\0' at the end of memo */
 	if(write(fd, "\0", 1) != 1)

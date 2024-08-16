@@ -101,6 +101,10 @@
    Length of category string, including null-termination byte.
 */
 #define PDB_CATEGORY_LEN       16
+/**
+   Default category on Palm PDA
+*/
+#define PDB_DEFAULT_CATEGORY   "Unfiled"
 /** Record item size.
 
 	- Offset to data: 32 bits

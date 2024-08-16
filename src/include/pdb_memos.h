@@ -142,14 +142,17 @@ PDBMemo * pdb_memos_memo_get(PDB * pdb, char * header);
    — it will be added to PDB header. If there are no memory for new category —
    function returns an error.
 
+   If there are NULL category — default category will be used.
+
    New memo will be added to the end of existing memos list.
 
    If adding memo is failed — underlying structures will not be changed!
 
    @param[in] pdb Pointer to initialized PDB structure.
    @param[in] header Header of new memo.
-   @param[in] text Text of new memo.
-   @param[in] category Category name for memo.
+   @param[in] text Text of new memo. May be NULL if there are no text.
+   @param[in] category Category name for memo. May be NULL if there are no
+   category.
    @return Pointer to new memo or NULL if error.
 */
 PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
