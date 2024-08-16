@@ -8,6 +8,12 @@
 #include "log.h"
 #include "pdb_memos.h"
 
+/**
+   Six-byte gap between application info and memos itself.
+   Should be filled by zeroes.
+*/
+#define SIX_BYTE_GAP 0x06
+
 
 static PDBMemo * _pdb_memos_read_memo(int fd, PDBRecord * record);
 static int _pdb_memos_write_memo(int fd, PDBRecord * record);
@@ -62,7 +68,37 @@ int pdb_memos_write(char * path, PDB * pdb)
 		goto pdb_memos_write_error;
 	}
 
-	PDBRecord * record;
+	/* Fill gap between application info section and notes data (6 bytes)
+	   with zeroes.
+	*/
+	PDBRecord * record = TAILQ_FIRST(&pdb->records);
+	if(record == NULL)
+	{
+		log_write(LOG_ERR, "Failed to read first record from PDB structure");
+		goto pdb_memos_write_error;
+	}
+	int currentOffset = lseek(fd, 0, SEEK_CUR);
+	if(currentOffset == -1 || (record->offset - currentOffset != SIX_BYTE_GAP))
+	{
+		if(currentOffset == -1)
+		{
+			log_write(LOG_ERR, "Cannot get current file position: %s",
+					  strerror(errno));
+		}
+		log_write(LOG_ERR, "Cannot fill 6 byte gap with zeroes");
+		log_write(LOG_ERR, "First record offset: 0x%08x", record->offset);
+		log_write(LOG_ERR, "Current offset: 0x%08x", currentOffset);
+		log_write(LOG_ERR, "Diff: %d", record->offset - currentOffset);
+		goto pdb_memos_write_error;
+	}
+	const char sixByteGap[SIX_BYTE_GAP] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	if(write(fd, sixByteGap, SIX_BYTE_GAP) != SIX_BYTE_GAP)
+	{
+		log_write(LOG_ERR, "Failed to write six byte gap: %s", strerror(errno));
+		goto pdb_memos_write_error;
+	}
+
+	/* Writing memos to PDB file */
 	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
 		if(_pdb_memos_write_memo(fd, record))
@@ -191,9 +227,9 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 		return NULL;
 	}
 	uint32_t offset = record->offset;
-	offset += PDB_RECORD_ITEM_SIZE;          /* New item in record list */
-	offset += strlen(header) + sizeof(char); /* header + '\n' */
-	offset += strlen(text) + sizeof(char);   /* text   + '\0' */
+	offset += PDB_RECORD_ITEM_SIZE;                  /* New item in record list */
+	offset += strlen(header) + sizeof(char);         /* header + '\n' */
+	offset += (text != NULL ? strlen(text) : 0) + 1; /* text + '\0' (as divider) */
 	log_write(LOG_DEBUG, "New offset for new memo: 0x%08x", offset);
 
 	/* Allocate memory for new memo */
@@ -243,12 +279,15 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 
 	/* Recalculate and update offsets for old memos due to
 	   length of record list change */
+	log_write(LOG_DEBUG, "Changing offsets for old memos due to record list size change");
 	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
 		if(record == newRecord)
 		{
 			break;
 		}
+		log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, new offset=0x%08x",
+				  record->offset, record->offset + PDB_RECORD_ITEM_SIZE);;
 		record->offset += PDB_RECORD_ITEM_SIZE;
 	}
 
@@ -352,11 +391,14 @@ int pdb_memos_memo_edit(PDB * pdb, PDBMemo * memo, char * header,
 	}
 
 	/* Should recalculate offsets for next memos */
+	log_write(LOG_DEBUG, "Recalculate offsets for next memos");
 	if(headerSizeDiff + textSizeDiff != 0)
 	{
 		/* Edit offset starting from edited record */
 		while((record = TAILQ_NEXT(record, pointers)) != NULL)
 		{
+			log_write(LOG_DEBUG, "Next memo: old offset=0x%08x, new offset=0x%08x",
+					  record->offset, record->offset + headerSizeDiff + textSizeDiff);
 			record->offset += headerSizeDiff + textSizeDiff;
 		}
 	}
@@ -383,15 +425,18 @@ int pdb_memos_memo_delete(PDB * pdb, PDBMemo * memo)
 
 	/* Search for corresponding record */
 	PDBRecord * record = TAILQ_FIRST(&pdb->records);
+	PDBRecord * nextRecord;
 	while(record->data != memo)
 	{
 		record = TAILQ_NEXT(record, pointers);
 	}
+	nextRecord = TAILQ_NEXT(record, pointers);
 
 	/* Delete memo record */
 	free(memo->header);
 	free(memo->text);
-	free(memo);
+	free(record->data);
+	record->data = NULL;
 	if(pdb_record_delete(pdb, record))
 	{
 		log_write(LOG_ERR, "Cannot delete memo record from record list (offset: %x)",
@@ -400,9 +445,24 @@ int pdb_memos_memo_delete(PDB * pdb, PDBMemo * memo)
 	}
 
 	/* Recalculate offsets for next memos */
-	while((record = TAILQ_NEXT(record, pointers)) != NULL)
+	log_write(LOG_DEBUG, "Recalculate offsets for existing memos");
+	if((record = nextRecord) != NULL)
 	{
-		record->offset -= offset;
+		do
+		{
+			log_write(LOG_DEBUG, "Existing memo: old offset=0x%08x, new offset=0x%08x",
+					  record->offset, record->offset - offset);
+			record->offset -= offset;
+		}
+		while((record = TAILQ_NEXT(record, pointers)) != NULL);
+	}
+	/* Recalculate offsets due to record list size change */
+	log_write(LOG_DEBUG, "Recalculate offsets due to record list size change");
+	TAILQ_FOREACH(record, &pdb->records, pointers)
+	{
+		log_write(LOG_DEBUG, "Existing memo 2: old offset=0x%08x, new offset=0x%08x",
+				  record->offset, record->offset - PDB_RECORD_ITEM_SIZE);
+		record->offset -= PDB_RECORD_ITEM_SIZE;
 	}
 
 	return 0;
@@ -574,7 +634,8 @@ static int _pdb_memos_write_memo(int fd, PDBRecord * record)
 		log_write(LOG_ERR, "Failed to write memo header!");
 		return -1;
 	}
-	log_write(LOG_DEBUG, "Write header (len=%d) for memo", strlen(memo->header));
+	log_write(LOG_DEBUG, "Write header (len=%d) [%s] for memo",
+			  strlen(memo->header), iconv_cp1251_to_utf8(memo->header));
 
     /* Insert '\n' as divider */
 	if(write(fd, "\n", 1) != 1)

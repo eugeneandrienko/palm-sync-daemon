@@ -32,11 +32,11 @@ int main(int argc, char * argv[])
 
 	if((memo = pdb_memos_memo_get(pdb, "Test 2")) == NULL)
 	{
-		return 1;
+	 	return 1;
 	}
-	if(pdb_memos_memo_delete(pdb, memo))
+    if(pdb_memos_memo_delete(pdb, memo))
 	{
-		return 1;
+	 	return 1;
 	}
 
 	pdb_memos_write(argv[1], pdb);

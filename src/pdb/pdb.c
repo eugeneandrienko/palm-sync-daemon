@@ -269,8 +269,8 @@ void pdb_free(int fd, PDB * pdb)
 	{
 		return;
 	}
-	struct PDBRecord * record1 = TAILQ_FIRST(&pdb->records);
-	struct PDBRecord * record2;
+	PDBRecord * record1 = TAILQ_FIRST(&pdb->records);
+	PDBRecord * record2;
 	while(record1 != NULL)
 	{
 		record2 = TAILQ_NEXT(record1, pointers);
@@ -714,14 +714,13 @@ static int _write8_field(int fd, uint8_t * buf, char * description)
 */
 static int _write16_field(int fd, uint16_t * buf, char * description)
 {
+	uint16_t htobe = htobe16(*buf);
 	if(log_is_debug())
 	{
 		off_t offset = lseek(fd, 0, SEEK_CUR);
-		log_write(LOG_DEBUG, "Writing %s 0x%04x to 0x%08x offset",
-				  description, *buf, offset);
+		log_write(LOG_DEBUG, "Writing %s 0x%04x (htobe: 0x%04x) to 0x%08x offset",
+				  description, *buf, htobe, offset);
 	}
-
-	uint16_t htobe = htobe16(*buf);
 	if(write(fd, &htobe, 2) != 2)
 	{
 		log_write(LOG_ERR, "Cannot write %s to PDB file: %s",
@@ -743,14 +742,13 @@ static int _write16_field(int fd, uint16_t * buf, char * description)
 */
 static int _write32_field(int fd, uint32_t * buf, char * description)
 {
+	uint32_t htobe = htobe32(*buf);
 	if(log_is_debug())
 	{
 		off_t offset = lseek(fd, 0, SEEK_CUR);
-		log_write(LOG_DEBUG, "Writing %s 0x%08x to 0x%08x offset",
-				  description, *buf, offset);
+		log_write(LOG_DEBUG, "Writing %s 0x%08x (htobe: 0x%08x) to 0x%08x offset",
+				  description, *buf, htobe, offset);
 	}
-
-	uint32_t htobe = htobe32(*buf);
 	if(write(fd, &htobe, 4) != 4)
 	{
 		log_write(LOG_ERR, "Cannot write %s to PDB file: %s",

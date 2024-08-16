@@ -227,10 +227,10 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
    records in PDB structure with dirty flag set — this flag will be
    cleared.
 
-   If this call ended with error, then opened PDB file will be closed and all
-   memory, allocated for PDB structure, will be freed. If this call ended
-   without error - opened file and PDB structure should be deallocated via
-   pdb_free().
+   If this call ended with error, then opened PDB file will be closed
+   and all memory, allocated for PDB structure, will be freed. If this
+   call ended without error - opened file and PDB structure should be
+   deallocated via pdb_free().
 
    @param[in] fd File descriptor, already opened by pdb_read().
    @param[in] pdb Pointer to the PDB structure with data.
