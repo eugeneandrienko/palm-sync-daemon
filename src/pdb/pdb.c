@@ -763,7 +763,9 @@ static int _write32_field(int fd, uint32_t * buf, char * description)
 }
 
 /**
-   Write record list to PDB file
+   Write record list to PDB file.
+
+   Drop changed flag. It should be set only inside Palm handheld.
 
    @param fd File descriptor
    @param records Queue of records
@@ -785,6 +787,9 @@ static int _write_record_list(int fd, struct RecordQueue * records)
 	PDBRecord * record;
 	TAILQ_FOREACH(record, records, pointers)
 	{
+		/* Drop "changed" flag */
+		record->attributes &= ~PDB_RECORD_ATTR_DIRTY;
+
 		int result = 0;
 		result += _write32_field(fd, &record->offset, "record offset");
 		result += _write8_field(fd, &record->attributes, "record attributes");

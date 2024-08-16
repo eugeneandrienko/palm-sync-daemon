@@ -222,8 +222,10 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
 /**
    Write header and other standard information to PDB file.
 
-   All multi-byte numbers will be converted to big-endian. All timestamps will
-   be converted to Mac timestamps.
+   All multi-byte numbers will be converted to big-endian. All
+   timestamps will be converted to Mac timestamps. If there are a
+   records in PDB structure with dirty flag set — this flag will be
+   cleared.
 
    If this call ended with error, then opened PDB file will be closed and all
    memory, allocated for PDB structure, will be freed. If this call ended
