@@ -111,9 +111,10 @@ int org_notes_write(int fd, char * header, char * text, char * category)
 	unsigned int noteLen = strlen(conv_header);
 	noteLen += conv_text != NULL ? strlen(conv_text) : 0;
 	noteLen += category != NULL ? strlen(category) : 0;
-	noteLen += 4                     /* For "* " before header + "\n" after header */
-		+ (category != NULL ? 6 : 0) /* For "\t\t:" before tag + ":" after tag */
-		+ (conv_text != NULL ? 2 : 0);    /* For "\n" after text */
+	noteLen += 3                       /* For "* " before header + '\n' after header */
+		+ (category != NULL ? 4 : 0)   /* For "\t\t:" before tag + ':' after tag */
+		+ (conv_text != NULL ? 1 : 0)  /* For '\n' after text */
+		+ 1;                           /* For '\0' at the end of string */
 
 	char * note;
 
