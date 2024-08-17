@@ -53,13 +53,12 @@ static int _insert_datetime(const char * datetime);
 %start entries
 %%
 entries : entry
+        | T_NEWLINE entry
         | entries entry
         ;
 
 entry : header
       | header text
-      | T_NEWLINE header
-      | T_NEWLINE header text
       ;
 
 header : headline T_NEWLINE

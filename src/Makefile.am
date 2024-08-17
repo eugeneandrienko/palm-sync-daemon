@@ -11,7 +11,7 @@ AM_CFLAGS = \
 if ENABLE_FANALYZER
 AM_CFLAGS += -fanalyzer -Wpedantic -Wall -Wextra
 endif
-AM_YFLAGS = -d
+AM_YFLAGS = -d -Wconflicts-sr -Wcounterexamples
 AM_LDFLAGS = @POPT_LIBS@ \
 	@PISOCK_LIBS@ \
 	@ICONV_LIB@
