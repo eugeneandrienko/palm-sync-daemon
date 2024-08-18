@@ -227,9 +227,21 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 		return NULL;
 	}
 	uint32_t offset = record->offset;
-	offset += PDB_RECORD_ITEM_SIZE;                  /* New item in record list */
-	offset += strlen(header) + sizeof(char);         /* header + '\n' */
-	offset += (text != NULL ? strlen(text) : 0) + 1; /* text + '\0' (as divider) */
+	log_write(LOG_DEBUG, "Offset of the last record: 0x%08x", offset);
+	/* Rewinding to the end of the last record */
+	PDBMemo * lastMemo = (PDBMemo *)record->data;
+	if(lastMemo == NULL)
+	{
+		log_write(LOG_ERR, "Suddenly got null memo at 0x%08x", offset);
+		return NULL;
+	}
+	/* Header + '\n' */
+	offset += strlen(lastMemo->header) + sizeof(char);
+	/* Text (if exists) + '\0' */
+	offset += (lastMemo->text != NULL ? strlen(lastMemo->text) : 0) + sizeof(char);
+	log_write(LOG_DEBUG, "Offset beyond the last record: 0x%08x", offset);
+	/* New item in record list */
+	offset += PDB_RECORD_ITEM_SIZE;
 	log_write(LOG_DEBUG, "New offset for new memo: 0x%08x", offset);
 
 	/* Allocate memory for new memo */
@@ -240,7 +252,8 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 				  strerror(errno));
 		return NULL;
 	}
-	if((newMemo->header = calloc(strlen(header), sizeof(char))) == NULL)
+	/* '+ 1' for NULL-terminating character */
+	if((newMemo->header = calloc(strlen(header) + 1, sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new memo header: %s",
 				  strerror(errno));
@@ -248,7 +261,7 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 		return NULL;
 	}
 	if(text != NULL &&
-	   (newMemo->text = calloc(strlen(text), sizeof(char))) == NULL)
+	   (newMemo->text = calloc(strlen(text) + 1, sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new memo text: %s",
 				  strerror(errno));
@@ -287,7 +300,7 @@ PDBMemo * pdb_memos_memo_add(PDB * pdb, char * header, char * text,
 			break;
 		}
 		log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, new offset=0x%08x",
-				  record->offset, record->offset + PDB_RECORD_ITEM_SIZE);;
+				  record->offset, record->offset + PDB_RECORD_ITEM_SIZE);
 		record->offset += PDB_RECORD_ITEM_SIZE;
 	}
 
