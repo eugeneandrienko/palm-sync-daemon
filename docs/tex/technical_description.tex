@@ -340,7 +340,7 @@ in synchronization logic like this:
   \hline
   Changed & No record & Add handheld record to org-files \\
   \hline
-  Deleted & No record & Do nothing \\
+  Deleted & No record & Delete from handheld \\
   \hline
   \hline
   No record & Exists & Add desktop record to handheld \\
@@ -349,16 +349,9 @@ in synchronization logic like this:
   \hline
   Not changed & Exists & Replace handheld record with desktop record \\
   \hline
-  Changed & Exists & Replace desktop record with handheld record\footnote{
-                     I assume, what user does not have access to PC with Emacs, when
-                     using Palm PDA. And vice versa~--- user do not use Palm PDA when using PC. If
-                     user changes the same record in Palm and in org-file
-                     \textit{simultaneously}~--- that's \textbf{his problem}. In that case changes
-                     in org-file will be lost!} \\
+  Changed & Exists & Copy handheld record to desktop \\
   \hline
-  Deleted & Exists & Delete record on desktop\footnote{If user changed something
-                     in org-file \textit{simultaneously} with handheld in
-                     usage~--- it's changes will be lost!} \\
+  Deleted & Exists & Do nothing \\
   \hline
   \caption{Synchronization logic\label{tab:synchronization-logic}}
 \end{longtable}
