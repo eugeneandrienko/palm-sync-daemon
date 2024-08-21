@@ -66,8 +66,13 @@ PKG_CHECK_MODULES([PISOCK], [pilot-link >= 0.12.5])
 AC_SUBST([PISOCK_CFLAGS])
 AC_SUBST([PISOCK_LIBS])
 # FreeBSD specific.
-AC_SEARCH_LIBS([iconv_open], [iconv], [AC_SUBST([ICONV_LIB], [-liconv])],
-                                      [AC_SUBST([ICONV_LIB], [])])
+AC_SEARCH_LIBS([iconv_open], [iconv], [], [AC_MSG_ERROR([libiconv not found])])
+echo $ac_cv_search_iconv_open
+AM_CONDITIONAL([LIBICONV_REQUIRED], [test "$ac_cv_search_iconv_open" == "-liconv"])
+AM_COND_IF([LIBICONV_REQUIRED], [AC_SUBST([ICONV_LIB], [-liconv])])
+AM_CONDITIONAL([LIBICONV_NOT_REQUIRED], [test "$ac_cv_search_iconv_open" == "none required"])
+AM_COND_IF([LIBICONV_NOT_REQUIRED], [AC_SUBST([ICONV_LIB], [])], [])
+echo $ICONV_LIB
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT

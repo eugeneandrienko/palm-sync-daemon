@@ -1,3 +1,4 @@
+#include <string.h>
 #include "pdb.h"
 #include "log.h"
 

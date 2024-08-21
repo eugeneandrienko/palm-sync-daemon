@@ -3,6 +3,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(__linux__)
+#include <sys/random.h>
+#endif
 #include <unistd.h>
 #include "log.h"
 #include "pdb.h"
@@ -49,7 +52,18 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 
 	/* Initialize random number generator.
 	   It is necessary for pdb_record_create(). */
+#if defined(__linux__)
+	unsigned int seed;
+	if(getrandom(&seed, sizeof(seed), 0) == -1)
+	{
+		log_write(LOG_CRIT, "Could not get random from /dev/urandom: %s",
+				  strerror(errno));
+		return -1;
+	}
+	srandom(seed);
+#elif defined(__FreeBSD__)
 	srandomdev();
+#endif
 
 	if((*ppdb = calloc(1, sizeof(PDB))) == NULL)
 	{
