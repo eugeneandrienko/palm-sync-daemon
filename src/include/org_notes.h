@@ -35,7 +35,8 @@ struct OrgNote
 {
 	char * header;        /**< Note header */
 	char * text;          /**< Note text. May be NULL of no text in note. */
-	char * category;      /**< String with note category. May be NULL of category not specified. */
+	char * category;      /**< String with note category. May be NULL if
+							 category not specified. */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(OrgNote) pointers;
 #endif
@@ -76,12 +77,15 @@ int org_notes_open(const char * path);
 /**
    Write given note to file.
 
-   If category is NULL — write note without category. If text is NULL — write only header without additional text.
+   If category is NULL — write note without category. If text is NULL — write
+   only header without additional text.
 
    @param[in] fd File descriptor of OrgMode file.
    @param[in] header Header for OrgMode record.
-   @param[in] text Text for OrgMode record. May be NULL if there is no text for note.
-   @param[in] category Text name of category. May be NULL if there is no category.
+   @param[in] text Text for OrgMode record. May be NULL if there is no text for
+   note.
+   @param[in] category Text name of category. May be NULL if there is no
+   category.
    @return 0 on success or non-zero value on error.
 */
 int org_notes_write(int fd, char * header, char * text, char * category);

@@ -116,7 +116,8 @@ uint64_t str_hash(char * buf, size_t length);
 
 
 /**
-   \defgroup previous_pdbs Processing PDB files from previous synchronization cycle
+   \defgroup previous_pdbs Processing PDB files from previous synchronization
+   cycle
 
    This set of functions intended to check and process PDB files,
    which are/will be files from previous synchronization cycle.

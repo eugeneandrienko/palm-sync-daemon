@@ -27,7 +27,8 @@ enum SyncAction
 	ACTION_ADD_TO_DESKTOP,      /**< Add handheld record to desktop */
 	ACTION_ADD_TO_HANDHELD,     /**< Add desktop record to handheld */
 	ACTION_COPY_TO_DESKTOP,     /**< Copy handheld record to desktop */
-	ACTION_REPLACE_ON_HANDHELD, /**< Replace handheld record with dekstop record */
+	ACTION_REPLACE_ON_HANDHELD, /**< Replace handheld record with dekstop
+								   record */
 	ACTION_DELETE_ON_HANDHELD   /**< Delete record from handheld */
 };
 typedef enum SyncAction SyncAction;
@@ -35,7 +36,8 @@ typedef enum SyncAction SyncAction;
 static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 					   int palmfd, int dryRun);
 static int _compute_record_statuses(PDB * pdb, char * prevPdbPath);
-static SyncAction _compute_action_for_record(enum RecordStatus recordStatus, bool orgNoteExists);
+static SyncAction _compute_action_for_record(enum RecordStatus recordStatus,
+											 bool orgNoteExists);
 
 
 int sync_this(SyncSettings * syncSettings)
@@ -78,7 +80,8 @@ int sync_this(SyncSettings * syncSettings)
 
 	if(!syncSettings->dryRun && save_as_previous_pdbs(syncSettings, palmData))
 	{
-		log_write(LOG_ERR, "Failed to save PDB files as files from previous iteration");
+		log_write(LOG_ERR, "Failed to save PDB files as files from previous "
+				  "iteration");
 		goto sync_this_error;
 	}
 
@@ -120,7 +123,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 	}
 	if(_compute_record_statuses(pdb, prevPdbPath))
 	{
-		log_write(LOG_ERR, "Cannot compute statuses for records from %s", pdbPath);
+		log_write(LOG_ERR, "Cannot compute statuses for records from %s",
+				  pdbPath);
 		palm_log(palmfd, "Cannot parse Memos\n");
 		return -1;
 	}
@@ -131,7 +135,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 	{
 		log_write(LOG_ERR, "Failed to parse file with notes: %s", orgPath);
 		char log[SYNC_LOG_LENGTH];
-		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n", orgPath);
+		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n",
+				 orgPath);
 		palm_log(palmfd, log);
 		return -1;
 	}
@@ -142,7 +147,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 	{
 		log_write(LOG_ERR, "Failed to open org-file %s for writing", orgPath);
 		char log[SYNC_LOG_LENGTH];
-		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n", orgPath);
+		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n",
+				 orgPath);
 		palm_log(palmfd, log);
 		return -1;
 	}
@@ -163,7 +169,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 		}
 
 		PDBMemo * memo = (PDBMemo *)record->data;
-		SyncAction action = _compute_action_for_record(record->status, note != NULL);
+		SyncAction action = _compute_action_for_record(
+			record->status, note != NULL);
 		switch(action)
 		{
 		case ACTION_DO_NOTHING:
@@ -172,11 +179,12 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 		case ACTION_COPY_TO_DESKTOP:
 			log_write(LOG_INFO, "Add note \"%s\" from handheld to desktop",
 					  iconv_cp1251_to_utf8(memo->header));
-			char * category = pdb_category_get_name(pdb, record->attributes & 0x0f);
+			char * category = pdb_category_get_name(
+				pdb, record->attributes & 0x0f);
 			if(category == NULL)
 			{
-				log_write(LOG_ERR, "Failed to get note (\"%s\") category with id = %d",
-						  iconv_cp1251_to_utf8(memo->header),
+				log_write(LOG_ERR, "Failed to get note (\"%s\") category with "
+						  "id = %d", iconv_cp1251_to_utf8(memo->header),
 						  record->attributes & 0x0f);
 				break;
 			}
@@ -186,8 +194,9 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 			}
 			if(org_notes_write(orgNoteFd, memo->header, memo->text, category))
 			{
-				log_write(LOG_ERR, "Failed to write note (\"%s\") to org file %s",
-						  iconv_cp1251_to_utf8(memo->header), orgPath);
+				log_write(LOG_ERR, "Failed to write note (\"%s\") to org "
+						  "file %s", iconv_cp1251_to_utf8(memo->header),
+						  orgPath);
 			}
 			qtyDesktopAdded++;
 			break;
@@ -204,13 +213,14 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 			qtyHandheldAdded++;
 			break;
 		case ACTION_REPLACE_ON_HANDHELD:
-			log_write(LOG_INFO, "Replacing \"%s\" memo on handheld with desktop version",
-					  iconv_cp1251_to_utf8(memo->header));
-			if(pdb_memos_memo_edit(pdb, memo, note->header, note->text, note->category))
+			log_write(LOG_INFO, "Replacing \"%s\" memo on handheld with "
+					  "desktop version", iconv_cp1251_to_utf8(memo->header));
+			if(pdb_memos_memo_edit(pdb, memo, note->header, note->text,
+								   note->category))
 			{
 				log_write(LOG_ERR,
-						  "Failed to replace memo (\"%s\") on handheld with desktop note",
-						  iconv_cp1251_to_utf8(memo->header));
+						  "Failed to replace memo (\"%s\") on handheld with "
+						  "desktop note", iconv_cp1251_to_utf8(memo->header));
 			}
 			qtyHandheldReplaced++;
 			break;
@@ -245,7 +255,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 		}
 		if(record == NULL)
 		{
-			log_write(LOG_INFO, "Adding new record (\"%s\") to handheld from org-file",
+			log_write(LOG_INFO, "Adding new record (\"%s\") to handheld from "
+					  "org-file",
 					  iconv_cp1251_to_utf8(note->header));
 			if(pdb_memos_memo_add(
 				   pdb, note->header, note->text, note->category) == NULL)
@@ -278,8 +289,8 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
 	{
 		if(pdb_memos_write(pdbPath, pdb))
 		{
-			log_write(LOG_ERR, "Failed to write redacted PDB with memos to file: %s",
-					  pdbPath);
+			log_write(LOG_ERR, "Failed to write redacted PDB with memos to "
+					  "file: %s", pdbPath);
 			return -1;
 		}
 	}
@@ -300,8 +311,8 @@ int _compute_record_statuses(PDB * pdb, char * prevPdbPath)
 	PDBRecord * record;
 	if((prevFd = pdb_read(prevPdbPath, 1, &prevPdb)) == -1)
 	{
-		log_write(LOG_WARNING, "Cannot open %s file as PDB from previous synchronization",
-				  prevPdbPath);
+		log_write(LOG_WARNING, "Cannot open %s file as PDB from previous "
+				  "synchronization", prevPdbPath);
 		log_write(LOG_NOTICE, "Set all records statuses to ADDED");
 		TAILQ_FOREACH(record, &pdb->records, pointers)
 		{
@@ -400,7 +411,8 @@ int _compute_record_statuses(PDB * pdb, char * prevPdbPath)
    in org-files.
    @return Calculated action for these records.
 */
-static SyncAction _compute_action_for_record(enum RecordStatus recordStatus, bool orgNoteExists)
+static SyncAction _compute_action_for_record(enum RecordStatus recordStatus,
+											 bool orgNoteExists)
 {
 	switch(recordStatus)
 	{
@@ -409,7 +421,8 @@ static SyncAction _compute_action_for_record(enum RecordStatus recordStatus, boo
 	case RECORD_ADDED:
 		return orgNoteExists ? ACTION_COPY_TO_DESKTOP : ACTION_ADD_TO_DESKTOP;
 	case RECORD_NOT_CHANGED:
-		return orgNoteExists ? ACTION_REPLACE_ON_HANDHELD : ACTION_ADD_TO_DESKTOP;
+		return orgNoteExists ?
+			ACTION_REPLACE_ON_HANDHELD : ACTION_ADD_TO_DESKTOP;
 	case RECORD_CHANGED:
 		return orgNoteExists ? ACTION_COPY_TO_DESKTOP : ACTION_ADD_TO_DESKTOP;
 	case RECORD_DELETED:

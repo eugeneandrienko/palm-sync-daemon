@@ -38,8 +38,10 @@
    Must be called before start using of logging facility. Option fg = 1 is
    meaningless if program started in daemon mode.
 
-   @param[in] fg Set to 0 to write to syslog. Set to 1 to write directly to STDERR.
-   @param[in] debug Set to 0 to skip debug messages, and to 1 to print debug messages.
+   @param[in] fg Set to 0 to write to syslog. Set to 1 to write directly to
+   STDERR.
+   @param[in] debug Set to 0 to skip debug messages, and to 1 to print debug
+   messages.
 */
 void log_init(int fg, int debug);
 

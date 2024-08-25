@@ -27,7 +27,8 @@ static OrgModeEntry * entry;
 static char parsedLine[LINE_LEN];
 static char * pointerLine;
 
-static int _create_entry(const char * header, const char * keyword, const char priority, const char * tag);
+static int _create_entry(const char * header, const char * keyword,
+						 const char priority, const char * tag);
 static int _insert_text(const char * text);
 static int _append_text(const char * text);
 static int _insert_datetime(const char * datetime);
@@ -237,7 +238,8 @@ void yyerror(const char* s)
 	exit(1);
 }
 
-static int _create_entry(const char * header, const char * keyword, const char priority, const char * tag)
+static int _create_entry(const char * header, const char * keyword,
+						 const char priority, const char * tag)
 {
     if((entry = calloc(1, sizeof(OrgModeEntry))) == NULL)
     {
@@ -379,7 +381,8 @@ static int _append_text(const char * text)
     }
     if(entry->text == NULL)
     {
-        log_write(LOG_ERR, "Cannot append new text (\"%s\") - pointer to existing text in memory is NULL");
+        log_write(LOG_ERR, "Cannot append new text (\"%s\") - pointer to "
+				  "existing text in memory is NULL");
         return -1;
     }
 
@@ -387,7 +390,8 @@ static int _append_text(const char * text)
     size_t oldTextLen = strlen(oldPointer);
 
     /* 1st byte for \n, 2nd byte for trailing \0. */
-    if((entry->text = realloc(oldPointer, oldTextLen + strlen(text) + 2)) == NULL)
+    if((entry->text = realloc(oldPointer,
+							  oldTextLen + strlen(text) + 2)) == NULL)
     {
         log_write(LOG_ERR, "Cannot append new string \"%s\" to existing: %s",
 				  text, strerror(errno));
@@ -418,13 +422,14 @@ static void __regerror(int regErrorCode, const regex_t * reg)
     free(buffer);
 }
 
-static int __insert_datetime(const char * datetime, int nsub, regmatch_t * regMatch, int regexNo)
+static int __insert_datetime(const char * datetime, int nsub,
+							 regmatch_t * regMatch, int regexNo)
 {
     const char REGEX_N_SUBS[] = {5, 4, 3, 2, 1};
     if(REGEX_N_SUBS[regexNo] != nsub)
     {
-        log_write(LOG_ERR, "Real regex subst groups count (%d) not matched with desired (%d)",
-				  nsub, REGEX_N_SUBS[regexNo]);
+        log_write(LOG_ERR, "Real regex subst groups count (%d) not matched "
+				  "with desired (%d)", nsub, REGEX_N_SUBS[regexNo]);
         return -1;
     }
 
@@ -544,7 +549,8 @@ static int __insert_datetime(const char * datetime, int nsub, regmatch_t * regMa
         if(regMatch[repeaterValuePos].rm_so == -1 ||
 		   regMatch[repeaterRangePos].rm_so == -1)
         {
-            log_write(LOG_ERR, "Cannot cut repetitive interval from: %s", datetime);
+            log_write(LOG_ERR, "Cannot cut repetitive interval from: %s",
+					  datetime);
             return -1;
         }
         matchlen = regMatch[repeaterValuePos].rm_eo - regMatch[repeaterValuePos].rm_so;
@@ -590,11 +596,15 @@ static int _insert_datetime(const char * datetime)
     const unsigned char REGEX_QTY = 5;
     char * regexToCheck[] = {
         /* Datetime with range and repetitive interval */
-        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2})-([0-9]{2}:[0-9]{2}) \\+([0-9]+)([hdwmy])",
+        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ "
+		"([0-9]{2}:[0-9]{2})-([0-9]{2}:[0-9]{2}) "
+		"\\+([0-9]+)([hdwmy])",
         /* Datetime with repetitive interval */
-        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2}) \\+([0-9]+)([hdwmy])",
+        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2}) \\+([0-9]+)"
+		"([hdwmy])",
         /* Datetime with range */
-        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2})-([0-9]{2}:[0-9]{2})",
+        "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2})-"
+		"([0-9]{2}:[0-9]{2})",
         /* Datetime */
         "([0-9]{4}-[0-9]{2}-[0-9]{2}) .+ ([0-9]{2}:[0-9]{2})",
         /* Date */
@@ -607,20 +617,22 @@ static int _insert_datetime(const char * datetime)
         regmatch_t * regMatch;
         int regError;
 
-        if((regError = regcomp(&regex, regexToCheck[i], REG_EXTENDED | REG_NEWLINE)) != 0)
+        if((regError = regcomp(&regex, regexToCheck[i],
+							   REG_EXTENDED | REG_NEWLINE)) != 0)
         {
             __regerror(regError, &regex);
             return -1;
         }
         if((regMatch = calloc((regex.re_nsub + 1), sizeof(regmatch_t))) == NULL)
         {
-            log_write(LOG_ERR, "Cannot allocate memory for regex matching groups when parsing datetime: %s",
-                      strerror(errno));
+            log_write(LOG_ERR, "Cannot allocate memory for regex matching "
+					  "groups when parsing datetime: %s", strerror(errno));
             regfree(&regex);
             return -1;
         }
 
-        if((regError = regexec(&regex, datetime, regex.re_nsub + 1, regMatch, 0)) != 0)
+        if((regError = regexec(&regex, datetime, regex.re_nsub + 1,
+							   regMatch, 0)) != 0)
         {
             if(regError == REG_NOMATCH)
             {

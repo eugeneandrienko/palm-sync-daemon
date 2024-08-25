@@ -104,7 +104,8 @@ int palm_write(int sd, const PalmData * data);
 
    @param[in] sd Palm device descriptor.
    @param[in] device Path to symbolic device connected to Palm PDA.
-   @return 0 if successfull or -1 if failed to close connection or got timeout when waiting.
+   @return 0 if successfull or -1 if failed to close connection or got timeout
+   when waiting.
 */
 int palm_close(int sd, char * device);
 

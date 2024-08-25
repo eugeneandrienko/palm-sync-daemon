@@ -24,7 +24,8 @@ char * iconv_utf8_to_cp1251(char * string)
 	iconv_t iconvfd;
 	if((iconvfd = iconv_open(CP1251, UTF8)) == (iconv_t)-1)
 	{
-		log_write(LOG_ERR, "Cannot initialize UTF8->CP1251 convertor: %s", strerror(errno));
+		log_write(LOG_ERR, "Cannot initialize UTF8->CP1251 convertor: %s",
+				  strerror(errno));
 		return NULL;
 	}
 
@@ -44,7 +45,8 @@ char * iconv_utf8_to_cp1251(char * string)
 	}
 
 	char * result = outString;
-	if(iconv(iconvfd, &inString, &inStringLen, &outString, &outStringLen) == (size_t)-1)
+	if(iconv(iconvfd, &inString, &inStringLen,
+			 &outString, &outStringLen) == (size_t)-1)
 	{
 		log_write(LOG_ERR, "Failed to convert UTF8 string \"%s\" to CP1251: %s",
 				  string, strerror(errno));
@@ -68,7 +70,8 @@ char * iconv_cp1251_to_utf8(char * string)
 	iconv_t iconvfd;
 	if((iconvfd = iconv_open(UTF8, CP1251)) == (iconv_t)-1)
 	{
-		log_write(LOG_ERR, "Cannot initialize CP1251->UTF8 convertor: %s", strerror(errno));
+		log_write(LOG_ERR, "Cannot initialize CP1251->UTF8 convertor: %s",
+				  strerror(errno));
 		return NULL;
 	}
 
@@ -88,7 +91,8 @@ char * iconv_cp1251_to_utf8(char * string)
 	}
 
 	char * result = outString;
-	if(iconv(iconvfd, &inString, &inStringLen, &outString, &outStringLen) == (size_t)-1)
+	if(iconv(iconvfd, &inString, &inStringLen,
+			 &outString, &outStringLen) == (size_t)-1)
 	{
 		log_write(LOG_ERR, "Failed to convert CP1251 string \"%s\" to UTF8: %s",
 				  string, strerror(errno));
@@ -195,7 +199,8 @@ uint64_t str_hash(char * buf, size_t length)
 #define COPY_BUFFER_LENGTH 4096
 
 
-static int _check_previous_pdb(char * dataDir, char * pdbFileName, char ** result);
+static int _check_previous_pdb(char * dataDir, char * pdbFileName,
+							   char ** result);
 static int _save_as_previous_pdb(char ** pathToPrevPDB, char * pathToCurrentPDB,
 								 char * dataDir, char * prevPdbFname);
 static int _cp(char * from, char * to);
@@ -238,7 +243,8 @@ int check_previous_pdbs(SyncSettings * syncSettings)
    @param[out] result Pointer to string with resulting path.
    @return Zero value on success, otherwise non-zero value will be returned.
 */
-static int _check_previous_pdb(char * dataDir, char * pdbFileName,	char ** result)
+static int _check_previous_pdb(char * dataDir, char * pdbFileName,
+							   char ** result)
 {
 	char prevPDBPath[MAX_PATH_LEN] = "\0";
 
@@ -254,8 +260,8 @@ static int _check_previous_pdb(char * dataDir, char * pdbFileName,	char ** resul
 	}
 	if(access(prevPDBPath, R_OK | W_OK))
 	{
-		log_write(LOG_WARNING, "No access to PDB file from previous iteration: %s",
-				  prevPDBPath);
+		log_write(LOG_WARNING, "No access to PDB file from previous "
+				  "iteration: %s", prevPDBPath);
 		return -1;
 	}
 
@@ -337,8 +343,8 @@ static int _save_as_previous_pdb(char ** pathToPrevPDB, char * pathToCurrentPDB,
 		}
 		strncpy(*pathToPrevPDB, dataDir, strlen(dataDir));
 		strcat(*pathToPrevPDB, prevPdbFname);
-		log_write(LOG_DEBUG, "Constructed next file path: %s - to store PDB file as from prev sync",
-				  *pathToPrevPDB);
+		log_write(LOG_DEBUG, "Constructed next file path: %s - to store PDB"
+				  " file as from prev sync", *pathToPrevPDB);
 	}
 
 	if(_cp(pathToCurrentPDB, *pathToPrevPDB))

@@ -18,10 +18,13 @@
 #include "pdb.h"
 
 #define PALM_PDB_FNAME_BUFFER_LEN 128 /* Maximal length for PDB filename */
-#define PALM_PDB_TMP_DIR "/tmp"       /* Directory to store temporary PDB files */
+#define PALM_PDB_TMP_DIR "/tmp"       /* Directory to store temporary
+										 PDB files */
 #define PALM_SYNCLOG_ENTRY_LEN 512    /* Maximal length for synclog string */
-#define PALM_CLOSE_WAIT_SEC 5         /* Seconds to wait while device disappering after close */
-#define PALM_CANNOT_BIND_MAX_ERRORS 3 /* Count of sequental logged errors from pi_bind */
+#define PALM_CLOSE_WAIT_SEC 5         /* Seconds to wait while device
+										 disappering after close */
+#define PALM_CANNOT_BIND_MAX_ERRORS 3 /* Count of sequental logged errors
+										 from pi_bind */
 
 static void _palm_log_system_info(struct SysInfo * info);
 static void _palm_read_database(int sd, const char * dbname, char ** path);
@@ -36,7 +39,8 @@ int palm_open(char * device)
 
 	if((sd = pi_socket(PI_AF_PILOT, PI_SOCK_STREAM, PI_PF_DLP)) < 0)
 	{
-		log_write(LOG_WARNING, "Cannot create socket for Palm: %s", strerror(errno));
+		log_write(LOG_WARNING, "Cannot create socket for Palm: %s",
+				  strerror(errno));
 		return -1;
 	}
 
@@ -158,7 +162,8 @@ int palm_close(int sd, char * device)
 
 	if(secondsToWait == 0)
 	{
-		log_write(LOG_CRIT, "Timeout when waiting %s to disappear from system", device);
+		log_write(LOG_CRIT, "Timeout when waiting %s to disappear from system",
+				  device);
 		return -1;
 	}
 	else
@@ -224,13 +229,16 @@ void palm_log(int sd, char * message)
 */
 static void _palm_log_system_info(struct SysInfo * info)
 {
-	log_write(LOG_DEBUG, "Device ROM version: major=%d, minor=%d, fix=%d, stage=%d, build=%d",
+	log_write(LOG_DEBUG, "Device ROM version: major=%d, minor=%d, fix=%d, "
+			  "stage=%d, build=%d",
 			  (info->romVersion >> 32) & 0x00000000ff,
 			  (info->romVersion >> 24) & 0x00000000ff,
 			  (info->romVersion >> 16) & 0x00000000ff,
 			  (info->romVersion >> 8)  & 0x00000000ff,
 			  (info->romVersion)       & 0x00000000ff);
-	log_write(LOG_DEBUG, "DLP protocol: %d.%d", info->dlpMajorVersion, info->dlpMinorVersion);
+	log_write(LOG_DEBUG, "DLP protocol: %d.%d",
+			  info->dlpMajorVersion,
+			  info->dlpMinorVersion);
 	log_write(LOG_DEBUG, "Compatible DLP protocol: %d.%d",
 			  info->compatMajorVersion,
 			  info->compatMinorVersion);
@@ -251,8 +259,8 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 
 	if(strlen(dbname) > PDB_DBNAME_LEN - 1)
 	{
-		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s characters!",
-				  dbname, PDB_DBNAME_LEN - 1);
+		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s "
+				  "characters!", dbname, PDB_DBNAME_LEN - 1);
 		log_write(LOG_ERR, "Cannot read %s database", dbname);
 		return;
 	}
@@ -269,7 +277,8 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 	*path = calloc(PALM_PDB_FNAME_BUFFER_LEN, sizeof(char));
 	if(*path == NULL)
 	{
-		log_write(LOG_ERR, "Cannot allocate memory for path to PDB file for %s", dbname);
+		log_write(LOG_ERR, "Cannot allocate memory for path to PDB file "
+				  "for %s", dbname);
 		return;
 	}
 	pid_t pid = getpid();
@@ -286,7 +295,8 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 
 	if(pi_file_retrieve(f, sd, 0, NULL) < 0)
 	{
-		log_write(LOG_ERR, "Unable to fetch database %s from Palm to %s", dbname, *path);
+		log_write(LOG_ERR, "Unable to fetch database %s from Palm to %s",
+				  dbname, *path);
 		pi_file_close(f);
 		unlink(*path);
 		free(*path);
@@ -313,8 +323,8 @@ static void _palm_write_database(int sd, const char * dbname, const char * path)
 {
 	if(strlen(dbname) > PDB_DBNAME_LEN - 1)
 	{
-		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s characters!",
-				  dbname, PDB_DBNAME_LEN - 1);
+		log_write(LOG_ERR, "Given Palm DB name (%s) has more than %s "
+				  "characters!", dbname, PDB_DBNAME_LEN - 1);
 		log_write(LOG_ERR, "Cannot write data to %s database", dbname);
 		return;
 	}
@@ -353,7 +363,8 @@ static void _palm_write_database(int sd, const char * dbname, const char * path)
 
 	if((unsigned long)sbuf.st_size > card.ramFree)
 	{
-		log_write(LOG_ERR, "Insufficient space on Palm device to install file %s", path);
+		log_write(LOG_ERR, "Insufficient space on Palm device to install "
+				  "file %s", path);
 		log_write(LOG_ERR, "We need %lu and have only %lu available",
 				  (unsigned long)sbuf.st_size, card.ramFree);
 		pi_file_close(f);
@@ -369,8 +380,10 @@ static void _palm_write_database(int sd, const char * dbname, const char * path)
 	}
 
 	char synclog[PALM_SYNCLOG_ENTRY_LEN];
-	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld bytes) from PC\n", dbname, sbuf.st_size);
+	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld bytes) from PC\n",
+			 dbname, sbuf.st_size);
 	palm_log(sd, synclog);
 	pi_file_close(f);
-	log_write(LOG_INFO, "Write %s from %s (%ld bytes)", dbname, path, sbuf.st_size);
+	log_write(LOG_INFO, "Write %s from %s (%ld bytes)", dbname, path,
+			  sbuf.st_size);
 }

@@ -56,7 +56,8 @@ static void _process_unlock();
 static void _process_on_exit_actions();
 static void _process_sig_handler(int signum);
 static int _process_setup_sig_handler();
-static volatile int _processTerminate = 0; /* Flag shows necessity of program termination */
+static volatile int _processTerminate = 0; /* Flag shows necessity of
+											  program termination */
 
 
 /**
@@ -73,7 +74,8 @@ static char * _get_file_path(char * env)
 	char * path = getenv(env);
 	if(path == NULL)
 	{
-		log_write(LOG_EMERG, "%s: no %s environment variable defined", PACKAGE_NAME, env);
+		log_write(LOG_EMERG, "%s: no %s environment variable defined",
+				  PACKAGE_NAME, env);
 		return NULL;
 	}
 	if(access(path, R_OK | W_OK))
@@ -113,8 +115,8 @@ int _check_data_directory(char * dataDir)
 			log_write(LOG_NOTICE, "Created %s directory", dataDir);
 			return 0;
 		}
-		log_write(LOG_EMERG, "No read, write or execute permission for %s catalog",
-				  dataDir);
+		log_write(LOG_EMERG, "No read, write or execute permission "
+				  "for %s catalog", dataDir);
 		return -1;
 	}
 	return 0;
@@ -137,11 +139,51 @@ int main(int argc, const char * argv[])
 	int foreground = 0;
 	int debug = 0;
 	struct poptOption optionsTable[] = {
-		{"data-dir", 't', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &syncSettings.dataDir, 0, "Data directory", "DIRECTORY"},
-		{"foreground", 'f', POPT_ARG_NONE, &foreground, 0, "Run in foreground", NULL},
-		{"debug", '\0', POPT_ARG_NONE, &debug, 0, "Log debug messages", NULL},
-		{"dry-run", '\0', POPT_ARG_NONE, &syncSettings.dryRun, 0, "Dry run, without real sync", NULL},
-		{"device", 'd', POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT, &syncSettings.device, 0, "Palm device to connect", "DEVICE"},
+		{
+			"data-dir",
+			't',
+			POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+			&syncSettings.dataDir,
+			0,
+			"Data directory",
+			"DIRECTORY"
+		},
+		{
+			"foreground",
+			'f',
+			POPT_ARG_NONE,
+			&foreground,
+			0,
+			"Run in foreground",
+			NULL
+		},
+		{
+			"debug",
+			'\0',
+			POPT_ARG_NONE,
+			&debug,
+			0,
+			"Log debug messages",
+			NULL
+		},
+		{
+			"dry-run",
+			'\0',
+			POPT_ARG_NONE,
+			&syncSettings.dryRun,
+			0,
+			"Dry run, without real sync",
+			NULL
+		},
+		{
+			"device",
+			'd',
+			POPT_ARG_STRING | POPT_ARGFLAG_SHOW_DEFAULT,
+			&syncSettings.device,
+			0,
+			"Palm device to connect",
+			"DEVICE"
+		},
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -179,7 +221,8 @@ int main(int argc, const char * argv[])
 	if((syncSettings.dataDir = calloc(
 			expandedDataDirLen + we.we_wordc + 1, sizeof(char))) == NULL)
 	{
-		log_write(LOG_EMERG, "Cannot allocate memory for string with data directory");
+		log_write(LOG_EMERG, "Cannot allocate memory for string "
+				  "with data directory");
 		return 1;
 	}
 	char * expandedDataDir = syncSettings.dataDir;
@@ -200,7 +243,8 @@ int main(int argc, const char * argv[])
 		*(--expandedDataDir) = '\0';
 	}
 	wordfree(&we);
-	log_write(LOG_DEBUG, "Expanded data directory string: %s", syncSettings.dataDir);
+	log_write(LOG_DEBUG, "Expanded data directory string: %s",
+			  syncSettings.dataDir);
 
 	if(_check_data_directory(syncSettings.dataDir))
 	{
@@ -217,8 +261,10 @@ int main(int argc, const char * argv[])
 	/* Main program actions */
 	log_write(LOG_INFO, "%s started successfully", PACKAGE_NAME);
 	log_write(LOG_DEBUG, "Device: %s", syncSettings.device);
-	log_write(LOG_DEBUG, "Path to notes org-file: %s", syncSettings.notesOrgFile);
-	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s", syncSettings.todoOrgFile);
+	log_write(LOG_DEBUG, "Path to notes org-file: %s",
+			  syncSettings.notesOrgFile);
+	log_write(LOG_DEBUG, "Path to todo and calendar org-file: %s",
+			  syncSettings.todoOrgFile);
 	log_write(LOG_DEBUG, "Data directory: %s", syncSettings.dataDir);
 	if(syncSettings.dryRun)
 	{
@@ -258,7 +304,8 @@ int main(int argc, const char * argv[])
    This function daemonize process (if necessary), acquire lockfile, setup
    signal handlers and set function to call at process exit.
 
-   @param foreground Set to 1 if program should run in foreground, set to 0 if we need a daemon.
+   @param foreground Set to 1 if program should run in foreground,
+   set to 0 if we need a daemon.
    @return Returns 0 if process successfully initialized, otherwise -1.
 */
 static int _process_init(int foreground)
@@ -286,7 +333,7 @@ static int _process_init(int foreground)
 	}
 	if(atexit(_process_on_exit_actions))
 	{
-		log_write(LOG_EMERG, "%s: failed to set atexit function\n", PACKAGE_NAME);
+		log_write(LOG_EMERG, "%s: failed to set atexit function", PACKAGE_NAME);
 		log_close();
 		return -1;
 	}
@@ -300,7 +347,8 @@ static int _process_init(int foreground)
    Creates lock-file in LOCK_FILE_PATH which prevents execution of another
    processd instance. If lock-file already exists — returns an error.
 
-   @return Returns 0 is lockfile successfully created. Returns 1 if lock-file exists or error happened.
+   @return Returns 0 is lockfile successfully created. Returns 1 if lock-file
+   exists or error happened.
 */
 static int _process_lock()
 {
@@ -312,8 +360,8 @@ static int _process_lock()
 		fd = open(LOCK_FILE_PATH, O_RDONLY, 0);
 		if(read(fd, pid, PID_BUFFER_SIZE) == -1)
 		{
-			log_write(LOG_EMERG, "Failed to read PID of locking process from %s file: %s",
-					  LOCK_FILE_PATH, strerror(errno));
+			log_write(LOG_EMERG, "Failed to read PID of locking process "
+					  "from %s file: %s", LOCK_FILE_PATH, strerror(errno));
 			strcpy(pid, "UNKNOWN");
 		}
 		log_write(LOG_CRIT, "Lock file owned by process with PID %s", pid);
@@ -322,7 +370,8 @@ static int _process_lock()
 	}
 	else if(fd < 0)
 	{
-		log_write(LOG_EMERG, "Cannot create lock file %s: %s", LOCK_FILE_PATH, strerror(errno));
+		log_write(LOG_EMERG, "Cannot create lock file %s: %s", LOCK_FILE_PATH,
+				  strerror(errno));
 		return 1;
 	}
 
@@ -401,17 +450,20 @@ static int _process_setup_sig_handler()
 	}
 	if(sigaddset(&maskedSignals, SIGINT))
 	{
-		log_write(LOG_EMERG, "Cannot add SIGINT to signal set: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot add SIGINT to signal set: %s",
+				  strerror(errno));
 		return 1;
 	}
 	if(sigaddset(&maskedSignals, SIGQUIT))
 	{
-		log_write(LOG_EMERG, "Cannot add SIGQUIT to signal set: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot add SIGQUIT to signal set: %s",
+				  strerror(errno));
 		return 1;
 	}
 	if(sigaddset(&maskedSignals, SIGTERM))
 	{
-		log_write(LOG_EMERG, "Cannot add SIGTERM to signal set: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot add SIGTERM to signal set: %s",
+				  strerror(errno));
 		return 1;
 	}
 
@@ -420,17 +472,20 @@ static int _process_setup_sig_handler()
 	sa.sa_mask = maskedSignals;
 	if(sigaction(SIGINT, &sa, NULL))
 	{
-		log_write(LOG_EMERG, "Cannot set signal handler for SIGINT: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot set signal handler for SIGINT: %s",
+				  strerror(errno));
 		return 1;
 	}
 	if(sigaction(SIGQUIT, &sa, NULL))
 	{
-		log_write(LOG_EMERG, "Cannot set signal handler for SIGQUIT: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot set signal handler for SIGQUIT: %s",
+				  strerror(errno));
 		return 1;
 	}
 	if(sigaction(SIGTERM, &sa, NULL))
 	{
-		log_write(LOG_EMERG, "Cannot set signal handler for SIGTERM: %s", strerror(errno));
+		log_write(LOG_EMERG, "Cannot set signal handler for SIGTERM: %s",
+				  strerror(errno));
 		return 1;
 	}
 

@@ -88,12 +88,19 @@ struct OrgModeEntry
 {
 	char * header;                    /**< OrgMode first-level header */
 	enum Priority priority;           /**< First-level header priority */
-	enum TODOKeyword keyword;         /**< TODO-keyword for first-level header. */
-	char * tag;                       /**< Tag of first-level header. May be NULL if no exists. */
-	char * text;                      /**< Text below first-level header. May be NULL if no exists. */
-	time_t datetime1;                 /**< Datetime or first part of time range or (time_t)-1 if no datetime. */
-	time_t datetime2;                 /**< Second part of time range. May be (time_t)-1 if no time range on datetime. */
-	unsigned char repeaterValue;      /**< Repeater value or 0 if no repeater interval. */
+	enum TODOKeyword keyword;         /**< TODO-keyword for first-level
+										 header. */
+	char * tag;                       /**< Tag of first-level header. May be
+										 NULL if no exists. */
+	char * text;                      /**< Text below first-level header. May be
+										 NULL if no exists. */
+	time_t datetime1;                 /**< Datetime or first part of time range
+										 or (time_t)-1 if no datetime. */
+	time_t datetime2;                 /**< Second part of time range. May be
+										 (time_t)-1 if no time range on
+										 datetime. */
+	unsigned char repeaterValue;      /**< Repeater value or 0 if no repeater
+										 interval. */
 	enum RepeaterRange repeaterRange; /**< Repeater range. */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(OrgModeEntry) pointers;
@@ -117,7 +124,8 @@ typedef struct OrgModeEntries OrgModeEntries;
    Contents of OrgMode file will be stored in OrgModeEntries queue.
 
    @param[in] path Path to OrgMode file.
-   @return Initialized and filled OrgModeEntries structure or NULL if parsing failed.
+   @return Initialized and filled OrgModeEntries structure or NULL if parsing
+   failed.
 */
 OrgModeEntries * parse_orgmode_file(const char * path);
 

@@ -28,14 +28,21 @@
 */
 struct SyncSettings
 {
-	char * device;          /**< Path to symbolic device, to which Palm PDA is connected. */
+	char * device;          /**< Path to symbolic device, to which Palm PDA is
+							   connected. */
 	char * notesOrgFile;    /**< Path to OrgMode file with notes. */
-	char * todoOrgFile;     /**< Path to OrgMode file with TODOs and calendar events. */
-	int dryRun;             /**< If non-zero - do not sync data, just simulate process. */
-	char * dataDir;         /**< Path to directory with data from previous sync iteration. */
-	char * prevDatebookPDB; /**< Path to PDB file with Datebook from previous iteration. */
-	char * prevMemosPDB;    /**< Path to PDB file with Memos from previous iteration. */
-	char * prevTodoPDB;     /**<Path to PDB file with TODO from previous iteration. */
+	char * todoOrgFile;     /**< Path to OrgMode file with TODOs and calendar
+							   events. */
+	int dryRun;             /**< If non-zero - do not sync data, just simulate
+							   process. */
+	char * dataDir;         /**< Path to directory with data from previous sync
+							   iteration. */
+	char * prevDatebookPDB; /**< Path to PDB file with Datebook from previous
+							   iteration. */
+	char * prevMemosPDB;    /**< Path to PDB file with Memos from previous
+							   iteration. */
+	char * prevTodoPDB;     /**<Path to PDB file with TODO from previous
+							   iteration. */
 };
 typedef struct SyncSettings SyncSettings;
 

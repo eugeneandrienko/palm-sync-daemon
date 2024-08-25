@@ -74,7 +74,8 @@ void log_write(int priority, const char * format, ...)
 		if(currentTime == ((time_t) -1))
 		{
 			sprintf(messageStr, "UNKNOWN TIME");
-			fprintf(stderr, "%s: Cannot get current time: %s", PACKAGE_NAME, strerror(errno));
+			fprintf(stderr, "%s: Cannot get current time: %s", PACKAGE_NAME,
+					strerror(errno));
 		}
 		else
 		{

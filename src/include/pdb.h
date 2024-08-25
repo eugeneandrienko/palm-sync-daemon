@@ -140,7 +140,8 @@ struct PDBRecord
 	uint8_t attributes;              /**< Record attributes */
 	uint8_t id[3];                   /**< Record unique ID */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-	TAILQ_ENTRY(PDBRecord) pointers; /**< Connection between elements in tail queue */
+	TAILQ_ENTRY(PDBRecord) pointers; /**< Connection between elements in tail
+										queue */
 #endif
 	uint64_t hash;                   /**< Hash for fast matching of records */
 	void * data;                     /**< Application specific data */
@@ -157,7 +158,7 @@ typedef struct PDBRecord PDBRecord;
 struct PDBCategories
 {
 	uint16_t renamedCategories;                           /**< Renamed categories (WTF?) */
-	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN]; /**< Array with categories names */
+	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN]; /**< Array withcategories names */
 	uint8_t ids[PDB_CATEGORIES_STD_QTY];                  /**< Array with categories IDs */
 	uint8_t lastUniqueId;                                 /**< Last unique category ID (usually 0x0f) */
 	uint8_t padding;                                      /**< Zero byte for padding */
@@ -169,7 +170,8 @@ typedef struct PDBCategories PDBCategories;
 */
 struct PDB
 {
-	char dbname[PDB_DBNAME_LEN];   /**< Null-terminated string with database name */
+	char dbname[PDB_DBNAME_LEN];   /**< Null-terminated string with database
+									  name */
 	uint16_t attributes;           /**< Attributes */
 	uint16_t version;              /**< Version */
 	uint32_t ctime;                /**< Creation datetime */
@@ -181,11 +183,13 @@ struct PDB
 	uint32_t databaseTypeID;       /**< Database type */
 	uint32_t creatorID;            /**< Creator ID */
 	uint32_t seed;                 /**< Unique seed */
-	uint32_t nextRecordListOffset; /**< Offset to next record list. Should be 0x00000000 */
+	uint32_t nextRecordListOffset; /**< Offset to next record list.
+									  Should be 0x00000000 */
 	uint16_t recordsQty;           /**< Qty of records */
 	struct RecordQueue records;    /**< Record list */
 	uint16_t recordListPadding;    /**< Padding bytes after record list */
-	PDBCategories * categories;    /**< Categories from PDB file. May be NULL if not applicable */
+	PDBCategories * categories;    /**< Categories from PDB file. May be NULL
+									  if not applicable */
 };
 typedef struct PDB PDB;
 
@@ -213,8 +217,10 @@ typedef struct PDB PDB;
    timestamps will be converted to Unix timestamps.
 
    @param[in]  path Path to PDB file.
-   @param[in]  stdCatInfo Set to true if there is a standard Palm OS category information.
-   @param[out] pdb Pointer to pointer to PDB structure. This structure will be allocated and initialized inside this function.
+   @param[in]  stdCatInfo Set to true if there is a standard Palm OS category
+   information.
+   @param[out] pdb Pointer to pointer to PDB structure. This structure will be
+   allocated and initialized inside this function.
    @return PDB file descriptor or -1 if error.
 */
 int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
@@ -333,7 +339,8 @@ int pdb_category_add(PDB * pdb, const char * name);
    Delete existing category.
 
    @param[in] pdb Pointer to PDB structure.
-   @param[in] id Category ID to delete. Starts from zero to PDB_CATEGORIES_STD_LEN - 1.
+   @param[in] id Category ID to delete. Starts from zero to
+   PDB_CATEGORIES_STD_LEN - 1.
    @return Zero on successfull or non-zero on error.
 */
 int pdb_category_delete(PDB * pdb, uint8_t id);

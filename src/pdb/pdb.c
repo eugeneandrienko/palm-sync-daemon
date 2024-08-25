@@ -79,7 +79,8 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 
 	if(read(fd, pdb->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
-		log_write(LOG_ERR, "Cannot read database name from PDB header: %s", strerror(errno));
+		log_write(LOG_ERR, "Cannot read database name from PDB header: %s",
+				  strerror(errno));
 		free(pdb);
 		goto pdb_read_error;
 	}
@@ -96,7 +97,8 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 	result += _read32_field(fd, &pdb->databaseTypeID, "database type ID");
 	result += _read32_field(fd, &pdb->creatorID, "creator ID");
 	result += _read32_field(fd, &pdb->seed, "unique ID seed");
-	result += _read32_field(fd, &pdb->nextRecordListOffset, "next record list offset");
+	result += _read32_field(fd, &pdb->nextRecordListOffset, "next record list "
+							"offset");
 	result += _read16_field(fd, &pdb->recordsQty, "qty of records");
 
 	if(result)
@@ -130,15 +132,15 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** ppdb)
 	{
 		if(pdb->appInfoOffset != lseek(fd, pdb->appInfoOffset, SEEK_SET))
 		{
-			log_write(LOG_ERR, "Failed to reposition to application info in PDB file %s: %s",
-					  path, strerror(errno));
+			log_write(LOG_ERR, "Failed to reposition to application info in "
+					  "PDB file %s: %s", path, strerror(errno));
 			pdb_free(fd, pdb);
 			goto pdb_read_error;
 		}
 		if(_read_categories(fd, &pdb->categories))
 		{
-			log_write(LOG_ERR, "Cannot read categories from application info (PDB file: %s)",
-					  path);;
+			log_write(LOG_ERR, "Cannot read categories from application info "
+					  "(PDB file: %s)", path);
 			pdb_free(fd, pdb);
 			goto pdb_read_error;
 		}
@@ -199,8 +201,8 @@ int pdb_write(int fd, PDB * pdb)
 			sizeof(pdb->recordListPadding);
 		if(appInfoOffset != pdb->appInfoOffset)
 		{
-			log_write(LOG_NOTICE, "Fix application info offset. Old: %lu, new: %lu",
-					  pdb->appInfoOffset, appInfoOffset);
+			log_write(LOG_NOTICE, "Fix application info offset. Old: %lu, "
+					  "new: %lu", pdb->appInfoOffset, appInfoOffset);
 			pdb->appInfoOffset = appInfoOffset;
 		}
 	}
@@ -215,7 +217,8 @@ int pdb_write(int fd, PDB * pdb)
 
 	if(write(fd, pdb->dbname, PDB_DBNAME_LEN) != PDB_DBNAME_LEN)
 	{
-		log_write(LOG_ERR, "Cannot write database name to PDB header: %s", strerror(errno));
+		log_write(LOG_ERR, "Cannot write database name to PDB header: %s",
+				  strerror(errno));
 		goto pdb_write_error;
 	}
 
@@ -225,13 +228,15 @@ int pdb_write(int fd, PDB * pdb)
 	result += _write32_field(fd, &pdb->ctime, "creation datetime");
 	result += _write32_field(fd, &pdb->mtime, "modification datetime");
 	result += _write32_field(fd, &pdb->btime, "last backup datetime");
-	result += _write32_field(fd, &pdb->modificationNumber, "modification number");
+	result += _write32_field(fd, &pdb->modificationNumber, "modification "
+							 "number");
 	result += _write32_field(fd, &pdb->appInfoOffset, "application info offset");
 	result += _write32_field(fd, &pdb->sortInfoOffset, "sort info offset");
 	result += _write32_field(fd, &pdb->databaseTypeID, "database type ID");
 	result += _write32_field(fd, &pdb->creatorID, "creator ID");
 	result += _write32_field(fd, &pdb->seed, "unique ID seed");
-	result += _write32_field(fd, &pdb->nextRecordListOffset, "next record list offset");
+	result += _write32_field(fd, &pdb->nextRecordListOffset, "next record list "
+							 "offset");
 	result += _write16_field(fd, &pdb->recordsQty, "qty of records");
 	if(result)
 	{
@@ -254,8 +259,8 @@ int pdb_write(int fd, PDB * pdb)
 	{
 		if(pdb->appInfoOffset != lseek(fd, pdb->appInfoOffset, SEEK_SET))
 		{
-			log_write(LOG_ERR, "Failed to reposition to application info in PDB file: %s",
-					  strerror(errno));
+			log_write(LOG_ERR, "Failed to reposition to application info in "
+					  "PDB file: %s", strerror(errno));
 			goto pdb_write_error;
 		}
 		if(_write_categories(fd, pdb->categories))
@@ -362,7 +367,8 @@ int pdb_record_delete(PDB * pdb, PDBRecord * record)
 
 	if(TAILQ_EMPTY(&pdb->records))
 	{
-		log_write(LOG_WARNING, "Empty queue, nothing to delete (%s)", "pdb_record_delete");
+		log_write(LOG_WARNING, "Empty queue, nothing to delete (%s)",
+				  "pdb_record_delete");
 		return -1;
 	}
 	if(record->data != NULL)
@@ -424,7 +430,8 @@ char pdb_category_get_id(PDB * pdb, char * name)
 	}
 	if(name == NULL)
 	{
-		log_write(LOG_ERR, "NULL category name to search (%s)", "pdb_category_get_id");
+		log_write(LOG_ERR, "NULL category name to search (%s)",
+				  "pdb_category_get_id");
 		return -1;
 	}
 
@@ -436,7 +443,9 @@ char pdb_category_get_id(PDB * pdb, char * name)
 		sortedCategories[i].name = pdb->categories->names[i];
 	}
 
-	qsort(&sortedCategories, PDB_CATEGORIES_STD_QTY, sizeof(struct SortedCategory),
+	qsort(&sortedCategories,
+		  PDB_CATEGORIES_STD_QTY,
+		  sizeof(struct SortedCategory),
 		  __compare_categories);
 	struct SortedCategory searchFor = {NULL, name};
 	struct SortedCategory * searchResult = bsearch(
@@ -466,7 +475,8 @@ int pdb_category_add(PDB * pdb, const char * name)
 	else if(length > PDB_CATEGORY_LEN - 1)
 	{
 		log_write(LOG_ERR, "New name is too long: it has %d symbols", length);
-		log_write(LOG_ERR, "But in PalmOS allowed only %d symbols", PDB_CATEGORY_LEN);
+		log_write(LOG_ERR, "But in PalmOS allowed only %d symbols",
+				  PDB_CATEGORY_LEN);
 		return -1;
 	}
 
@@ -477,7 +487,8 @@ int pdb_category_add(PDB * pdb, const char * name)
 	}
 	if(freeId >= PDB_CATEGORY_LEN)
 	{
-		log_write(LOG_WARNING, "No space to add new category - all IDs is in use");
+		log_write(LOG_WARNING, "No space to add new category - all IDs "
+				  "is in use");
 		return -1;
 	}
 
@@ -658,10 +669,12 @@ static int _read_categories(int fd, PDBCategories ** categories)
 	}
 
 	int result = 0;
-	result += _read16_field(fd, &((*categories)->renamedCategories), "renamed categories");
+	result += _read16_field(fd, &((*categories)->renamedCategories),
+							"renamed categories");
 	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
-		if(read(fd, &((*categories)->names[i]), PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
+		if(read(fd, &((*categories)->names[i]),
+				PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
 		{
 			log_write(LOG_ERR, "Cannot read category #%d name: %s", i,
 					  strerror(errno));
@@ -672,7 +685,8 @@ static int _read_categories(int fd, PDBCategories ** categories)
 	{
 		result += _read8_field(fd, &((*categories)->ids[i]), "category id");
 	}
-	result += _read8_field(fd, &((*categories)->lastUniqueId), "category last unique id");
+	result += _read8_field(fd, &((*categories)->lastUniqueId), "category last "
+						   "unique id");
 	result += _read8_field(fd, &((*categories)->padding), "category padding");
 
 	if(result)
@@ -683,7 +697,8 @@ static int _read_categories(int fd, PDBCategories ** categories)
 	if((*categories)->lastUniqueId != 0x0f &&
 	   (*categories)->padding != 0x00)
 	{
-		log_write(LOG_ERR, "Malformed Palm OS category information in application info block");
+		log_write(LOG_ERR, "Malformed Palm OS category information in "
+				  "application info block");
 		return -1;
 	}
 
@@ -732,8 +747,8 @@ static int _write16_field(int fd, uint16_t * buf, char * description)
 	if(log_is_debug())
 	{
 		off_t offset = lseek(fd, 0, SEEK_CUR);
-		log_write(LOG_DEBUG, "Writing %s 0x%04x (htobe: 0x%04x) to 0x%08x offset",
-				  description, *buf, htobe, offset);
+		log_write(LOG_DEBUG, "Writing %s 0x%04x (htobe: 0x%04x) to 0x%08x "
+				  "offset", description, *buf, htobe, offset);
 	}
 	if(write(fd, &htobe, 2) != 2)
 	{
@@ -760,8 +775,8 @@ static int _write32_field(int fd, uint32_t * buf, char * description)
 	if(log_is_debug())
 	{
 		off_t offset = lseek(fd, 0, SEEK_CUR);
-		log_write(LOG_DEBUG, "Writing %s 0x%08x (htobe: 0x%08x) to 0x%08x offset",
-				  description, *buf, htobe, offset);
+		log_write(LOG_DEBUG, "Writing %s 0x%08x (htobe: 0x%08x) to 0x%08x "
+				  "offset", description, *buf, htobe, offset);
 	}
 	if(write(fd, &htobe, 4) != 4)
 	{
@@ -834,10 +849,12 @@ static int _write_categories(int fd, PDBCategories * categories)
 	}
 
 	int result = 0;
-	result += _write16_field(fd, &categories->renamedCategories, "renamed categories");
+	result += _write16_field(fd, &categories->renamedCategories,
+							 "renamed categories");
 	for(int i = 0; i < PDB_CATEGORIES_STD_QTY; i++)
 	{
-		if(write(fd, &(categories->names[i]), PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
+		if(write(fd, &(categories->names[i]),
+				 PDB_CATEGORY_LEN) != PDB_CATEGORY_LEN)
 		{
 			log_write(LOG_ERR, "Cannot write category #%d name: %s", i,
 					  strerror(errno));
@@ -852,7 +869,8 @@ static int _write_categories(int fd, PDBCategories * categories)
 	categories->lastUniqueId = 0x0f;
 	categories->padding = 0x00;
 
-	result += _write8_field(fd, &categories->lastUniqueId, "category last unique id");
+	result += _write8_field(fd, &categories->lastUniqueId,
+							"category last unique id");
 	result += _write8_field(fd, &categories->padding, "category padding");
 
 	if(result)
