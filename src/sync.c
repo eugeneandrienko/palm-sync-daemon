@@ -13,6 +13,11 @@
 
 
 /**
+   Maximal length of synclog string.
+*/
+#define SYNC_LOG_LENGTH 1000
+
+/**
    Possible synchronization actions for items to sync.
 */
 enum SyncAction
@@ -27,7 +32,8 @@ enum SyncAction
 };
 typedef enum SyncAction SyncAction;
 
-static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int dryRun);
+static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
+					   int palmfd, int dryRun);
 static int _compute_record_statuses(PDB * pdb, char * prevPdbPath);
 static SyncAction _compute_action_for_record(enum RecordStatus recordStatus, bool orgNoteExists);
 
@@ -58,7 +64,7 @@ int sync_this(SyncSettings * syncSettings)
 	}
 
 	if(_sync_memos(palmData->memoDBPath, syncSettings->prevMemosPDB,
-				   syncSettings->notesOrgFile, syncSettings->dryRun))
+				   syncSettings->notesOrgFile, palmfd, syncSettings->dryRun))
 	{
 		log_write(LOG_ERR, "Failed to synchronize Memos");
 		goto sync_this_error;
@@ -97,21 +103,25 @@ sync_this_error:
    @param[in] pdbPath Path to temporary PDB file from Palm PDA.
    @param[in] prevPdbPath Path to PDB file from previous synchronization cycle.
    @param[in] orgPath Path to OrgMode file with notes.
+   @param[in] palmfd Palm device descriptor.
    @param[in] dryRun If non-zero - do not sync data, just simulate process.
    @return Zero on sucessfull or non-zero on error.
 */
-static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int dryRun)
+static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath,
+					   int palmfd, int dryRun)
 {
 	/* Read memos from PDB file */
 	PDB * pdb;
 	if((pdb = pdb_memos_read(pdbPath)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to read MemosDB");
+		palm_log(palmfd, "Cannot parse Memos\n");
 		return -1;
 	}
 	if(_compute_record_statuses(pdb, prevPdbPath))
 	{
 		log_write(LOG_ERR, "Cannot compute statuses for records from %s", pdbPath);
+		palm_log(palmfd, "Cannot parse Memos\n");
 		return -1;
 	}
 
@@ -120,6 +130,9 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 	if((notes = org_notes_parse(orgPath)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to parse file with notes: %s", orgPath);
+		char log[SYNC_LOG_LENGTH];
+		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n", orgPath);
+		palm_log(palmfd, log);
 		return -1;
 	}
 
@@ -128,10 +141,18 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 	if(orgNoteFd == -1)
 	{
 		log_write(LOG_ERR, "Failed to open org-file %s for writing", orgPath);
+		char log[SYNC_LOG_LENGTH];
+		snprintf(log, SYNC_LOG_LENGTH, "Cannot parse OrgMode file: %s\n", orgPath);
+		palm_log(palmfd, log);
 		return -1;
 	}
 
 	/* Compare and sync notes from handheld with notes from org-file */
+	unsigned int qtyDesktopAdded = 0;
+	unsigned int qtyHandheldAdded = 0;
+	unsigned int qtyHandheldReplaced = 0;
+	unsigned int qtyHandheldDeleted = 0;
+	unsigned int qtyErrors = 0;
 	PDBRecord * record;
 	TAILQ_FOREACH(record, &pdb->records, pointers)
 	{
@@ -168,6 +189,7 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 				log_write(LOG_ERR, "Failed to write note (\"%s\") to org file %s",
 						  iconv_cp1251_to_utf8(memo->header), orgPath);
 			}
+			qtyDesktopAdded++;
 			break;
 		case ACTION_ADD_TO_HANDHELD:
 			log_write(LOG_INFO, "Add note \"%s\" from desktop to handheld",
@@ -179,6 +201,7 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 						  "Failed to add note (\"%s\") from desktop to handheld",
 						  iconv_cp1251_to_utf8(note->header));
 			}
+			qtyHandheldAdded++;
 			break;
 		case ACTION_REPLACE_ON_HANDHELD:
 			log_write(LOG_INFO, "Replacing \"%s\" memo on handheld with desktop version",
@@ -189,6 +212,7 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 						  "Failed to replace memo (\"%s\") on handheld with desktop note",
 						  iconv_cp1251_to_utf8(memo->header));
 			}
+			qtyHandheldReplaced++;
 			break;
 		case ACTION_DELETE_ON_HANDHELD:
 			log_write(LOG_INFO, "Removing \"%s\" memo on handheld",
@@ -199,12 +223,14 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 						  "Failed to remove memo (\"%s\") on handheld",
 						  iconv_cp1251_to_utf8(memo->header));
 			}
+			qtyHandheldDeleted++;
 			break;
 		case ACTION_ERROR:
 		default:
 			log_write(LOG_ERR, "Unknown record (%s) status: %d", memo->header,
 					  record->status);
 			log_write(LOG_ERR, "Unknown action number: %d", action);
+			qtyErrors++;
 		}
 	} /* TAILQ_FOREACH(...) */
 
@@ -228,10 +254,20 @@ static int _sync_memos(char * pdbPath, char * prevPdbPath, char * orgPath, int d
 						  "Failed to add note (\"%s\") from desktop to handheld",
 						  iconv_cp1251_to_utf8(note->header));
 			}
+			qtyHandheldAdded++;
 		}
 	}
 
 	/* Writing changes back to files */
+	char message[SYNC_LOG_LENGTH];
+	snprintf(message, SYNC_LOG_LENGTH, "Notes added to desktop: %d\n"
+			 "Notes added to handheld: %d\n"
+			 "Notes replaced on handheld: %d\n"
+			 "Notes deleted on handheld: %d\n"
+			 "Notes with errors: %d\n",
+			 qtyDesktopAdded, qtyHandheldAdded, qtyHandheldReplaced,
+			 qtyHandheldDeleted, qtyErrors);
+	palm_log(palmfd, message);
 	if(org_notes_close(orgNoteFd))
 	{
 		log_write(LOG_ERR, "Failed to close org-file %s opened for writing",

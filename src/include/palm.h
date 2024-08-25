@@ -118,4 +118,12 @@ int palm_close(int sd, char * device);
 */
 void palm_free(PalmData * data);
 
+/**
+   Write message to Palm handheld synchronization log.
+
+   @param[in] sd Palm device descriptor.
+   @param[in] message Message to write.
+*/
+void palm_log(int sd, char * message);
+
 #endif

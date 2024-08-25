@@ -212,6 +212,11 @@ void palm_free(PalmData * data)
 	free(data);
 }
 
+void palm_log(int sd, char * message)
+{
+	dlp_AddSyncLogEntry(sd, message);
+}
+
 /**
    Prints Palm system info.
 
@@ -292,7 +297,7 @@ static void _palm_read_database(int sd, const char * dbname, char ** path)
 
 	char synclog[PALM_SYNCLOG_ENTRY_LEN];
 	snprintf(synclog, sizeof(synclog) - 1, "Read %s to PC\n", dbname);
-	dlp_AddSyncLogEntry(sd, synclog);
+	palm_log(sd, synclog);
 	pi_file_close(f);
 }
 
@@ -365,7 +370,7 @@ static void _palm_write_database(int sd, const char * dbname, const char * path)
 
 	char synclog[PALM_SYNCLOG_ENTRY_LEN];
 	snprintf(synclog, sizeof(synclog) - 1, "Write %s (%ld bytes) from PC\n", dbname, sbuf.st_size);
-	dlp_AddSyncLogEntry(sd, synclog);
+	palm_log(sd, synclog);
 	pi_file_close(f);
 	log_write(LOG_INFO, "Write %s from %s (%ld bytes)", dbname, path, sbuf.st_size);
 }
