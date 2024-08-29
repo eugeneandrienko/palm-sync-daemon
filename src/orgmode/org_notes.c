@@ -10,6 +10,7 @@
 #include "org_notes.h"
 #include "orgmode_parser.h"
 #include "parser.h"
+#include "pdb.h"
 
 
 OrgNotes * org_notes_parse(const char * path)
@@ -107,6 +108,11 @@ int org_notes_write(int fd, char * header, char * text, char * category)
 {
 	char * conv_header = iconv_cp1251_to_utf8(header);
 	char * conv_text = text != NULL ? iconv_cp1251_to_utf8(text) : NULL;
+	if(category != NULL && strncmp(PDB_DEFAULT_CATEGORY, category,
+								   strlen(PDB_DEFAULT_CATEGORY)) == 0)
+	{
+		category = NULL;
+	}
 
 	unsigned int noteLen = strlen(conv_header);
 	noteLen += conv_text != NULL ? strlen(conv_text) : 0;

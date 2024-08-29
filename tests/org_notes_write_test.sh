@@ -20,6 +20,7 @@ Last text line
 First text line
 Last text line
 * Just a header TEST
+* Just a header TEST2
 * Header with tag TEST		:tag:
 * Header with text TEST
 Some test text

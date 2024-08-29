@@ -21,6 +21,10 @@ int main(int argc, char * argv[])
 	{
 		return 1;
 	}
+	if(org_notes_write(fd, "Just a header TEST2", NULL, "Unfiled"))
+	{
+		return 1;
+	}
 	if(org_notes_write(fd, "Header with tag TEST", NULL, "tag"))
 	{
 		return 1;
