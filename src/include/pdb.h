@@ -158,7 +158,7 @@ typedef struct PDBRecord PDBRecord;
 struct PDBCategories
 {
 	uint16_t renamedCategories;                           /**< Renamed categories (WTF?) */
-	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN]; /**< Array withcategories names */
+	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN]; /**< Array with categories names */
 	uint8_t ids[PDB_CATEGORIES_STD_QTY];                  /**< Array with categories IDs */
 	uint8_t lastUniqueId;                                 /**< Last unique category ID (usually 0x0f) */
 	uint8_t padding;                                      /**< Zero byte for padding */

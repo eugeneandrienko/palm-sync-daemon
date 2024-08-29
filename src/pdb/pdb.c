@@ -655,6 +655,8 @@ static int _read_record_list(int fd, int qty, struct RecordQueue * records)
 /**
    Read standard Palm OS category information from application info block.
 
+   Also, check for remaing bytes from deleted categories and prune it.
+
    @param fd File descriptor
    @param categories Pointer to pointer to categories structure
    @return 0 on success and non-zero on error
@@ -694,12 +696,30 @@ static int _read_categories(int fd, PDBCategories ** categories)
 		log_write(LOG_ERR, "Failed to read categories from application info");
 		return -1;
 	}
-	if((*categories)->lastUniqueId != 0x0f &&
-	   (*categories)->padding != 0x00)
+	if((*categories)->padding != 0x00)
 	{
 		log_write(LOG_ERR, "Malformed Palm OS category information in "
 				  "application info block");
 		return -1;
+	}
+
+	// Check for "garbage" categories:
+	for(int i = PDB_CATEGORIES_STD_QTY - 1; i >= 0; i--)
+	{
+		if((*categories)->ids[i] != i && strlen((*categories)->names[i]) > 0)
+		{
+			log_write(LOG_WARNING, "Found garbage in categories list: id=%d, "
+					  "name=%s. Removing it.", (*categories)->ids[i],
+					  (*categories)->names[i]);
+			(*categories)->ids[i] = 0;
+			explicit_bzero((*categories)->names[i],
+						   strlen((*categories)->names[i]));
+		}
+		else
+		{
+			(*categories)->lastUniqueId = i;
+			break;
+		}
 	}
 
 	return 0;
