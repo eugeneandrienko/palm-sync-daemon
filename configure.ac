@@ -70,7 +70,7 @@ AC_SEARCH_LIBS([iconv_open], [iconv], [], [AC_MSG_ERROR([libiconv not found])])
 OS_TYPE=$(uname -s)
 AM_CONDITIONAL([ON_FREEBSD], [test "$OS_TYPE" == "FreeBSD"])
 AM_COND_IF([ON_FREEBSD], [AC_SUBST([ICONV_LIB], [-liconv])],
-                         [AC_SUBST([ICONV_LIB], [])])
+                         [AC_SUBST([ICONV_LIB], [ ])])
 
 # Checks for header files.
 AC_CHECK_INCLUDES_DEFAULT
