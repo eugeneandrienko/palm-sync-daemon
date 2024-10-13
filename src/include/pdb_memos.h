@@ -94,15 +94,16 @@ PDB * pdb_memos_read(char * path);
    structure. After that, file will be closed.
 
    @param[in] path Path to file for writing.
-   @param[in] memos Pointer to PDBFile structure with data inside.
+   @param[in] memos Pointer to PDB structure with data inside.
    @return 0 on success or non-zero if error.
 */
 int pdb_memos_write(char * path, PDB * memos);
 
 /**
-   Emergency clear of filled PDB structure with all allocated memory. Call it
-   only on irreversible errors, when writing PDB structure to PDB file with
-   proper cleaning is impossible.
+   Emergency clear of filled PDB structure with all allocated memory.
+
+   Call it only on irreversible errors, when writing PDB structure to
+   PDB file with proper cleaning is impossible or non necessary.
 
    @param[in] pdb PDB structure for emergency cleaning.
 */
