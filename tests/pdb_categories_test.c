@@ -1,5 +1,5 @@
 #include <string.h>
-#include "pdb.h"
+#include "pdb/pdb.h"
 #include "log.h"
 
 int main(int argc, char * argv[])
@@ -10,20 +10,24 @@ int main(int argc, char * argv[])
 	}
 	log_init(1, 0);
 
+	int fd;
 	PDB * pdb;
-	int fd = pdb_read(argv[1], true, &pdb);
-	if(fd == -1)
+	if((fd = pdb_open(argv[1])) == -1)
+	{
+		return 1;
+	}
+	if((pdb = pdb_read(fd, true)) == NULL)
 	{
 		return 1;
 	}
 
 	/* Add two categories and delete middle category */
-	if(pdb_category_add(pdb, "NEW"))
+	if(pdb_category_add(pdb, "NEW") == UINT8_MAX)
 	{
 		log_write(LOG_ERR, "Failed to add category \"NEW\"");
 		return 1;
 	}
-	if(pdb_category_add(pdb, "NEW2"))
+	if(pdb_category_add(pdb, "NEW2") == UINT8_MAX)
 	{
 		log_write(LOG_ERR, "Failed to add category \"NEW2\"");
 		return 1;
@@ -51,7 +55,8 @@ int main(int argc, char * argv[])
 		log_write(LOG_INFO, "ID: %d", categories->ids[i]);
 	}
 
-	pdb_free(fd, pdb);
+	pdb_free(pdb);
+	pdb_close(fd);
 	log_close();
 	return 0;
 }

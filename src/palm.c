@@ -15,7 +15,7 @@
 #endif
 #include "log.h"
 #include "palm.h"
-#include "pdb.h"
+#include "pdb/pdb.h"
 
 #define PALM_PDB_FNAME_BUFFER_LEN 128 /* Maximal length for PDB filename */
 #define PALM_PDB_TMP_DIR "/tmp"       /* Directory to store temporary

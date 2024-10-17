@@ -1,4 +1,4 @@
-#include "pdb.h"
+#include "pdb/pdb.h"
 #include "log.h"
 
 int main(int argc, char * argv[])
@@ -11,8 +11,12 @@ int main(int argc, char * argv[])
 
 	/* Read and write PDB file */
 	PDB * pdb;
-	int fd = pdb_read(argv[1], true, &pdb);
-	if(fd == -1)
+	int fd;
+	if((fd = pdb_open(argv[1])) == -1)
+	{
+		return 1;
+	}
+	if((pdb = pdb_read(fd, true)) == NULL)
 	{
 		return 1;
 	}
@@ -20,12 +24,16 @@ int main(int argc, char * argv[])
 	{
 		return 1;
 	}
-	pdb_free(fd, pdb);
+	pdb_close(fd);
+	pdb_free(pdb);
 
 	/* Check the result */
 	PDB * pdb2;
-	fd = pdb_read(argv[1], true, &pdb2);
-	if(fd == -1)
+	if((fd = pdb_open(argv[1])) == -1)
+	{
+		return 1;
+	}
+	if((pdb2 = pdb_read(fd, true)) == NULL)
 	{
 		return 1;
 	}
@@ -63,8 +71,8 @@ int main(int argc, char * argv[])
 		log_write(LOG_INFO, "ID: %d", categories->ids[i]);
 	}
 
-	pdb_free(fd, pdb2);
-
+	pdb_close(fd);
+	pdb_free(pdb2);
 	log_close();
 	return 0;
 }

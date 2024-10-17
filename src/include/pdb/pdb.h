@@ -1,37 +1,39 @@
 /**
    @author Eugene Andrienko
-   @brief Module to operate with PDB file (application unspecific)
+   @brief Module with low-level operations for PDB files.
    @file pdb.h
 
    This module open PDB file and parse it's header.
 
-   To open and parse PDB file use pdb_read() function. This function will open
-   PDB file and allocate memory for PDB structure and fills it with data from
-   header. All application specific data should be read in application specific
-   modules.
+   To open PDB file use pdb_open() function.
 
-   File descriptor from pdb_read() can be used in other modules to read
-   remaining application data in other modules.
+   To parse PDB file use pdb_read() function. This function will open
+   PDB file and allocate memory for PDB structure and fills it with
+   data from header. All application specific data should be read in
+   application specific modules.
 
-   All mutli-byte numbers (offsets, timestamps, etc) will be saved to PDB in
-   host system endianess!
+   File descriptor from pdb_read() can be used in other modules to
+   read remaining application data in other modules.
+
+   All mutli-byte numbers (offsets, timestamps, etc) will be saved to
+   PDB in host system endianess!
 
    After modification of in-memory data, it can be written back to PDB
-   file. Call pdb_write() for this. This function will write data from PDB
-   structure to file. If writing error occurs, function will close opened
-   PDB-file and free memory, allocated for PDB structure; file descriptor and
-   PDB structure mustn't be used after error condition.
+   file. Call pdb_write() for this. This function will write data from
+   PDB structure to file. If writing error occurs, function will close
+   opened PDB-file and free memory, allocated for PDB structure; file
+   descriptor and PDB structure mustn't be used after error condition.
 
-   All multi-byte numbers (offsets, timestamps, etc) will be written to PDB file
-   on disk as big-endian!
+   All multi-byte numbers (offsets, timestamps, etc) will be written
+   to PDB file on disk as big-endian!
 
-   If PDB structure and opened file are not necessary anymore - pdb_free()
-   function can be used to free resources.
+   If PDB structure and opened file are not necessary anymore -
+   pdb_close() function can be used to free resources.
 
-   There are some support functions to operate with records and categories —
-   add, delete and edit it. Each function will change application info offset
-   and records qty fields in PDB structure to remain consistency of this
-   structure.
+   There are some support functions to operate with records and
+   categories — add, delete and edit it. Each function will change
+   application info offset and records qty fields in PDB structure to
+   remain consistency of this structure.
 */
 
 /**
@@ -41,9 +43,10 @@
 
    To read/write PDB file to/from PDB structure, there are next set of
    functions:
+   - pdb_open()
    - pdb_read()
    - pdb_write()
-   - pdb_free()
+   - pdb_close()
 
    To edit record list, when we add/edit/delete some application data in other
    module:
@@ -113,23 +116,8 @@
 
 	Overall size: 64 bits = 8 bytes.
 */
-#define PDB_RECORD_ITEM_SIZE        8
+#define PDB_RECORD_ITEM_SIZE   8
 
-
-/**
-   Computed statuses for every record.
-
-   See technical_description.pdf (table #1) for description of logic
-   and sync.c for realization, using it.
-*/
-enum RecordStatus
-{
-	RECORD_NO_RECORD,   /**< No record found */
-	RECORD_ADDED,       /**< Record added */
-	RECORD_NOT_CHANGED, /**< Record not changed */
-	RECORD_CHANGED,     /**< Record changed */
-	RECORD_DELETED      /**< Record deleted */
-};
 
 /**
    One record from record queue.
@@ -143,9 +131,7 @@ struct PDBRecord
 	TAILQ_ENTRY(PDBRecord) pointers; /**< Connection between elements in tail
 										queue */
 #endif
-	uint64_t hash;                   /**< Hash for fast matching of records */
 	void * data;                     /**< Application specific data */
-	enum RecordStatus status;        /**< Computed status of this record */
 };
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(RecordQueue, PDBRecord);
@@ -157,7 +143,7 @@ typedef struct PDBRecord PDBRecord;
 */
 struct PDBCategories
 {
-	uint16_t renamedCategories;                           /**< Renamed categories (WTF?) */
+	uint16_t renamedCategories;                           /**< Renamed categories */
 	char names[PDB_CATEGORIES_STD_QTY][PDB_CATEGORY_LEN]; /**< Array with categories names */
 	uint8_t ids[PDB_CATEGORIES_STD_QTY];                  /**< Array with categories IDs */
 	uint8_t lastUniqueId;                                 /**< Last unique category ID (usually 0x0f) */
@@ -195,7 +181,7 @@ typedef struct PDB PDB;
 
 
 /**
-   \defgroup pdb_file_ops Operate with the whole PDB structure and PDB files
+   \defgroup pdb_file_ops Operations with PDB files
 
    There are a set of functions to operate with *.pdb files and to
    read/store it in PDB structure.
@@ -204,26 +190,32 @@ typedef struct PDB PDB;
 */
 
 /**
+   Opens given PDB file and returns it's descriptor.
+
+   @param[in] path Path to file in filesystem.
+   @return File descriptor or -1 on error.
+*/
+int pdb_open(const char * path);
+
+/**
    Read header and other standard info from PDB file to PDB structure.
 
-   Reads PDB file from given path. Then, allocate memory for header and records
-   to fill it with actual data. Categories may by NULL if we do not use standard
-   Palm OS categories in given PDB file.
+   Reads PDB file and allocate memory for header and records to fill
+   it with actual data. Categories in PDB structure may be NULL if we
+   do not use Palm OS categories in given PDB file.
 
-   Allocated memory should be freed outside of this function, by pdb_write() or
-   pdb_free().
+   Allocated memory will be freed outside of this function, by
+   pdb_close().
 
    All multi-byte numbers will be converted to host system endianess. All
    timestamps will be converted to Unix timestamps.
 
-   @param[in]  path Path to PDB file.
-   @param[in]  stdCatInfo Set to true if there is a standard Palm OS category
+   @param[in] fd PDB file descriptor.
+   @param[in] stdCatInfo Set to true if there is a standard Palm OS category
    information.
-   @param[out] pdb Pointer to pointer to PDB structure. This structure will be
-   allocated and initialized inside this function.
-   @return PDB file descriptor or -1 if error.
+   @return Initialized PDB structure or NULL on error.
 */
-int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
+PDB * pdb_read(const int fd, bool stdCatInfo);
 
 /**
    Write header and other standard information to PDB file.
@@ -233,25 +225,25 @@ int pdb_read(const char * path, bool stdCatInfo, PDB ** pdb);
    records in PDB structure with dirty flag set — this flag will be
    cleared.
 
-   If this call ended with error, then opened PDB file will be closed
-   and all memory, allocated for PDB structure, will be freed. If this
-   call ended without error - opened file and PDB structure should be
-   deallocated via pdb_free().
-
-   @param[in] fd File descriptor, already opened by pdb_read().
+   @param[in] fd File descriptor, already opened by pdb_open().
    @param[in] pdb Pointer to the PDB structure with data.
-   @return Zero if write successfull, otherwise non-zero
+   @return Zero if write successfull, otherwise non-zero.
 */
 int pdb_write(int fd, PDB * pdb);
 
 /**
-   Free acquired resources: opened file and the PDB structure, already filled
-   with data.
+   Close opened PDB file.
 
    @param[in] fd Opened PDB-file descriptor.
+*/
+void pdb_close(int fd);
+
+/**
+   Free internals of PDB structure allocated in pdb_read().
+
    @param[in] pdb PDB structure to free.
 */
-void pdb_free(int fd, PDB * pdb);
+void pdb_free(PDB * pdb);
 
 /**
    @}
@@ -262,30 +254,42 @@ void pdb_free(int fd, PDB * pdb);
    \defgroup pdb_record_ops Operate with records from PDB structure
 
    There are set of functions to create or delete record in PDB
-   structure. Not including application specific data — it should be
-   stored in application-specific modules
+   structure.
 
    @{
 */
 
 /**
-   Create new record at the end of record list.
+   Add new record to the end of record list.
+
+   Record unique ID will be generated inside this function.
 
    @param[in] pdb Pointer to PDB structure.
-   @param[in] offset offset field for the new record's data.
-   @param[in] attributes attributes field for new record.
-   @return Pointer to new record or NULL of error.
+   @param[in] offset Offset to record's data.
+   @param[in] attributes Attributes field for new record.
+   @param[in] data Application specific data.
+   @return Created record or NULL on error.
 */
-PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes);
+PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes,
+							  void * data);
 
 /**
    Delete given record from the records list.
 
    @param[in] pdb Pointer to PDB structure.
-   @param[in] record Record to delete.
+   @param[in] uniqueRecordId Unique record ID.
    @return Zero if success or non-zero value on error.
 */
-int pdb_record_delete(PDB * pdb, PDBRecord * record);
+int pdb_record_delete(PDB * pdb, long uniqueRecordId);
+
+/**
+   Get unique record ID.
+
+   @param[in] record PDB record.
+   @return Unique record ID or zero on error.
+*/
+long pdb_record_get_unique_id(PDBRecord * record);
+
 
 /**
    @}
@@ -295,14 +299,14 @@ int pdb_record_delete(PDB * pdb, PDBRecord * record);
 /**
    \defgroup pdb_categories_ops Operate with categories in PDB structure
 
-   Functions to retrieving category data or create/delete categories,
-   if possible.
+   Set of functions to retrieving category data or create/delete
+   categories.
 
    @{
 */
 
 /**
-   Returns pointer to category name.
+   Returns pointer to category name by category ID.
 
    Category ID starts from zero to PDB_CATEGORIES_STD_LEN - 1.
 
@@ -313,27 +317,28 @@ int pdb_record_delete(PDB * pdb, PDBRecord * record);
 char * pdb_category_get_name(PDB * pdb, uint8_t id);
 
 /**
-   Returns category ID.
-
-   Category ID to search.
+   Returns category ID by category name.
 
    @param[in] pdb Pointer to PDB structure.
    @param[in] name Category name.
-   @return Category ID. Returns -1 if not found.
+   @return Category ID. Returns UINT8_MAX if category not found.
 */
-char pdb_category_get_id(PDB * pdb, char * name);
+uint8_t pdb_category_get_id(PDB * pdb, char * name);
 
 /**
    Add new category.
 
-   Category ID starts from zero to PDB_CATEGORIES_STD_LEN - 1. Function will
-   take first non-using category ID.
+   Resulting category ID starts from zero to PDB_CATEGORIES_STD_LEN - 1.
+   Function will take first non-using category ID.
+
+   If category name is > PDB_CATEGORY_LEN, then category name will be
+   truncated.
 
    @param[in] pdb Pointer to PDB structure.
    @param[in] name Name of new category.
-   @return Zero on successfull or non-zero on error.
+   @return Category ID or UINT8_MAX on error.
 */
-int pdb_category_add(PDB * pdb, const char * name);
+uint8_t pdb_category_add(PDB * pdb, const char * name);
 
 /**
    Delete existing category.

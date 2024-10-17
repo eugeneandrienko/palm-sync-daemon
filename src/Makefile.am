@@ -27,10 +27,10 @@ palm_sync_daemon_SOURCES = \
 	helper.c \
 	include/palm.h \
 	palm.c \
-	include/pdb.h \
+	include/pdb/pdb.h \
 	pdb/pdb.c \
-	include/pdb_memos.h \
-	pdb/pdb_memos.c \
+	include/pdb/memos.h \
+	pdb/memos.c \
 	orgmode/parser/orgmode_parser.h \
 	orgmode/parser/parser.y \
 	orgmode/parser/scanner.l \

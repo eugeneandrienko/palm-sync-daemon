@@ -1,4 +1,4 @@
-#include "pdb.h"
+#include "pdb/pdb.h"
 #include "log.h"
 
 int main(int argc, char * argv[])
@@ -9,27 +9,32 @@ int main(int argc, char * argv[])
 	}
 	log_init(1, 0);
 
+	int fd;
 	PDB * pdb;
-	int fd = pdb_read(argv[1], true, &pdb);
-	if(fd == -1)
+	if((fd = pdb_open(argv[1])) == -1)
+	{
+		return 1;
+	}
+	if((pdb = pdb_read(fd, true)) == NULL)
 	{
 		return 1;
 	}
 
 	/* Add two records and delete middle record */
 	PDBRecord * record;
-	if((record = pdb_record_create(pdb, 0x01, PDB_RECORD_ATTR_DIRTY | 2)) == NULL)
+	if((record = pdb_record_create(
+			pdb, 0x01, PDB_RECORD_ATTR_DIRTY | 2, NULL)) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to write new record #1");
 		return 1;
 	}
 
-	if(pdb_record_create(pdb, 0x02, PDB_RECORD_ATTR_DELETED | 3) == NULL)
+	if(pdb_record_create(pdb, 0x02, PDB_RECORD_ATTR_DELETED | 3, NULL) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to write new record #2");
 		return 1;
 	}
-	if(pdb_record_delete(pdb, record))
+	if(pdb_record_delete(pdb, pdb_record_get_unique_id(record)))
 	{
 		log_write(LOG_ERR, "Failed to delete record #1");
 		return 1;
@@ -46,7 +51,8 @@ int main(int argc, char * argv[])
 				  record->id[0], record->id[1], record->id[2]);
 	}
 
-	pdb_free(fd, pdb);
+	pdb_free(pdb);
+	pdb_close(fd);
 	log_close();
 	return 0;
 }

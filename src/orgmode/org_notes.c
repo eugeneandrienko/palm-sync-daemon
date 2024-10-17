@@ -10,7 +10,7 @@
 #include "org_notes.h"
 #include "orgmode_parser.h"
 #include "parser.h"
-#include "pdb.h"
+#include "pdb/pdb.h"
 
 
 OrgNotes * org_notes_parse(const char * path)
