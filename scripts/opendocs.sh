@@ -4,5 +4,8 @@ if [ "$(pwd | xargs basename)" == "scripts" ]; then
     cd ..
 fi
 
-xdg-open docs/doxygen/html/index.html
-
+DOCUMENTATION="docs/doxygen/html/index.html"
+librewolf "$DOCUMENTATION"
+if [ "$?" -ne "0" ]; then
+    xdg-open "$DOCUMENTATION"
+fi
