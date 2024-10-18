@@ -17,7 +17,7 @@
 */
 
 /**
-   @page memos Operate with Memos from PDB file.
+   @page memos Operate with Memos from PDB file
 
    This module can operate with memos from PDB file with Memos database inside.
 
@@ -28,7 +28,7 @@
    - memos_close() - close opened PDB file with Memos.
    - memos_free() - free memory, allocated inside Memos structure.
 
-   To operate with PDBMemos structure there are the next functions:
+   To operate with Memos structure there are the next functions:
    - memos_memo_get()
    - memos_memo_add()
    - memos_memo_edit()
@@ -81,8 +81,7 @@ typedef struct Memos Memos;
 
 
 /**
-   \defgroup memos_ops Operate with Memos from corresponding PDB
-   structure
+   \defgroup memos_ops Operate with Memos from corresponding PDB structure
 
    Set of functions to operate with PDB structure specific for Memos
    Palm application.

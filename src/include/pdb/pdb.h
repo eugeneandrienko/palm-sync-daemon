@@ -47,11 +47,13 @@
    - pdb_read()
    - pdb_write()
    - pdb_close()
+   - pdb_free()
 
    To edit record list, when we add/edit/delete some application data in other
    module:
    - pdb_record_create()
    - pdb_record_delete()
+   - pdb_record_get_unique_id()
 
    To operate with standard Palm OS categories:
    - pdb_category_get_id()
