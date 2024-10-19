@@ -532,7 +532,6 @@ stored in queue\footnote{See manual page for \texttt{queue}, section~\#3. This
 	uint32_t offset;
 	uint8_t attributes;
 	uint8_t id[3];
-	uint64_t hash;
 	void * data;
   };
   typedef struct PDBRecord PDBRecord;
@@ -821,13 +820,18 @@ OS). Otherwise there are a plain ASCII symbols.
 Data format, which is used to store Memos data inside field \texttt{data} in
 \texttt{PDB} structure, is simple and looks like this:
 \begin{lstlisting}[language=C, caption={C structure to store memo data}]
-  struct PDBMemo
+  struct Memo
   {
 	char * header;
 	char * text;
+    char * category;
+    PDBRecord * _record;
   };
-  typedef struct PDBMemo PDBMemo;
+  typedef struct Memo Memo;
 \end{lstlisting}
+
+Here the \texttt{_record} is link to \texttt{PDBRecord} corresponding to this
+memo.
 
 \subsubsection{Processing Tasks PDB files}
 \label{sec:processing-todo-pdb}
