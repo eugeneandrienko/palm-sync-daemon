@@ -58,14 +58,11 @@ struct Memo
 	PDBRecord * _record;         /**< PDB record for memo */
 #endif
 };
+typedef struct Memo Memo;
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TAILQ_HEAD(MemosQueue, Memo);
-#endif
-typedef struct Memo Memo;
-/**
-   Double linked queue of Memo elements
-*/
 typedef struct MemosQueue MemosQueue;
+#endif
 
 /**
    Data from PDB file.

@@ -167,7 +167,7 @@ void memos_free(Memos * memos)
 }
 
 
-/* Function to operate with memos */
+/* Functions to operate with memo */
 
 /**
    Element of array with memos. Maps memo header and pointer of memo.
@@ -618,7 +618,7 @@ static Memo * _memos_read_memo(int fd, PDBRecord * record, PDB * pdb)
 				  " %s", record->offset, strerror(errno));
 		return NULL;
 	}
-	/* "+ 1" for three next callocs for null-termination bytes */
+	/* "+ 1" for two next callocs for null-termination bytes */
 	if((memo->header = calloc(headerSize + 1, sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for memo header: %s",
