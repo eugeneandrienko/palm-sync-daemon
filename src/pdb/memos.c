@@ -164,6 +164,7 @@ void memos_free(Memos * memos)
 	}
 
 	pdb_free(memos->_pdb);
+	free(memos);
 }
 
 

@@ -322,6 +322,7 @@ void pdb_free(PDB * pdb)
 	{
 		free(pdb->categories);
 	}
+	free(pdb);
 }
 
 
