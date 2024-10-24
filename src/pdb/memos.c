@@ -404,7 +404,7 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 		return -1;
 	}
 
-	char categoryId = 0;
+	uint8_t categoryId = 0;
 	if(category != NULL &&
 	   (categoryId = pdb_category_get_id(memos->_pdb, category)) == UINT8_MAX)
 	{
