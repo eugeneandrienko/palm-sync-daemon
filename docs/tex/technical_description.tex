@@ -1092,7 +1092,7 @@ Byte lengths of all parts of data entry:
   \texttt{<repeat\_data>} & 3 \\
   \texttt{<repeat\_until\_date>} & 2 \\
   \texttt{<repeat\_N\_times>} & 1 \\
-  \texttt{<unknown>} & 4 \\
+  \texttt{<unknown>} & 3 \\
   \hline
   \caption{Byte length of TasksDB-PTod entry parts}
   \label{tab:tasks-ptod-entry-parts-lens}
@@ -1174,8 +1174,6 @@ Byte lengths of all parts of data entry:
       \hline
       ... $N$ weeks & \texttt{0x02 0x00} \\
       \hline
-      ... $N$ other weeks & \texttt{0x02 0x00} \\
-      \hline
       ... $N$ month(s) by day & \texttt{0x03 0x00} \\
       \hline
       ... $N$ month(s) by date & \texttt{0x04 0x00} \\
@@ -1195,20 +1193,13 @@ Byte lengths of all parts of data entry:
       (repeat TODO item every $N$ day/weeks/months/etc). Just a hexadecimal
       value.
     \end{itemize}
-
-  \item \texttt{<unknown>}~--- can take the next values:
-    \begin{itemize}
-    \item \texttt{0x01 0x00 0x00 0x00} when repeating every week
-    \item \texttt{0x40 0x00 0x00 0x00} whene repeating every other week
-    \item \texttt{0x00 0x00 0x00 0x00} in every other cases.
-    \end{itemize}
   \end{itemize}
 \end{itemize}
 
 This description of Tasks databases is non-complete and doesn't cover the next
 topics:
 \begin{itemize}
-\item Meaning of the last 4 bytes~--- the \texttt{<unkown>} part of entry from
+\item Meaning of the last 3 bytes~--- the \texttt{<unkown>} part of entry from
   \texttt{TasksDB-PTod} database.
 \item Where are days of week stored, on which the task will be repeated?
 \item Where flag, which switches between <<Fixed schedule>> and <<After
