@@ -17,10 +17,9 @@ EXTRA_DIST = $(srcdir)/scripts/*
 all-local:
 	if [ "$(srcdir)" == "$(builddir)" ]; then \
 		$(srcdir)/scripts/static_analysis.sh $(MAYBE_CPPCHECK); \
-		etags --version > /dev/null; \
-		if [ "$$?" -eq "0" ]; then \
-			find src/ -type f -regex '.*\.[ch]' | xargs etags --language=c; \
-		fi \
+		if [ "$(MAYBE_CTAGS)" == "ctags" ]; then \
+			$(MAYBE_CTAGS) -eR "$(srcdir)"/src; \
+		fi; \
 	fi
 
 clean-local:

@@ -47,6 +47,11 @@ AM_COND_IF([HAVE_CPPCHECK], [], [AC_MSG_WARN([Continue without C static analysis
 AM_COND_IF([HAVE_CPPCHECK], [AC_SUBST([MAYBE_CPPCHECK], [cppcheck])],
                             [AC_SUBST([MAYBE_CPPCHECK], [no])])
 
+AC_CHECK_PROG([CTAGS], [ctags], [yes], [no])
+AM_CONDITIONAL([HAVE_CTAGS], [test "$CTAGS" == "yes"])
+AM_COND_IF([HAVE_CTAGS], [AC_SUBST([MAYBE_CTAGS], [ctags])],
+                         [AC_SUBST([MAYBE_CTAGS], [no])])
+
 AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile])
 AC_CONFIG_FILES([docs/doxygen/Makefile docs/doxygen/Doxyfile docs/tex/Makefile docs/man/Makefile])
 
