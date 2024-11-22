@@ -698,6 +698,12 @@ static Memo * _memos_read_memo(int fd, PDBRecord * record, PDB * pdb)
 */
 static int _memos_write_memo(int fd, Memo * memo)
 {
+	if(memo == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL memo to write!");
+		return -1;
+	}
+
 	PDBRecord * record = memo->_record;
 	uint32_t offset = record->offset;
 
