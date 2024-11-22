@@ -31,6 +31,8 @@ palm_sync_daemon_SOURCES = \
 	pdb/pdb.c \
 	include/pdb/memos.h \
 	pdb/memos.c \
+	include/pdb/tasks.h \
+	pdb/tasks.c \
 	orgmode/parser/orgmode_parser.h \
 	orgmode/parser/parser.y \
 	orgmode/parser/scanner.l \

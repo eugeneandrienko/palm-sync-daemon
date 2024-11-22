@@ -20,6 +20,7 @@ TESTS = \
 	pdb_record_test.sh \
 	memos_test.sh \
 	memos_data_edit_test.sh \
+	tasks_test.sh \
 	parser_test.sh \
 	org_notes_test.sh \
 	org_notes_write_test.sh \
@@ -35,6 +36,7 @@ check_PROGRAMS = \
 	pdb_record_test \
 	memos_test \
 	memos_data_edit_test \
+	tasks_test \
 	parser_test \
 	org_notes_test \
 	org_notes_write_test \
@@ -88,6 +90,13 @@ memos_data_edit_test_SOURCES = \
 	../src/pdb/pdb.c \
 	../src/pdb/memos.c \
 	memos_data_edit_test.c
+tasks_test_SOURCES = \
+	../src/umash.c \
+	../src/helper.c \
+	../src/log.c \
+	../src/pdb/pdb.c \
+	../src/pdb/tasks.c \
+	tasks_test.c
 parser_test_SOURCES = \
 	../src/log.c \
 	../src/orgmode/parser/parser.y \
