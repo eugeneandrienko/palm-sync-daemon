@@ -157,9 +157,11 @@ void memos_free(Memos * memos)
 		free(memo1->header);
 		free(memo1->text);
 		free(memo1->category);
+		PDBRecord * record = memo1->_record;
 		memo1->_record = NULL;
 		TAILQ_REMOVE(&memos->queue, memo1, pointers);
 		free(memo1);
+		record->data = NULL;
 		memo1 = memo2;
 	}
 

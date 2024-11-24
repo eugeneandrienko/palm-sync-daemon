@@ -187,7 +187,20 @@ void tasks_free(Tasks * tasks)
 	{
 		task2 = TAILQ_NEXT(task1, pointers);
 		TAILQ_REMOVE(&tasks->queue, task1, pointers);
-		_task_free(task1);
+		free(task1->header);
+		if(task1->text != NULL)
+		{
+			free(task1->text);
+		}
+		free(task1->category);
+		__task_clear_ptod(task1);
+		PDBRecord * recordToDoDB = task1->_record_todo;
+		PDBRecord * recordTasksDB = task1->_record_tasks;
+		task1->_record_todo = NULL;
+		task1->_record_tasks = NULL;
+		free(task1);
+		recordToDoDB->data = NULL;
+		recordTasksDB->data = NULL;
 		task1 = task2;
 	}
 	pdb_free(tasks->_pdb_tododb);
