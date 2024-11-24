@@ -327,6 +327,7 @@ Memo * memos_memo_add(Memos * memos, char * header, char * text,
 			PDB_RECORD_ATTR_EMPTY | (0x0f & categoryId), memo)) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot add new record for new memo");
+		free(memo->category);
 		if(text != NULL)
 		{
 			free(memo->text);
