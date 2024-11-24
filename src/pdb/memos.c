@@ -224,7 +224,7 @@ Memo * memos_memo_add(Memos * memos, char * header, char * text,
 {
 	if(memos == NULL)
 	{
-		log_write(LOG_ERR, "No memos - nowhere to add new memo!");
+		log_write(LOG_ERR, "No memos structure - nowhere to add new memo!");
 		return NULL;
 	}
 	if(header == NULL)
@@ -524,7 +524,7 @@ int memos_memo_delete(Memos * memos, Memo * memo)
 	if(pdb_record_delete(memos->_pdb, uniqueRecordId))
 	{
 		log_write(LOG_ERR, "Cannot delete memo record from record list "
-				  "(offset: %x)", record->offset);
+				  "(offset: 0x%08x)", record->offset);
 		return -1;
 	}
 
