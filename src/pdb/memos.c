@@ -393,7 +393,8 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 				  strerror(errno));
 		return -1;
 	}
-	if(text != NULL && strlen(text) > strlen(memo->text) &&
+	int strlenMemoText = memo->text != NULL ? strlen(text) : 0;
+	if(text != NULL && strlen(text) > strlenMemoText &&
 	   (newText = calloc(strlen(text), sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to allocate memory for memo's new text: %s",
@@ -443,12 +444,28 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 
 	if(newText != NULL)
 	{
-		free(memo->text);
+		if(memo->text != NULL)
+		{
+			free(memo->text);
+		}
 		memo->text = newText;
 		strcpy(memo->text, text);
 	}
 	else if(text != NULL)
 	{
+		if(memo->text == NULL)
+		{
+			if((memo->text = calloc(strlen(text), sizeof(char))) == NULL)
+			{
+				log_write(LOG_ERR, "Failed to allocate memory for new text in "
+						  "memo structure: %s", strerror(errno));
+				if(newHeader != NULL)
+				{
+					free(newHeader);
+				}
+				return -1;
+			}
+		}
 		explicit_bzero(memo->text, strlen(memo->text));
 		strcpy(memo->text, text);
 	}
@@ -492,12 +509,15 @@ int memos_memo_delete(Memos * memos, Memo * memo)
 
 	uint32_t offset;
 	offset = strlen(memo->header) + sizeof(char); /* header + '\n' */
-	offset += strlen(memo->text) + sizeof(char);  /* text   + '\0' */
+	offset += (memo->text != NULL ? strlen(memo->text) : 0) + sizeof(char); /* text   + '\0' */
 
 	/* Delete memo */
 	PDBRecord * record = memo->_record;
 	free(memo->header);
-	free(memo->text);
+	if(memo->text != NULL)
+	{
+		free(memo->text);
+	}
 	free(memo->category);
 	TAILQ_REMOVE(&memos->queue, memo, pointers);
 
