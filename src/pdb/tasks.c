@@ -955,7 +955,7 @@ static int _tasks_write_task(TasksFD tfd, Task * task)
 			log_write(LOG_ERR, "Failed to write task text!");
 			return -1;
 		}
-		log_write(LOG_DEBUG, "Write text (len=%d) for memo", strlen(task->text));
+		log_write(LOG_DEBUG, "Write text (len=%d) for task", strlen(task->text));
 	}
 
 	/* Writing '\0' at the end of record in ToDoDB PDB file */
@@ -1168,7 +1168,7 @@ static int _tasks_write_task(TasksFD tfd, Task * task)
 			log_write(LOG_ERR, "Failed to write task text!");
 			return -1;
 		}
-		log_write(LOG_DEBUG, "Write text (len=%d) for memo", strlen(task->text));
+		log_write(LOG_DEBUG, "Write text (len=%d) for task", strlen(task->text));
 	}
 
 	/* Writing '\0' at the end of record in TasksDB-PTod PDB file */
