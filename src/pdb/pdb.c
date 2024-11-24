@@ -337,6 +337,25 @@ PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes,
 		return NULL;
 	}
 
+	long randomId = random();
+	uint8_t id[3] = {
+		(uint8_t)(randomId & 0x000000ff),
+		(uint8_t)((randomId & 0x0000ff00) >> 8),
+		(uint8_t)((randomId & 0x00ff0000) >> 16)
+	};
+	return pdb_record_create_with_id(pdb, offset, attributes, id, data);
+}
+
+PDBRecord * pdb_record_create_with_id(PDB * pdb, uint32_t offset,
+									  uint8_t attributes, uint8_t id[3],
+									  void * data)
+{
+	if(pdb == NULL)
+	{
+		log_write(LOG_ERR, "NULL PDB structure in pdb_record_create");
+		return NULL;
+	}
+
 	PDBRecord * newRecord;
 	if((newRecord = calloc(1, sizeof(PDBRecord))) == NULL)
 	{
@@ -349,10 +368,9 @@ PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes,
 	newRecord->attributes = attributes;
 	newRecord->data = data;
 
-	long randomId = random();
-	newRecord->id[0] = (uint8_t)(randomId & 0x000000ff);
-	newRecord->id[1] = (uint8_t)((randomId & 0x0000ff00) >> 8);
-	newRecord->id[2] = (uint8_t)((randomId & 0x00ff0000) >> 16);
+	newRecord->id[0] = id[0];
+	newRecord->id[1] = id[1];
+	newRecord->id[2] = id[2];
 
 	if(TAILQ_EMPTY(&pdb->records))
 	{

@@ -276,6 +276,20 @@ PDBRecord * pdb_record_create(PDB * pdb, uint32_t offset, uint8_t attributes,
 							  void * data);
 
 /**
+   Add new record to the end of record list.
+
+   @param[in] pdb Pointer to PDB structure.
+   @param[in] offset Offset to record's data.
+   @param[in] attributes Attributes field for new record.
+   @param[in] id Array with unique ID of record.
+   @param[in] data Application specific data.
+   @return Created record or NULL on error.
+*/
+PDBRecord * pdb_record_create_with_id(PDB * pdb, uint32_t offset,
+									  uint8_t attributes, uint8_t id[3],
+									  void * data);
+
+/**
    Delete given record from the records list.
 
    @param[in] pdb Pointer to PDB structure.
