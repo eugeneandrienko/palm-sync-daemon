@@ -112,6 +112,7 @@ tests/pdb_record_test
 tests/memos_test
 tests/memos_data_edit_test
 tests/tasks_test
+tests/tasks_data_edit_test
 tests/pdb_test
 test-driver
 ylwrap

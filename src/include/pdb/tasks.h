@@ -233,6 +233,87 @@ void tasks_free(Tasks * tasks);
 Task * tasks_task_get(Tasks * tasks, char * header);
 
 /**
+   Add new task.
+
+   Add new task to tasks queue. Task will not have due date or alarm time or
+   repeat interval. These should be set via tasks_task_set_due(),
+   tasks_task_set_alarm() and tasks_task_set_repeat() functions.
+
+   New task will be added to the end of existing tasks list.
+
+   @param[in] tasks Tasks structure.
+   @param[in] header Header of new task.
+   @param[in] text Text for new task. May be NULL if no note for new task should
+   exists.
+   @param[in] category Category name for task. May be NULL — then default Palm
+   category will be used.
+   @param[in] priority Priority for task.
+   @return Pointer to new task or NULL if error.
+*/
+Task * tasks_task_add(Tasks * tasks, char * header, char * text,
+					  char * category, TaskPriority priority);
+
+/**
+   Set due date for existing task.
+
+   Can set due date or remove it if zero parameters are passed.
+
+   @param[in] task Task to edit.
+   @param[in] dueYear Due year for task or 0 to delete due date.
+   @param[in] dueMonth Due month for task or 0 to delete due date.
+   @param[in] dueDay Due day for task or 0 to delete due date.
+   @return Zero on success or non-zero on error.
+*/
+int tasks_task_set_due(Task * task, uint16_t dueYear, uint8_t dueMonth,
+					   uint8_t dueDay);
+
+/**
+   Set alarm time for existing task.
+
+   Can set alarm time or remove it if NULL parameter is passed.
+
+   @param[in] task Task to edit.
+   @param[in] alarm Alarm structure or NULL to delete alarm time from task.
+   @return Zero on success or non-zero on error.
+*/
+int tasks_task_set_alarm(Task * task, Alarm * alarm);
+
+/**
+   Set repeat interval for existing task.
+
+   Can set repeat interval or remove it if NULL parameter is passed.
+
+   @param[in] task Task to edit.
+   @param[in] repeat Repeat structure or NULL to delete repeat interval from
+   task.
+   @return Zero on success or non-zero on error.
+*/
+int tasks_task_set_repeat(Task * task, Repeat * repeat);
+
+/**
+   Edit main data on existing task.
+
+   @param[in] tasks Tasks structure.
+   @param[in] task Task to edit.
+   @param[in] header New header or NULL if we shouldn't change header.
+   @param[in] text New text or NULL if we shouldn't change text.
+   @param[in] category Category name or NULL if we shouldn't change category.
+   @param[in] priority New priority or NULL if we shouldn't change priority.
+   @return Zero on success or non-zero value on error.
+*/
+int tasks_task_edit(Tasks * tasks, Task * task, char * header, char * text,
+					char * category, TaskPriority * priority);
+
+/**
+   Delete existing task.
+
+   @param[in] tasks Pointer to TasksQueue.
+   @param[in] task Pointer to task to delete.
+   @return Zero on success or non-zero value on error.
+*/
+int tasks_task_delete(Tasks * tasks, Task * task);
+
+/**
    @}
 */
 

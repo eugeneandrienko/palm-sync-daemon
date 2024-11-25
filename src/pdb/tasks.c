@@ -260,6 +260,760 @@ Task * tasks_task_get(Tasks * tasks, char * header)
 	return searchResult != NULL ? searchResult->task : NULL;
 }
 
+Task * tasks_task_add(Tasks * tasks, char * header, char * text,
+					  char * category, TaskPriority priority)
+{
+	if(tasks == NULL)
+	{
+		log_write(LOG_ERR, "No tasks structure - nowhere to add new task!");
+		return NULL;
+	}
+	if(header == NULL)
+	{
+		log_write(LOG_ERR, "Header of new task is NULL! Cannot add new task!");
+		return NULL;
+	}
+
+	/* Search category ID for given category */
+	if(category == NULL)
+	{
+		category = PDB_DEFAULT_CATEGORY;
+	}
+	int categoryIdToDoDB = pdb_category_get_id(tasks->_pdb_tododb, category);
+	if(categoryIdToDoDB == UINT8_MAX)
+	{
+		log_write(LOG_DEBUG, "Category with name \"%s\" not found in ToDoDB "
+				  "PDB!", category);
+		if((categoryIdToDoDB = pdb_category_add(tasks->_pdb_tododb,
+												category)) == UINT8_MAX)
+		{
+			log_write(LOG_ERR, "Cannot add new category with name \"%s\" "
+					  "to ToDoDB PDB!", category);
+			return NULL;
+		}
+	}
+	int categoryIdTasksDB = pdb_category_get_id(tasks->_pdb_tasks, category);
+	if(categoryIdTasksDB == UINT8_MAX)
+	{
+		log_write(LOG_DEBUG, "Category with name \"%s\" not found in TasksDB "
+				  "PDB!", category);
+		if((categoryIdTasksDB = pdb_category_add(tasks->_pdb_tasks,
+												 category)) == UINT8_MAX)
+		{
+			log_write(LOG_ERR, "Cannot add new category with name \"%s\" "
+					  "to TasksDB PDB!", category);
+			return NULL;
+		}
+	}
+	if(categoryIdToDoDB != categoryIdTasksDB)
+	{
+		log_write(LOG_ERR, "Successfully added \"%s\" category to ToDoDB and "
+			"TasksDB PDBs, but category IDs in these files are differ: %d and "
+				  "%d", category, categoryIdToDoDB, categoryIdTasksDB);
+		return NULL;
+	}
+
+	/* Calculating offsets for new task: */
+
+	/* Get last task in ToDoDB */
+	PDBRecord * recordToDoDB;
+	PDBRecord * recordTasksDB;
+	Task * task;
+	if((recordToDoDB = TAILQ_LAST(&tasks->_pdb_tododb->records,
+								  RecordQueue)) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot get last task's record from ToDoDB PDB "
+				  "header");
+		return NULL;
+	}
+	if((recordTasksDB = TAILQ_LAST(&tasks->_pdb_tasks->records,
+								   RecordQueue)) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot get last task's record from TasksDB PDB "
+				  "header");
+		return NULL;
+	}
+	if((task = TAILQ_LAST(&tasks->queue, TasksQueue)) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot get last task from ToDoDB PDB header");
+		return NULL;
+	}
+	if(task->_record_todo != recordToDoDB || task->_record_tasks != recordTasksDB)
+	{
+		log_write(LOG_ERR, "Latest task and latest PDB record doesn't match!\n"
+				  "[ToDoDB] Latest task record: 0x%08x, "
+				  "latest PDB record: 0x%08x\n",
+				  "[TasksDB] Latest task record: 0x%08x, "
+				  "latest PDB record: 0x%08x",
+				  task->_record_todo, recordToDoDB,
+				  task->_record_tasks, recordTasksDB);
+		return NULL;
+	}
+	uint32_t offsetToDoDB = recordToDoDB->offset;
+	uint32_t offsetTasksDB = recordTasksDB->offset;
+	log_write(LOG_DEBUG, "Offset of the last record in ToDoDB: 0x%08x\n"
+			  "Offset of the last record in TasksDB: 0x%08x",
+			  offsetToDoDB, offsetTasksDB);
+
+	/* Calculate size of last record and offset beyond it for ToDoDB: */
+	/* Scheduled date (2 bytes) */
+	offsetToDoDB += 2;
+	/* Priority (1 byte) */
+	offsetToDoDB += 1;
+	/* Header + '\0' */
+	offsetToDoDB += strlen(task->header) + sizeof(char);
+	/* Text (if exists) + '\0' */
+	offsetToDoDB += (task->text != NULL ? strlen(task->text) : 0) + sizeof(char);
+	/* Size of new task item in record list */
+	offsetToDoDB += PDB_RECORD_ITEM_SIZE;
+
+	/* Calculate size of last record and offset beyond it for TasksDB: */
+	/* Entry type (1 byte) */
+	offsetTasksDB += 1;
+	/* Zero bytes (4 bytes) */
+	offsetTasksDB += 4;
+	/* Priority (1 byte) */
+	offsetTasksDB += 1;
+	/* Sheduled date (2 bytes) */
+	if(task->dueDay != 0 && task->dueMonth != 0 && task->dueYear != 0)
+	{
+		offsetTasksDB += 2;
+	}
+	/* Alarm data (4 bytes) */
+	if(task->alarm != NULL)
+	{
+		offsetTasksDB += 4;
+	}
+	/* Repeat interval (7 bytes) */
+	if(task->repeat != NULL)
+	{
+		offsetTasksDB += 10;
+	}
+	/* Header + '\0' */
+	offsetTasksDB += strlen(task->header) + sizeof(char);
+	/* Text (if exists) + '\0' */
+	offsetTasksDB += (task->text != NULL ? strlen(task->text) : 0) + sizeof(char);
+	/* Size of new task item in record list */
+	offsetTasksDB += PDB_RECORD_ITEM_SIZE;
+
+	/* Allocate memory for new task */
+	if((task = calloc(1, sizeof(Task))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new task: %s",
+				  strerror(errno));
+		return NULL;
+	}
+	/* '+ 1' for NULL-terminating character */
+	if((task->header = calloc(strlen(header) + 1, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new task header: %s",
+				  strerror(errno));
+		free(task);
+		return NULL;
+	}
+	if(text != NULL &&
+	   (task->text = calloc(strlen(text) + 1, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new task text: %s",
+				  strerror(errno));
+	    free(task->header);
+		free(task);
+		return NULL;
+	}
+	if((task->category = calloc(strlen(category) + 1, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new task category: %s",
+				  strerror(errno));
+		if(text != NULL)
+		{
+			free(task->text);
+		}
+		free(task->header);
+		free(task);
+		return NULL;
+	}
+
+	/* Add new records for new task */
+	if((recordToDoDB = pdb_record_create(
+			tasks->_pdb_tododb, offsetToDoDB,
+			PDB_RECORD_ATTR_EMPTY | (0x0f & categoryIdToDoDB), task)) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot add new record for new task in ToDoDB PDB");
+		free(task->category);
+		if(text != NULL)
+		{
+			free(task->text);
+		}
+		free(task->header);
+		free(task);
+		return NULL;
+	}
+	uint8_t id[3] = {
+		recordToDoDB->id[0],
+		recordToDoDB->id[1],
+		recordToDoDB->id[2]
+	};
+	if((recordTasksDB = pdb_record_create_with_id(
+			tasks->_pdb_tasks, offsetTasksDB,
+			PDB_RECORD_ATTR_EMPTY | (0x0f & categoryIdTasksDB),
+			id, task)) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot add new record for new task in TasksDB PDB");
+		free(task->category);
+		if(text != NULL)
+		{
+			free(task->text);
+		}
+		free(task->header);
+		free(task);
+		return NULL;
+	}
+
+	/* Fill new task with data and append it to PDB structure */
+	strcpy(task->header, header);
+	task->text = text != NULL ? strcpy(task->text, text) : NULL;
+	strcpy(task->category, category);
+	task->priority = priority;
+	task->dueDay = 0;
+	task->dueMonth = 0;
+	task->dueYear = 0;
+	task->alarm = NULL;
+	task->repeat = NULL;
+	task->_record_todo = recordToDoDB;
+	task->_record_tasks = recordTasksDB;
+	if(TAILQ_EMPTY(&tasks->queue))
+	{
+		TAILQ_INSERT_HEAD(&tasks->queue, task, pointers);
+	}
+	else
+	{
+		TAILQ_INSERT_TAIL(&tasks->queue, task, pointers);
+	}
+
+	/* Recalculate and update offsets for old tasks */
+	log_write(LOG_DEBUG, "Changing offsets for old tasks in ToDoDB PDB");
+	PDBRecord * oldRecord = TAILQ_PREV(recordToDoDB, RecordQueue, pointers);
+	while(oldRecord != NULL)
+	{
+		log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, "
+				  "new offset=0x%08x", oldRecord->offset,
+				  oldRecord->offset + PDB_RECORD_ITEM_SIZE);
+		oldRecord->offset += PDB_RECORD_ITEM_SIZE;
+		oldRecord = TAILQ_PREV(oldRecord, RecordQueue, pointers);
+	}
+
+	log_write(LOG_DEBUG, "Changing offsets for old tasks in TasksDB PDB");
+	oldRecord = TAILQ_PREV(recordTasksDB, RecordQueue, pointers);
+	while(oldRecord != NULL)
+	{
+		log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, "
+				  "new offset=0x%08x", oldRecord->offset,
+				  oldRecord->offset + PDB_RECORD_ITEM_SIZE);
+		oldRecord->offset += PDB_RECORD_ITEM_SIZE;
+		oldRecord = TAILQ_PREV(oldRecord, RecordQueue, pointers);
+	}
+
+	return task;
+}
+
+int tasks_task_set_due(Task * task, uint16_t dueYear, uint8_t dueMonth,
+					   uint8_t dueDay)
+{
+	int32_t offsetTasksDBDelta = 0;
+	if(task == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL pointer to task, can't set due date");
+		return -1;
+	}
+
+	/* Update task with given due date.
+	   Or remove due date at all */
+	if(dueYear == 0 || dueMonth == 0 || dueDay == 0)
+	{
+		if(task->dueDay == 0 && task->dueMonth == 0 && task->dueYear == 0)
+		{
+			log_write(LOG_DEBUG, "Due date for task already empty - no need to "
+					  "clear it!");
+			return 0;
+		}
+		log_write(LOG_DEBUG, "Clearing due date for task. Old due date:: year: "
+				  "%d, month: %d, day: %d", task->dueYear, task->dueMonth,
+				  task->dueDay);
+		/* If repeat interval is exists and due date was removed - we should
+		   change offset delta to -2, because scheduled date repeated before
+		   repeat date. */
+		if(task->repeat != NULL)
+		{
+			offsetTasksDBDelta = -2;
+		}
+		task->dueDay = 0;
+		task->dueMonth = 0;
+		task->dueYear = 0;
+	}
+	else
+	{
+		if(task->dueDay == 0 && task->dueMonth == 0 && task->dueYear == 0)
+		{
+			log_write(LOG_DEBUG, "No due date in task - setting the new one");
+			/* If repeat interval is set and due date not exists before - we
+			   should change offset delta to 2, because scheduled date repeated
+			   before repeat date. */
+			if(task->repeat != NULL)
+			{
+				offsetTasksDBDelta = 2;
+			}
+		}
+		else
+		{
+			log_write(LOG_DEBUG, "Changing existing due date in task.");
+		}
+		task->dueDay = dueDay;
+		task->dueMonth = dueMonth;
+		task->dueYear = dueYear;
+	}
+
+	/* Change offsets for the next tasks in TasksDB PDB */
+	if(offsetTasksDBDelta != 0)
+	{
+		log_write(LOG_DEBUG, "Changing offsets for next tasks in TasksDB PDB. "
+				  "Offset delta = %d", offsetTasksDBDelta);
+		PDBRecord * nextRecord = TAILQ_NEXT(task->_record_tasks, pointers);
+		while(nextRecord != NULL)
+		{
+			log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, "
+					  "new offset=0x%08x", nextRecord->offset,
+					  nextRecord->offset + offsetTasksDBDelta);
+			nextRecord->offset += offsetTasksDBDelta;
+			nextRecord = TAILQ_NEXT(nextRecord, pointers);
+		}
+	}
+
+	return 0;
+}
+
+int tasks_task_set_alarm(Task * task, Alarm * alarm)
+{
+	if(task == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL pointer to task, can't set alarm");
+		return -1;
+	}
+	if(task->dueYear == 0 && task->dueMonth == 0 && task->dueDay)
+	{
+		log_write(LOG_WARNING, "There is no due date set - can't set alarm!");
+		log_write(LOG_WARNING, "Problem task header: %s",
+				  iconv_cp1251_to_utf8(task->header));
+		return -1;
+	}
+
+	int32_t offsetDelta = 0;
+	/* Setting new alarm for task */
+	if(task->alarm == NULL && alarm == NULL)
+	{
+		log_write(LOG_DEBUG, "Alarm already is not set in task, nothing to do");
+		return 0;
+	}
+	else if(alarm == NULL)
+	{
+		log_write(LOG_DEBUG, "Clearing task's alarm");
+		free(task->alarm);
+		task->alarm = NULL;
+		offsetDelta = -4;
+	}
+	else if(task->alarm == NULL)
+	{
+		log_write(LOG_DEBUG, "Setting new alarm for task");
+		if((task->alarm = calloc(1, sizeof(Alarm))) == NULL)
+		{
+			log_write(LOG_ERR, "Failed to allocate memory for new alarm in "
+					  "tasks_task_set_alarm(): %s", strerror(errno));
+			return -1;
+		}
+		memcpy(task->alarm, alarm, sizeof(Alarm));
+		offsetDelta = 4;
+	}
+	else
+	{
+		log_write(LOG_DEBUG, "Updating existing alarm for task");
+		task->alarm->alarmHour = alarm->alarmHour;
+		task->alarm->alarmMinute = alarm->alarmMinute;
+		task->alarm->daysEarlier = alarm->daysEarlier;
+	}
+
+	/* Updating offsets for next tasks in queue */
+	if(offsetDelta != 0)
+	{
+		log_write(LOG_DEBUG, "Changing offsets for next tasks in TasksDB PDB. "
+				  "Offset delta = %d", offsetDelta);
+		PDBRecord * nextRecord = TAILQ_NEXT(task->_record_tasks, pointers);
+		while(nextRecord != NULL)
+		{
+			log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, "
+					  "new offset=0x%08x", nextRecord->offset,
+					  nextRecord->offset + offsetDelta);
+			nextRecord->offset += offsetDelta;
+			nextRecord = TAILQ_NEXT(nextRecord, pointers);
+		}
+	}
+
+	return 0;
+}
+
+int tasks_task_set_repeat(Task * task, Repeat * repeat)
+{
+	if(task == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL pointer to task, can't set repeat interval");
+		return -1;
+	}
+
+	int32_t offsetDelta = 0;
+	/* Setting new repeat inteval for task */
+	if(task->repeat == NULL && repeat == NULL)
+	{
+		log_write(LOG_DEBUG, "Repeat interval is not set in task,  nothing to do");
+		return 0;
+	}
+	else if(repeat == NULL)
+	{
+		log_write(LOG_DEBUG, "Clearing task's repeat interval");
+		free(task->repeat);
+		task->repeat = NULL;
+		/* Second scheduled - 2 bytes
+		   Repeat type - 2 bytes
+		   Repeat data - 3 bytes
+		   Unknown 3 bytes - 3 bytes */
+		offsetDelta = -10;
+	}
+	else if(task->repeat == NULL)
+	{
+		log_write(LOG_DEBUG, "Setting new repeat interval for task");
+		if((task->repeat = calloc(1, sizeof(Repeat))) == NULL)
+		{
+			log_write(LOG_ERR, "Failed to allocate memory for new repeat "
+					  "interval in tasks_task_set_repeat(): %s",
+					  strerror(errno));
+			return -1;
+		}
+		memcpy(task->repeat, repeat, sizeof(Repeat));
+		offsetDelta = 10;
+	}
+	else
+	{
+		log_write(LOG_DEBUG, "Updating existing interval for task");
+		log_write(LOG_DEBUG, "Range: %d", repeat->range);
+		log_write(LOG_DEBUG, "Day: %d", repeat->day);
+		log_write(LOG_DEBUG, "Month: %d", repeat->month);
+		log_write(LOG_DEBUG, "Year: %d", repeat->year);
+		log_write(LOG_DEBUG, "Interval: %d", repeat->interval);
+		task->repeat->range = repeat->range;
+		task->repeat->day = repeat->day;
+		task->repeat->month = repeat->month;
+		task->repeat->year = repeat->year;
+		task->repeat->interval = repeat->interval;
+		log_write(LOG_DEBUG, "Update of existing interval complete");
+	}
+
+	/* Updating offsets for next tasks in queue */
+	if(offsetDelta != 0)
+	{
+		log_write(LOG_DEBUG, "Changing offsets for next tasks in TasksDB PDB. "
+				  "Offset delta = %d", offsetDelta);
+		PDBRecord * nextRecord = TAILQ_NEXT(task->_record_tasks, pointers);
+		while(nextRecord != NULL)
+		{
+			log_write(LOG_DEBUG, "For existing record: old offset=0x%08x, "
+					  "new offset=0x%08x", nextRecord->offset,
+					  nextRecord->offset + offsetDelta);
+			nextRecord->offset += offsetDelta;
+			nextRecord = TAILQ_NEXT(nextRecord, pointers);
+		}
+	}
+
+	return 0;
+}
+
+int tasks_task_edit(Tasks * tasks, Task * task, char * header, char * text,
+					char * category, TaskPriority * priority)
+{
+	if(tasks == NULL)
+	{
+		log_write(LOG_ERR, "Got NULL tasks queue - cannot edit task");
+		return -1;
+	}
+	if(task == NULL);
+	{
+		log_write(LOG_ERR, "Got NULL task - cannot edit it");
+		return -1;
+	}
+
+	PDBRecord * recordToDo = task->_record_todo;
+	PDBRecord * recordTasks = task->_record_tasks;
+
+	/* Allocate memory for new header and text, if necessary */
+	char * newHeader = NULL;
+	char * newText = NULL;
+	int strlenTaskText = task->text != NULL ? strlen(task->text) : 0;
+	if(header != NULL && strlen(header) > strlen(task->header) &&
+	   (newHeader = calloc(strlen(header), sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Failed to allocate memory for new task's header: "
+				  "%s", strerror(errno));
+		return -1;
+	}
+	if(text != NULL && strlen(text) > strlenTaskText &&
+	   (newText = calloc(strlen(text), sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Failed to allocate memory for new task's text: %s",
+				  strerror(errno));
+		if(newHeader != NULL)
+		{
+			free(newHeader);
+		}
+		return -1;
+	}
+
+	/* Read and check category ID if necessary */
+	uint8_t categoryIdToDoDB = 0;
+	uint8_t categoryIdTasksDB = 0;
+	if(category != NULL &&
+	   ((categoryIdToDoDB = pdb_category_get_id(tasks->_pdb_tododb,
+												category)) == UINT8_MAX ||
+		(categoryIdTasksDB = pdb_category_get_id(tasks->_pdb_tasks,
+												 category)) == UINT8_MAX))
+	{
+		log_write(LOG_ERR, "Cannot find category ID for category \"%s\" in "
+				  "%s PDB", category,
+				  categoryIdToDoDB == UINT8_MAX ?
+				  "ToDoDB" :
+				  "TasksDB");
+		if(newHeader != NULL)
+		{
+			free(newHeader);
+		}
+		if(newText != NULL)
+		{
+			free(newText);
+		}
+		return -1;
+	}
+	if(categoryIdToDoDB != categoryIdTasksDB)
+	{
+		log_write(LOG_DEBUG, "Found category IDs for \"%s\" category, but "
+				  "they are differs:: ToDoDB: %d, TasksDB: %d", category,
+				  categoryIdToDoDB, categoryIdTasksDB);
+		if(newHeader != NULL)
+		{
+			free(newHeader);
+		}
+		if(newText != NULL)
+		{
+			free(newText);
+		}
+		return -1;
+	}
+
+	/* Writing changes to memory */
+	int32_t headerSizeDiff = header != NULL ?
+		strlen(header) - strlen(task->header) :
+		0;
+	int32_t textSizeDiff = text != NULL ?
+		strlen(text) - strlen(task->text) :
+		0;
+
+	if(newHeader != NULL)
+	{
+		free(task->header);
+		task->header = newHeader;
+		strcpy(task->header, header);
+	}
+	else if(header != NULL)
+	{
+		explicit_bzero(task->header, strlen(task->header));
+		strcpy(task->header, header);
+	}
+
+	if(newText != NULL)
+	{
+		if(task->text != NULL)
+		{
+			free(task->text);
+		}
+		task->text = newText;
+		strcpy(task->text, text);
+	}
+	else if(task != NULL)
+	{
+		if(task->text == NULL)
+		{
+			if((task->text = calloc(strlen(text), sizeof(char))) == NULL)
+			{
+				log_write(LOG_ERR, "Failed to allocate memory for new text in "
+						  "task structure: %s", strerror(errno));
+				if(newHeader != NULL)
+				{
+					free(newHeader);
+				}
+				return -1;
+			}
+		}
+		explicit_bzero(task->text, strlen(task->text));
+		strcpy(task->text, text);
+	}
+
+	if(category != NULL)
+	{
+		recordToDo->attributes &= 0xf0;
+		recordToDo->attributes |= categoryIdToDoDB;
+		recordTasks->attributes &= 0xf0;
+		recordTasks->attributes |= categoryIdTasksDB;
+	}
+
+	/* Should recalculate offset for next tasks */
+	log_write(LOG_DEBUG, "Recalculate offsets for next tasks");
+	if(headerSizeDiff + textSizeDiff != 0)
+	{
+		PDBRecord * record;
+		while((record = TAILQ_NEXT(recordToDo, pointers)) != NULL)
+		{
+			log_write(LOG_DEBUG, "[ToDoDB] Next task: old offset=0x%08x, "
+					  "new offset=0x%08x", record->offset,
+					  record->offset + headerSizeDiff + textSizeDiff);
+			record->offset += headerSizeDiff + textSizeDiff;
+		}
+		while((record = TAILQ_NEXT(recordTasks, pointers)) != NULL)
+		{
+			log_write(LOG_DEBUG, "[TasksDB] Next task: old offset=0x%08x, "
+					  "new offset=0x%08x", record->offset,
+					  record->offset + headerSizeDiff + textSizeDiff);
+			record->offset += headerSizeDiff + textSizeDiff;
+		}
+	}
+
+	return 0;
+}
+
+
+int tasks_task_delete(Tasks * tasks, Task * task)
+{
+	if(tasks == NULL)
+	{
+		log_write(LOG_ERR, "Got no tasks, cannot delete task");
+		return -1;
+	}
+	if(task == NULL)
+	{
+		log_write(LOG_ERR, "Got completely empty task to delete. Nothing to "
+				  "delete");
+		return -1;
+	}
+
+	uint32_t offsetToDo = 2; /* Scheduled date */
+	offsetToDo += 1; /* Priority */
+	offsetToDo += strlen(task->header) + sizeof(char); /* header + '\0' */
+	offsetToDo += (task->text != NULL ? strlen(task->text) : 0) + sizeof(char); /* text + '\0' */
+	offsetToDo += PDB_RECORD_ITEM_SIZE;
+
+	uint32_t offsetTasks = 1; /* Entry type */
+	offsetTasks += 4; /* Zero bytes */
+	offsetTasks += 1; /* Priority */
+	if(task->dueDay != 0 && task->dueMonth != 0 && task->dueYear != 0)
+	{
+		offsetTasks += 2;
+	}
+	if(task->alarm != NULL)
+	{
+		offsetTasks += 4;
+	}
+	if(task->repeat != NULL)
+	{
+		offsetTasks += 2; /* Repeat of scheduled */
+		offsetTasks += 2; /* Repeat type */
+		offsetTasks += 3; /* Repeat data */
+		offsetTasks += 3; /* Unknown 3 bytes at the end */
+	}
+	offsetTasks += strlen(task->header) + sizeof(char); /* header + '\0' */
+	offsetTasks += (task->text != NULL ? strlen(task->text) : 0) + sizeof(char); /*text + '\0' */
+	offsetTasks += PDB_RECORD_ITEM_SIZE;
+
+	/* Delete task */
+	PDBRecord * recordToDoDB = task->_record_todo;
+	PDBRecord * recordTasksDB = task->_record_tasks;
+	free(task->header);
+	if(task->text != NULL)
+	{
+		free(task->text);
+	}
+	free(task->category);
+	if(task->alarm != NULL)
+	{
+		free(task->alarm);
+	}
+	if(task->repeat != NULL)
+	{
+		free(task->repeat);
+	}
+	TAILQ_REMOVE(&tasks->queue, task, pointers);
+
+	/* Recalculate offsets for next tasks */
+	PDBRecord * recordToDoDB2 = recordToDoDB;
+	PDBRecord * recordTasksDB2 = recordTasksDB;
+	log_write(LOG_DEBUG, "Recalculate offsets for next tasks");
+	while((recordToDoDB2 = TAILQ_NEXT(recordToDoDB2, pointers)) != NULL)
+	{
+		log_write(LOG_DEBUG, "[ToDoDB] Existing task: old offset=0x%08x, "
+				  "new offset=0x%08x", recordToDoDB2->offset,
+				  recordToDoDB2->offset - offsetToDo);
+		recordToDoDB2->offset -= offsetToDo;
+	}
+	while((recordTasksDB2 = TAILQ_NEXT(recordTasksDB2, pointers)) != NULL)
+	{
+		log_write(LOG_DEBUG, "[TasksDB] Existing task: old offset=0x%08x, "
+				  "new offset=0x%08x", recordTasksDB2->offset,
+				  recordTasksDB2->offset - offsetTasks);
+		recordTasksDB2->offset -= offsetTasks;
+	}
+	/* Recalculate offsets for previous tasks,
+	   due to record list size change. */
+	recordToDoDB2 = recordToDoDB;
+	recordTasksDB2 = recordTasksDB;
+	log_write(LOG_DEBUG, "Recalculate offsets due to record list size change "
+			  "for previous change");
+	while((recordToDoDB2 = TAILQ_PREV(
+			   recordToDoDB2, RecordQueue, pointers)) != NULL)
+	{
+		log_write(LOG_DEBUG, "[ToDoDB] Existing task [2]: old offset=0x%08x, "
+				  "new offset=0x%08x", recordToDoDB2->offset,
+				  recordToDoDB2->offset - PDB_RECORD_ITEM_SIZE);
+		recordToDoDB2->offset -= PDB_RECORD_ITEM_SIZE;
+	}
+	while((recordTasksDB2 = TAILQ_PREV(
+			   recordTasksDB2, RecordQueue, pointers)) != NULL)
+	{
+		log_write(LOG_DEBUG, "[TasksDB] Existing task [2]: old offset=0x%08x, "
+				  "new offset=0x%08x", recordTasksDB2->offset,
+				  recordTasksDB2->offset - PDB_RECORD_ITEM_SIZE);
+		recordTasksDB2->offset -= PDB_RECORD_ITEM_SIZE;
+	}
+
+	/* Delete records in ToDoDB and TasksDB-PTod files */
+	long uniqueRecordId = pdb_record_get_unique_id(recordToDoDB);
+	if(pdb_record_delete(tasks->_pdb_tododb, uniqueRecordId))
+	{
+		log_write(LOG_ERR, "[ToDoDB] Cannot delete task record from record list"
+				  " (offset: 0x%08x)", recordToDoDB->offset);
+		return -1;
+	}
+	uniqueRecordId = pdb_record_get_unique_id(recordTasksDB);
+	if(pdb_record_delete(tasks->_pdb_tasks, uniqueRecordId))
+	{
+		log_write(LOG_ERR, "[TasksDB] Cannot delete task record from record "
+				  "list (offset: 0x%08x)", recordTasksDB->offset);
+		return -1;
+	}
+
+	return 0;
+}
 
 /* Local private functions */
 
