@@ -113,9 +113,10 @@ PalmData * palm_read(int sd)
 		return NULL;
 	}
 
-	_palm_read_database(sd, "DatebookDB", &data->datebookDBPath);
-	_palm_read_database(sd, "MemoDB",     &data->memoDBPath);
-	_palm_read_database(sd, "ToDoDB",     &data->todoDBPath);
+	_palm_read_database(sd, "DatebookDB",   &data->datebookDBPath);
+	_palm_read_database(sd, "MemoDB",       &data->memoDBPath);
+	_palm_read_database(sd, "ToDoDB",       &data->todoDBPath);
+	_palm_read_database(sd, "TasksDB-PTod", &data->tasksDBPath);
 
 	return data;
 }
@@ -134,7 +135,8 @@ int palm_write(int sd, const PalmData * data)
 	}
 	if(data->datebookDBPath == NULL ||
 	   data->memoDBPath == NULL ||
-	   data->todoDBPath == NULL)
+	   data->todoDBPath == NULL ||
+	   data->tasksDBPath == NULL)
 	{
 		log_write(LOG_ERR, "Empty PalmData structure");
 		return -1;
@@ -143,6 +145,7 @@ int palm_write(int sd, const PalmData * data)
 	_palm_write_database(sd, "DatebookDB", data->datebookDBPath);
 	_palm_write_database(sd, "MemoDB", data->memoDBPath);
 	_palm_write_database(sd, "ToDoDB", data->todoDBPath);
+	_palm_write_database(sd, "TasksDB-PTod", data->tasksDBPath);
 
 	return 0;
 }
@@ -176,7 +179,8 @@ void palm_free(PalmData * data)
 {
 	if(data->datebookDBPath == NULL &&
 	   data->memoDBPath == NULL &&
-	   data->todoDBPath == NULL)
+	   data->todoDBPath == NULL &&
+	   data->tasksDBPath == NULL)
 	{
 		free(data);
 		// Nothing to clean.
@@ -212,6 +216,16 @@ void palm_free(PalmData * data)
 		}
 		free(data->todoDBPath);
 		data->todoDBPath = NULL;
+	}
+	if(data->tasksDBPath != NULL)
+	{
+		if(unlink(data->tasksDBPath))
+		{
+			log_write(LOG_ERR, "Cannot delete %s: %s", data->tasksDBPath,
+					  strerror(errno));
+		}
+		free(data->tasksDBPath);
+		data->tasksDBPath = NULL;
 	}
 
 	free(data);

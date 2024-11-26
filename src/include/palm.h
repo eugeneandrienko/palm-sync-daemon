@@ -55,6 +55,7 @@ struct PalmData {
 	char * datebookDBPath; /**< Path to DatebookDB */
 	char * memoDBPath;     /**< Path to MemoDB */
 	char * todoDBPath;     /**< Path to ToDoDB */
+	char * tasksDBPath;    /**< Path to TasksDB-PTod */
 };
 typedef struct PalmData PalmData;
 

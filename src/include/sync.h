@@ -41,8 +41,10 @@ struct SyncSettings
 							   iteration. */
 	char * prevMemosPDB;    /**< Path to PDB file with Memos from previous
 							   iteration. */
-	char * prevTodoPDB;     /**<Path to PDB file with TODO from previous
+	char * prevTodoPDB;     /**< Path to PDB file with TODO from previous
 							   iteration. */
+	char * prevTasksPDB;    /**< Path to PDB file with TasksDB-PTod from
+							   previous iteration. */
 };
 typedef struct SyncSettings SyncSettings;
 

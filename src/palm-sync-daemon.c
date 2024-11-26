@@ -133,7 +133,8 @@ int main(int argc, const char * argv[])
 		.dataDir = "~/.palm-sync-daemon/",
 		.prevDatebookPDB = NULL,
 		.prevMemosPDB = NULL,
-		.prevTodoPDB = NULL
+		.prevTodoPDB = NULL,
+		.prevTasksPDB = NULL
 	};
 	/* Parse command-line arguments */
 	int foreground = 0;
