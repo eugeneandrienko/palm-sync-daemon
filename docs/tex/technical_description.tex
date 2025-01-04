@@ -119,7 +119,7 @@
   \hline
   \textbf{Date} & \textbf{Document version} & \textbf{Changes} \\
   \hline
-  2024-01-14 & 1.0 & First version \\
+  2024-12-02 & 1.0 & First version \\
   \hline
 \end{tabular}
 
@@ -129,9 +129,9 @@
 
 \begin{abstract}
   Main purpose of \texttt{palm-sync-daemon} is seamless synchronization between
-  Palm and OrgMode files on the Linux PC. Desired goal~--- user just press
-  button on the cradle (or cable) and all necessary data synchonize two way
-  between Palm and OrgMode files. Without destructive changes on org-files.
+  Palm and OrgMode files on the Unix PC. Desired goal~--- user just press button
+  on the cradle (or cable) and all necessary data synchonize two way between
+  Palm and OrgMode files. Without destructive changes on org-files.
 
   Org-files will be synchronized with the next applications on the Palm:
   \begin{itemize}
@@ -150,9 +150,13 @@ All data from org-files divided to 3 logical parts:
 \begin{enumerate}
 \item Data for Memos~--- different notes, not belonging to TODO-list of calendar
   data.
-\item Data for Tasks~--- tasks from TODO-list
-\item Data for Calendar~--- tasks (may be repetitive) from TODO-list with time
-  range.
+\item Data for Tasks~--- tasks from TODO-list.
+\item Data for Calendar~--- tasks from TODO-list with specified start and stop
+  range. For example:
+  \begin{lstlisting}[language=org]
+    * TODO Language lesson   :mission:
+      SCHEDULED: <2024-10-01 Thu 19:00-20:00>
+  \end{lstlisting}
 \end{enumerate}
 
 Lets look closer to the each type of data.
@@ -174,16 +178,6 @@ categories which I use:
 \item \texttt{todo}
 \end{itemize}
 
-Each note can have priority or TODO keyword\footnote{See
-  \url{https://orgmode.org/manual/TODO-Basics.html}} or may not. For example, I
-can use next TODO keywords:
-\begin{itemize}
-\item \texttt{TODO}
-\item \texttt{VERIFIED}
-\item \texttt{DONE}
-\item \texttt{CANCELLED}
-\end{itemize}
-
 Notes example:
 \begin{lstlisting}[language=org]
   * Camera wrist strap
@@ -201,8 +195,16 @@ Notes example:
 \label{sec:todo-list-tasks}
 
 TODO-lists stored in a separate file. For example: \texttt{org/todo.org}. Each
-TODO-list item is a first-level headline, which starts from TODO keyword
-(described above).
+TODO-list item is a first-level headline, which starts from TODO
+keyword\footnote{See \url{https://orgmode.org/manual/TODO-Basics.html}}.
+
+I use the next TODO keywords:
+\begin{itemize}
+\item \texttt{TODO}
+\item \texttt{VERIFIED}
+\item \texttt{DONE}
+\item \texttt{CANCELLED}
+\end{itemize}
 
 Each TODO-list item can have a special tag:
 \begin{description}
