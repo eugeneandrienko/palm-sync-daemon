@@ -835,6 +835,10 @@ Data format, which is used to store Memos data inside field \texttt{data} in
 Here the \texttt{\_record} is link to \texttt{PDBRecord} corresponding to this
 memo.
 
+The \texttt{header} and \texttt{text} fields contains lines in UTF-8. The
+\texttt{category} fields always contains plain ASCII null-terminated line with
+the name of category.
+
 \subsubsection{Processing Tasks PDB files}
 \label{sec:processing-todo-pdb}
 

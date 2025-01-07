@@ -14,6 +14,8 @@
    To work with Memos structure use memos_memo_get(),
    memos_memo_add(), memos_memo_edit() or memos_memo_delete()
    functions.
+
+   The header and the text of memo should be in UTF-8.
 */
 
 /**
@@ -45,17 +47,31 @@
 
 
 /**
+   No memo was found.
+*/
+#define E_NOMEMO -1
+
+/**
+   Multiple memos were found, when where should be the only one.
+*/
+#define E_MULTIPLE_MEMOS -2
+
+
+/**
    One memo from Memos application.
 */
 struct Memo
 {
-	char * header;              /**< Header of memo */
+	uint32_t id;                /**< Unique ID of memo */
+	char * header;              /**< Header of memo in UTF8 */
 	char * text;                /**< Memo text */
 	char * category;            /**< Memo category */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 	TAILQ_ENTRY(Memo) pointers; /**< Connection between elements in tail
 								   queue */
-	PDBRecord * _record;         /**< PDB record for memo */
+	PDBRecord * _record;        /**< PDB record for memo */
+	size_t _header_cp1251_len;  /**< Header length of memo in CP1251 */
+	size_t _text_cp1251_len;    /**< Text length of memo in CP1251 */
 #endif
 };
 typedef struct Memo Memo;
@@ -148,17 +164,33 @@ void memos_free(Memos * memos);
 */
 
 /**
-   Returns memo from Memos queue, if exists.
+   Returns ID of memo for given header or header and text.
 
-   Will be search memo by it's header. If multiple memos with same
-   header exists — first found memo will be returned. If no memo with
-   given header found — NULL value will be returned.
+   Search for memo with given header (or header and text) and return
+   it's ID. If there are no memo or multiple memos, then an error will
+   be returned.
 
    @param[in] memos Memos structure.
    @param[in] header Will search memo with this header.
+   @param[in] text Optional. Will search memo with this text. May be NULL, then
+   memo text will not be used in search.
+   @param[out] id ID of found memo. Will be NULL on error.
+   @return Zero on success, E_NOMEMO if no memo is found, E_MULTIPLE_MEMOS if
+   found multiple memos.
+*/
+int memos_memo_get_id(Memos * memos, char * header, char * text, uint32_t * id);
+
+/**
+   Returns memo from Memos queue, if exists.
+
+   Will return memo with given ID. If no memo with given header found —
+   NULL value will be returned.
+
+   @param[in] memos Memos structure.
+   @param[in] id ID of memo.
    @return Pointer to memo or NULL if no memo found or error occured.
 */
-Memo * memos_memo_get(Memos * memos, char * header);
+Memo * memos_memo_get(Memos * memos, uint32_t id);
 
 /**
    Add new memo.
@@ -171,38 +203,40 @@ Memo * memos_memo_get(Memos * memos, char * header);
 
    New memo will be added to the end of existing memos list.
 
+   All strings should use UTF8 encoding.
+
    @param[in] memos Memos structure.
    @param[in] header Header of new memo.
    @param[in] text Text of new memo. May be NULL if there are no text.
    @param[in] category Category name for memo. May be NULL — default Palm
    category will be used.
-   @return Pointer to new memo or NULL if error.
+   @return ID of new memo or 0 on error.
 */
-Memo * memos_memo_add(Memos * memos, char * header, char * text,
-					  char * category);
+uint32_t memos_memo_add(Memos * memos, char * header, char * text,
+						char * category);
 
 /**
    Edit existing memo.
 
    @param[in] memos Memos structure.
-   @param[in] memo Memo to edit.
+   @param[in] id ID of memo to edit.
    @param[in] header New header or NULL if we shouldn't change header.
    @param[in] text New text or NULL if we shouldn't change text.
    @param[in] category Category name or NULL if we shouldn't change
    category.
    @return 0 on success or non-zero value on error.
 */
-int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
+int memos_memo_edit(Memos * memos, uint32_t id, char * header, char * text,
 					char * category);
 
 /**
    Delete existing memo.
 
    @param[in] memos Pointer to MemosQueue.
-   @param[in] memo Pointer to memo to delete.
+   @param[in] id ID of memo to delete.
    @return 0 on success or returns non-zero value on error.
 */
-int memos_memo_delete(Memos * memos, Memo * memo);
+int memos_memo_delete(Memos * memos, uint32_t id);
 
 /**
    @}

@@ -20,28 +20,28 @@ int main(int argc, char * argv[])
 		return 1;
 	}
 
-	Memo * memo;
-	if((memo = memos_memo_add(memos, "Test 2", "Sample text 2", "Personal")) == NULL)
+	uint32_t memoId;
+	if((memoId = memos_memo_add(memos, "Test 2", "Sample text 2", "Personal")) == 0)
+	{
+		return 1;
+	}
+	if(memos_memo_edit(memos, memoId, "Test 3", "Sample text 3", "Personal"))
 	{
 		return 1;
 	}
 
-	if((memo = memos_memo_get(memos, "Test")) == NULL)
+	if(memos_memo_get_id(memos, "Test", NULL, &memoId) != 0)
 	{
 		return 1;
 	}
-	if(memos_memo_edit(memos, memo, "Test 3", "Sample text 3", "Personal"))
+    if(memos_memo_delete(memos, memoId))
 	{
-		return 1;
+	 	return 1;
 	}
 
-	if((memo = memos_memo_get(memos, "Test 2")) == NULL)
+	if((memoId = memos_memo_add(memos, "Тест 4", "Тестовая заметка", "Unfiled")) == 0)
 	{
-	 	return 1;
-	}
-    if(memos_memo_delete(memos, memo))
-	{
-	 	return 1;
+		return 1;
 	}
 
 	if(memos_write(fd, memos))
@@ -59,6 +59,7 @@ int main(int argc, char * argv[])
 	{
 		return 1;
 	}
+	Memo * memo;
 	TAILQ_FOREACH(memo, &memos->queue, pointers)
 	{
 		log_write(LOG_INFO, "Header: %s", memo->header);

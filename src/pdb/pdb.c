@@ -309,19 +309,13 @@ void pdb_free(PDB * pdb)
 	while(record1 != NULL)
 	{
 		record2 = TAILQ_NEXT(record1, pointers);
-		if(record1->data != NULL)
-		{
-			free(record1->data);
-		}
+		free(record1->data);
 		TAILQ_REMOVE(&pdb->records, record1, pointers);
 		free(record1);
 		record1 = record2;
 	}
 
-	if(pdb->categories != NULL)
-	{
-		free(pdb->categories);
-	}
+	free(pdb->categories);
 	free(pdb);
 }
 
@@ -446,7 +440,7 @@ int pdb_record_delete(PDB * pdb, long uniqueRecordId)
 	}
 }
 
-long pdb_record_get_unique_id(PDBRecord * record)
+uint32_t pdb_record_get_unique_id(PDBRecord * record)
 {
 	return ((0x000000ff & (long)record->id[2]) << 16) |
 		((0x000000ff & (long)record->id[1]) << 8) |

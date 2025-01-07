@@ -304,7 +304,7 @@ int pdb_record_delete(PDB * pdb, long uniqueRecordId);
    @param[in] record PDB record.
    @return Unique record ID or zero on error.
 */
-long pdb_record_get_unique_id(PDBRecord * record);
+uint32_t pdb_record_get_unique_id(PDBRecord * record);
 
 
 /**

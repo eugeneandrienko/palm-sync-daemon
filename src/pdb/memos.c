@@ -173,24 +173,154 @@ void memos_free(Memos * memos)
 /* Functions to operate with memo */
 
 /**
-   Element of array with memos. Maps memo header and pointer of memo.
+   Element of array with memos. Maps memo header, or header and text, or ID
+   and pointer to memo.
 
-   Used to sort memos by header and search for desired memo by it's header.
+   Used to sort memos and search for desired memo.
 */
 struct __SortedMemos
 {
+	uint32_t id;   /**< ID of Memo */
 	char * header; /**< Pointer to Memo header */
+	char * text;   /**< Pointer to Memo text */
 	Memo * memo;   /**< Pointer to Memo structure */
 };
 
 static int __compare_headers(const void * rec1, const void * rec2)
 {
-	return strcmp(
-		((const struct __SortedMemos *)rec1)->header,
-		((const struct __SortedMemos *)rec2)->header);
+	return strcmp(((const struct __SortedMemos *)rec1)->header,
+				  ((const struct __SortedMemos *)rec2)->header);
 }
 
-Memo * memos_memo_get(Memos * memos, char * header)
+static int __compare_headers_and_text(const void * rec1, const void * rec2)
+{
+	char * text1 = ((const struct __SortedMemos *)rec1)->text;
+	char * text2 = ((const struct __SortedMemos *)rec2)->text;
+	int result = strcmp(((const struct __SortedMemos *)rec1)->header,
+						((const struct __SortedMemos *)rec2)->header);
+	if(result == 0 && text1 != NULL && text2 != NULL)
+	{
+		return strcmp(text1, text2);
+	}
+	else
+	{
+		return result;
+	}
+}
+
+/**
+   Recursive search of memos with given header/text.
+
+   On first iteration function will search for desired memo. On second
+   iteration it will search for the memo with the same header/text,
+   excluding previously found memo.
+
+   @param[in] memos Memos structure.
+   @param[in] header Will search memo with this header.
+   @param[in] text Optional. Will search memo with this text. May be NULL, then
+   memo text will not be used in search.
+   @param[out] id ID of found memo. Will be NULL on error.
+   @param[in] prevId ID of memo, found on previous iteration or NULL on the
+   first iteration.
+   @return Zero on success, E_NOMEMO if no memo is found, E_MULTIPLE_MEMOS if
+   found multiple memos.
+*/
+int _memos_memo_get_id(Memos * memos, char * header, char * text, uint32_t * id,
+					   uint32_t * prevId)
+{
+	int memosQty = memos->_pdb->recordsQty;
+	/* One less element on the 2nd iteration */
+	struct __SortedMemos sortedMemos[prevId == NULL ? memosQty : memosQty - 1];
+
+	Memo * memo;
+	unsigned short index = 0;
+
+	if(prevId != NULL)
+	{
+		log_write(LOG_DEBUG, "Second iteration of _memos_memo_get_id");
+	}
+	else
+	{
+		log_write(LOG_DEBUG, "First iteration of _memos_memo_get_id");
+	}
+
+	TAILQ_FOREACH(memo, &memos->queue, pointers)
+	{
+		if(prevId != NULL && *prevId == memo->id)
+		{
+			continue;
+		}
+		sortedMemos[index].header = memo->header;
+		sortedMemos[index].text = memo->text;
+		sortedMemos[index].memo = memo;
+		index++;
+	}
+
+	if(prevId == NULL && memosQty != index)
+	{
+		log_write(LOG_ERR, "Memos count in PDB header: %d, real memos "
+				  "count: %d", memosQty, index);
+		return E_NOMEMO;
+	}
+
+	qsort(&sortedMemos, memosQty, sizeof(struct __SortedMemos),
+		  text == NULL ? __compare_headers : __compare_headers_and_text);
+	struct __SortedMemos searchFor = {0, header, text, NULL};
+	struct __SortedMemos * searchResult = bsearch(
+		&searchFor, &sortedMemos, memosQty, sizeof(struct __SortedMemos),
+		text == NULL ? __compare_headers : __compare_headers_and_text);
+
+	if(searchResult == NULL)
+	{
+		return E_NOMEMO;
+	}
+
+	if(prevId == NULL)
+	{
+		if(_memos_memo_get_id(memos, header, text, id,
+								   &searchResult->memo->id) != E_NOMEMO)
+		{
+			return E_MULTIPLE_MEMOS;
+		}
+		else
+		{
+			*id = searchResult->memo->id;
+			return 0;
+		}
+	}
+	else
+	{
+		*id = searchResult->memo->id;
+		log_write(LOG_DEBUG, "Found second memo with header = %s. ID = %d",
+				  header, *id);
+		return 0;
+	}
+}
+
+int memos_memo_get_id(Memos * memos, char * header, char * text, uint32_t * id)
+{
+	return _memos_memo_get_id(memos, header, text, id, NULL);
+}
+
+static int __compare_ids(const void * rec1, const void * rec2)
+{
+	uint32_t id1 = ((const struct __SortedMemos *)rec1)->id;
+	uint32_t id2 = ((const struct __SortedMemos *)rec2)->id;
+	if(id1 < id2)
+	{
+		return -1;
+	}
+	else if(id1 == id2)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	};
+}
+
+Memo * memos_memo_get(Memos * memos, uint32_t id)
 {
 	int memosQty = memos->_pdb->recordsQty;
 	struct __SortedMemos sortedMemos[memosQty];
@@ -200,7 +330,7 @@ Memo * memos_memo_get(Memos * memos, char * header)
 
 	TAILQ_FOREACH(memo, &memos->queue, pointers)
 	{
-		sortedMemos[index].header = memo->header;
+		sortedMemos[index].id = memo->id;
 		sortedMemos[index].memo = memo;
 		index++;
 	}
@@ -212,27 +342,26 @@ Memo * memos_memo_get(Memos * memos, char * header)
 		return NULL;
 	}
 
-	qsort(&sortedMemos, memosQty, sizeof(struct __SortedMemos),
-		  __compare_headers);
-	struct __SortedMemos searchFor = {header, NULL};
+	qsort(&sortedMemos, memosQty, sizeof(struct __SortedMemos), __compare_ids);
+	struct __SortedMemos searchFor = {id, NULL, NULL, NULL};
 	struct __SortedMemos * searchResult = bsearch(
 		&searchFor, &sortedMemos, memosQty, sizeof(struct __SortedMemos),
-		__compare_headers);
-	return searchResult != NULL ? searchResult->memo : NULL;
+		__compare_ids);
+	return searchResult == NULL ? NULL : searchResult->memo;
 }
 
-Memo * memos_memo_add(Memos * memos, char * header, char * text,
-					  char * category)
+uint32_t memos_memo_add(Memos * memos, char * header, char * text,
+						char * category)
 {
 	if(memos == NULL)
 	{
 		log_write(LOG_ERR, "No memos structure - nowhere to add new memo!");
-		return NULL;
+		return 0;
 	}
 	if(header == NULL)
 	{
 		log_write(LOG_ERR, "Header of new memo is NULL! Cannot add new memo!");
-		return NULL;
+		return 0;
 	}
 
 	/* Search category ID for given category */
@@ -249,7 +378,7 @@ Memo * memos_memo_add(Memos * memos, char * header, char * text,
 		{
 			log_write(LOG_ERR, "Cannot add new category with name \"%s\" "
 					  "to Memos file!", category);
-			return NULL;
+			return 0;
 		}
 	}
 
@@ -261,96 +390,144 @@ Memo * memos_memo_add(Memos * memos, char * header, char * text,
 	if((record = TAILQ_LAST(&memos->_pdb->records, RecordQueue)) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot get last memo's record from PDB header");
-		return NULL;
+		return 0;
 	}
 	if((memo = TAILQ_LAST(&memos->queue, MemosQueue)) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot get last memo");
-		return NULL;
+		return 0;
 	}
 	if(memo->_record != record)
 	{
 		log_write(LOG_ERR, "Latest memo and latest PDB record doesn't match");
-		return NULL;
+		return 0;
 	}
 	uint32_t offset = record->offset;
 	log_write(LOG_DEBUG, "Offset of the last record: 0x%08x", offset);
 
 	/* Calculate size of last record and offset beyond it: */
 	/* Header + '\n' */
-	offset += strlen(memo->header) + sizeof(char);
+	offset += memo->_header_cp1251_len + sizeof(char);
 	/* Text (if exists) + '\0' */
-	offset += (memo->text != NULL ? strlen(memo->text) : 0) + sizeof(char);
+	offset += (memo->text != NULL ? memo->_text_cp1251_len : 0) + sizeof(char);
 	log_write(LOG_DEBUG, "Offset beyond the last record: 0x%08x", offset);
 	/* New item in record list */
 	offset += PDB_RECORD_ITEM_SIZE;
 	log_write(LOG_DEBUG, "New offset for new memo: 0x%08x", offset);
+
+	/* Prepare header for new memo */
+	char * newHeader;
+	/* '+ 1' for NULL-terminating character */
+	if((newHeader = calloc(strlen(header) + 1, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new memo header: %s",
+				  strerror(errno));
+		return 0;
+	}
+	strcpy(newHeader, header);
+	/* Calculate length of CP1251 encoded header */
+	char * newHeaderCp1251 = iconv_utf8_to_cp1251(header);
+	if(newHeaderCp1251 == NULL)
+	{
+		log_write(LOG_ERR, "Failed to convert new memo header \"%s\" "
+				  "from UTF8 to CP1251", header);
+		free(newHeader);
+		return 0;
+	}
+	size_t newHeaderCp1251Len = strlen(newHeaderCp1251);
+	free(newHeaderCp1251);
+	log_write(LOG_DEBUG, "New memo header copied, length (CP1251): %d",
+			  newHeaderCp1251Len);
+
+	/* Prepare text for new memo */
+	char * newText = NULL;
+	size_t newTextCp1251Len = 0;
+	if(text != NULL)
+	{
+		/* '+1' for NULL-terminated character */
+		if((newText = calloc(strlen(text) + 1, sizeof(char))) == NULL)
+		{
+			log_write(LOG_ERR, "Cannot allocate memory for new memo text: %s",
+					  strerror(errno));
+			free(newHeader);
+			return 0;
+		}
+		strcpy(newText, text);
+		/* Calculate length of CP1251 encoded text */
+		char * newTextCp1251 = iconv_utf8_to_cp1251(text);
+		if(newTextCp1251 == NULL)
+		{
+			log_write(LOG_ERR, "Failed to convert new memo text \"%s\" "
+					  "from UTF8 to CP1251", text);
+			free(newHeader);
+			free(newText);
+			return 0;
+		}
+		newTextCp1251Len = strlen(newTextCp1251);
+		free(newTextCp1251);
+		log_write(LOG_DEBUG, "New memo text copied, length (CP1251): %d",
+				  newTextCp1251Len);
+	}
+
+	/* Prepare category for new memo */
+	char * newCategory;
+	if((newCategory = calloc(strlen(category) + 1, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for new memo category: %s",
+				  strerror(errno));
+		free(newHeader);
+		free(newText);
+		return 0;
+	}
+	strcpy(newCategory, category);
+	log_write(LOG_DEBUG, "New memo category copied");
 
 	/* Allocate memory for new memo */
 	if((memo = calloc(1, sizeof(Memo))) == NULL)
 	{
 		log_write(LOG_ERR, "Cannot allocate memory for new memo: %s",
 				  strerror(errno));
-		return NULL;
+		free(newHeader);
+		free(newText);
+		free(newCategory);
+		return 0;
 	}
-	/* '+ 1' for NULL-terminating character */
-	if((memo->header = calloc(strlen(header) + 1, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for new memo header: %s",
-				  strerror(errno));
-		free(memo);
-		return NULL;
-	}
-	if(text != NULL &&
-	   (memo->text = calloc(strlen(text) + 1, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for new memo text: %s",
-				  strerror(errno));
-		free(memo->header);
-		free(memo);
-		return NULL;
-	}
-	if((memo->category = calloc(strlen(category) + 1, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for new memo category: %s",
-				  strerror(errno));
-		if(text != NULL)
-		{
-			free(memo->text);
-		}
-		free(memo->header);
-		free(memo);
-		return NULL;
-	}
+	log_write(LOG_DEBUG, "Memory for new memo allocated");
 
 	/* Add new record for new memo */
 	if((record = pdb_record_create(
 			memos->_pdb, offset,
 			PDB_RECORD_ATTR_EMPTY | (0x0f & categoryId), memo)) == NULL)
 	{
-		log_write(LOG_ERR, "Cannot add new record for new memo");
-		free(memo->category);
-		if(text != NULL)
-		{
-			free(memo->text);
-		}
-		free(memo->header);
+		log_write(LOG_ERR, "Cannot add new PDB record for new memo");
+		free(newHeader);
+		free(newText);
+		free(newCategory);
 		free(memo);
-		return NULL;
+		return 0;
 	}
 
+	/* Read memo unique ID */
+	uint32_t id = pdb_record_get_unique_id(record);
+	log_write(LOG_DEBUG, "PDB record for new memo created. Record: ID: %d", id);
+
 	/* Fill new memo with data and append it to PDB structure */
-	strcpy(memo->header, header);
-	memo->text = text != NULL ? strcpy(memo->text, text) : NULL;
-	strcpy(memo->category, category);
+	memo->id = id;
+	memo->header = newHeader;
+	memo->text = newText;
+	memo->category = newCategory;
 	memo->_record = record;
+	memo->_header_cp1251_len = newHeaderCp1251Len;
+	memo->_text_cp1251_len = newTextCp1251Len;
 	if(TAILQ_EMPTY(&memos->queue))
 	{
 		TAILQ_INSERT_HEAD(&memos->queue, memo, pointers);
+		log_write(LOG_DEBUG, "New memo added as the first memo to the queue");
 	}
 	else
 	{
 		TAILQ_INSERT_TAIL(&memos->queue, memo, pointers);
+		log_write(LOG_DEBUG, "New memo added as the last memo to the queue");
 	}
 
 	/* Recalculate and update offsets for old memos due to
@@ -367,10 +544,10 @@ Memo * memos_memo_add(Memos * memos, char * header, char * text,
 		old_record = TAILQ_PREV(old_record, RecordQueue, pointers);
 	}
 
-	return memo;
+	return id;
 }
 
-int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
+int memos_memo_edit(Memos * memos, uint32_t id, char * header, char * text,
 					char * category)
 {
 	if(memos == NULL)
@@ -378,13 +555,17 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 		log_write(LOG_ERR, "Got no memos to edit");
 		return -1;
 	}
+	Memo * memo = memos_memo_get(memos, id);
 	if(memo == NULL)
 	{
-		log_write(LOG_ERR, "Cannot edit completely empty memo");
+		log_write(LOG_ERR, "Cannot get memo with ID = %d", id);
 		return -1;
 	}
+	log_write(LOG_DEBUG, "Found memo with ID %d and header \"%s\" for edit",
+			  id, memo->header);
 
 	PDBRecord * record = memo->_record;
+
 	/* Allocate memory for new header and text, if necessary */
 	char * newHeader = NULL;
 	char * newText = NULL;
@@ -395,90 +576,100 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 				  strerror(errno));
 		return -1;
 	}
-	int strlenMemoText = memo->text != NULL ? strlen(text) : 0;
-	if(text != NULL && strlen(text) > strlenMemoText &&
+	size_t strlenOldMemoText = memo->text != NULL ? strlen(text) : 0;
+	if(text != NULL && strlen(text) > strlenOldMemoText &&
 	   (newText = calloc(strlen(text), sizeof(char))) == NULL)
 	{
 		log_write(LOG_ERR, "Failed to allocate memory for memo's new text: %s",
 				  strerror(errno));
-		if(newHeader != NULL)
-		{
-			free(newHeader);
-		}
+		free(newHeader);
 		return -1;
 	}
 
+	/* Load category ID for new category, if necessary */
 	uint8_t categoryId = 0;
 	if(category != NULL &&
 	   (categoryId = pdb_category_get_id(memos->_pdb, category)) == UINT8_MAX)
 	{
 		log_write(LOG_ERR, "Cannot find category ID for category \"%s\"",
 				  category);
-		if(newHeader != NULL)
-		{
-			free(newHeader);
-		}
-		if(newText != NULL)
-		{
-			free(newText);
-		}
+		free(newHeader);
+		free(newText);
 		return -1;
 	}
 
-	uint32_t headerSizeDiff =  header != NULL ?
-		strlen(header) - strlen(memo->header) :
-		0;
-	uint32_t textSizeDiff = text != NULL ?
-		strlen(text) - strlen(memo->text) :
-		0;
+	/* Calculate difference between new and old header/text strings in CP1251
+	   encoding, while old data is exists */
+	uint32_t headerSizeDiff = 0;
+	if(header != NULL)
+	{
+		char * headerCp1251 = iconv_utf8_to_cp1251(header);
+		headerSizeDiff = strlen(headerCp1251) - memo->_header_cp1251_len;
+		free(headerCp1251);
+	}
+	uint32_t textSizeDiff = 0;
+	if(text != NULL)
+	{
+		char * textCp1251 = iconv_utf8_to_cp1251(text);
+		textSizeDiff = strlen(textCp1251) - memo->_text_cp1251_len;
+		free(textCp1251);
+	}
+	log_write(LOG_DEBUG, "Calculate strings' size diffs, header: %d, text: %d",
+			  headerSizeDiff, textSizeDiff);
 
+	/* Set new header for memo */
 	if(newHeader != NULL)
 	{
 		free(memo->header);
 		memo->header = newHeader;
 		strcpy(memo->header, header);
+		log_write(LOG_DEBUG, "New header set");
 	}
 	else if(header != NULL)
 	{
 		explicit_bzero(memo->header, strlen(memo->header));
 		strcpy(memo->header, header);
+		log_write(LOG_DEBUG, "New header set");
 	}
 
+	/* Set new text for memo */
 	if(newText != NULL)
 	{
-		if(memo->text != NULL)
-		{
-			free(memo->text);
-		}
+		/* New text size is larger than existing memo's text size */
+		free(memo->text);
+		/* Use newly allocated string */
 		memo->text = newText;
+		/* and copy new text string to it */
 		strcpy(memo->text, text);
+		log_write(LOG_DEBUG, "New text set");
 	}
 	else if(text != NULL)
 	{
+		/* New text size is smaller or equals to existing memo's text size */
 		if(memo->text == NULL)
 		{
 			if((memo->text = calloc(strlen(text), sizeof(char))) == NULL)
 			{
 				log_write(LOG_ERR, "Failed to allocate memory for new text in "
 						  "memo structure: %s", strerror(errno));
-				if(newHeader != NULL)
-				{
-					free(newHeader);
-				}
+				free(newHeader);
 				return -1;
 			}
 		}
 		explicit_bzero(memo->text, strlen(memo->text));
 		strcpy(memo->text, text);
+		log_write(LOG_DEBUG, "New text set");
 	}
 
+	/* Set new category for category */
 	if(category != NULL)
 	{
 		record->attributes &= 0xf0;
 		record->attributes |= categoryId;
+		log_write(LOG_DEBUG, "New category set");
 	}
 
-	/* Should recalculate offsets for next memos */
+	/* Should recalculate PDB offsets for next memos */
 	log_write(LOG_DEBUG, "Recalculate offsets for next memos");
 	if(headerSizeDiff + textSizeDiff != 0)
 	{
@@ -495,59 +686,60 @@ int memos_memo_edit(Memos * memos, Memo * memo, char * header, char * text,
 	return 0;
 }
 
-int memos_memo_delete(Memos * memos, Memo * memo)
+int memos_memo_delete(Memos * memos, uint32_t id)
 {
 	if(memos == NULL)
 	{
 		log_write(LOG_ERR, "Got no memos, cannot delete memo");
 		return -1;
 	}
+	Memo * memo = memos_memo_get(memos, id);
 	if(memo == NULL)
 	{
-		log_write(LOG_ERR, "Got completely empty memo to delete. "
-				  "Nothing to delete.");
+		log_write(LOG_ERR, "Memo with ID = %d not found. "
+				  "Nothing to delete.", id);
 		return -1;
 	}
 
+	uint32_t memoId = memo->id;
+	log_write(LOG_DEBUG, "Deleting memo with ID: %d", memoId);
+
 	uint32_t offset;
-	offset = strlen(memo->header) + sizeof(char); /* header + '\n' */
-	offset += (memo->text != NULL ? strlen(memo->text) : 0) + sizeof(char); /* text   + '\0' */
+	/* header + '\n' */
+	offset = strlen(memo->header) + sizeof(char);
+	/* text   + '\0' */
+	offset += (memo->text != NULL ? strlen(memo->text) : 0) + sizeof(char);
 
 	/* Delete memo */
 	PDBRecord * record = memo->_record;
 	free(memo->header);
-	if(memo->text != NULL)
-	{
-		free(memo->text);
-	}
+	free(memo->text);
 	free(memo->category);
 	TAILQ_REMOVE(&memos->queue, memo, pointers);
 
 	/* Recalculate offsets for next memos */
-	PDBRecord * record2 = record;
 	log_write(LOG_DEBUG, "Recalculate offsets for existing memos");
-	while((record2 = TAILQ_NEXT(record2, pointers)) != NULL)
+	while((record = TAILQ_NEXT(record, pointers)) != NULL)
 	{
 		log_write(LOG_DEBUG, "Existing memo: old offset=0x%08x, new offset="
-				  "0x%08x", record2->offset, record2->offset - offset);
-		record2->offset -= offset;
+				  "0x%08x", record->offset, record->offset - offset);
+		record->offset -= offset;
 	}
 	/* Recalculate offsets due to record list size change */
 	log_write(LOG_DEBUG, "Recalculate offsets due to record list size change");
-	TAILQ_FOREACH(record2, &memos->_pdb->records, pointers)
+	TAILQ_FOREACH(record, &memos->_pdb->records, pointers)
 	{
 		log_write(LOG_DEBUG, "Existing memo [2]: old offset=0x%08x, "
-				  "new offset=0x%08x", record2->offset,
-				  record2->offset - PDB_RECORD_ITEM_SIZE);
-		record2->offset -= PDB_RECORD_ITEM_SIZE;
+				  "new offset=0x%08x", record->offset,
+				  record->offset - PDB_RECORD_ITEM_SIZE);
+		record->offset -= PDB_RECORD_ITEM_SIZE;
 	}
 
 	/* Delete record */
-	long uniqueRecordId = pdb_record_get_unique_id(record);
-	if(pdb_record_delete(memos->_pdb, uniqueRecordId))
+	if(pdb_record_delete(memos->_pdb, memoId))
 	{
-		log_write(LOG_ERR, "Cannot delete memo record from record list "
-				  "(offset: 0x%08x)", record->offset);
+		log_write(LOG_ERR, "Cannot delete memo record with ID=%d from record "
+				  "list (offset: 0x%08x)", memoId, record->offset);
 		return -1;
 	}
 
@@ -625,6 +817,7 @@ static Memo * _memos_read_memo(int fd, PDBRecord * record, PDB * pdb)
 		log_write(LOG_ERR, "Failed to locate memo text: %s", strerror(errno));
 		return NULL;
 	}
+	log_write(LOG_DEBUG, "Header size: %d, text size: %d", headerSize, textSize);
 
 	/* Rewinding to the start of memo */
 	if(lseek(fd, record->offset, SEEK_SET) != record->offset)
@@ -634,81 +827,120 @@ static Memo * _memos_read_memo(int fd, PDBRecord * record, PDB * pdb)
 		return NULL;
 	}
 
-	/* Allocate memory for memo */
-	Memo * memo;
-	if((memo = calloc(1, sizeof(Memo))) == NULL)
+	/* Read CP1251 encoded header */
+	char * headerCp1251;
+	if((headerCp1251 = calloc(headerSize, sizeof(char))) == NULL)
 	{
-		log_write(LOG_ERR, "Cannot allocate memory for memo at offset 0x%08x:"
-				  " %s", record->offset, strerror(errno));
+		log_write(LOG_ERR, "Failed to allocate buffer for new memo header "
+				  "(CP1251): %s", strerror(errno));
 		return NULL;
 	}
-	/* "+ 1" for two next callocs for null-termination bytes */
-	if((memo->header = calloc(headerSize + 1, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for memo header: %s",
-				  strerror(errno));
-		free(memo);
-		return NULL;
-	}
-	if((memo->text = calloc(textSize + 1, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for memo text: %s",
-				  strerror(errno));
-		free(memo->header);
-		free(memo);
-		return NULL;
-	}
-	if((memo->category = calloc(PDB_CATEGORY_LEN, sizeof(char))) == NULL)
-	{
-		log_write(LOG_ERR, "Cannot allocate memory for memo category: %s",
-				  strerror(errno));
-		free(memo->text);
-		free(memo->header);
-		free(memo);
-		return NULL;
-	}
-
-	log_write(LOG_DEBUG, "Header size: %d, text size: %d", headerSize, textSize);
-
-	/* Reading header */
-	if(read_chunks(fd, memo->header, headerSize))
+	if(read_chunks(fd, headerCp1251, headerSize))
 	{
 		log_write(LOG_ERR, "Cannot read memo header");
-		free(memo->header);
-		free(memo->text);
-		free(memo->category);
-		free(memo);
 		return NULL;
 	}
+
+	/* Encode header to UTF8 */
+	char * header = iconv_cp1251_to_utf8(headerCp1251);
+	if(header == NULL)
+	{
+		log_write(LOG_ERR, "Failed to encode CP1251 header to UTF8");
+		free(headerCp1251);
+		return NULL;
+	}
+	free(headerCp1251);
 
 	/* Skip '\n' from the header */
 	if(lseek(fd, 1, SEEK_CUR) == (off_t)-1)
 	{
 		log_write(LOG_ERR, "Failed to skip newline symbol between memo header "
 				  "and text: %s", strerror(errno));
-		free(memo->header);
-		free(memo->text);
-		free(memo->category);
-		free(memo);
+		free(header);
 		return NULL;
 	}
 
-	/* Reading text */
-	if(read_chunks(fd, memo->text, textSize))
+	/* Read CP1251 encoded text */
+	char * textCp1251;
+	if((textCp1251 = calloc(textSize, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Failed to allocate buffer for new memo text "
+				  "(CP1251): %s", strerror(errno));
+		free(header);
+		return NULL;
+	}
+	if(read_chunks(fd, textCp1251, textSize))
 	{
 		log_write(LOG_ERR, "Cannot read memo text");
-		free(memo->header);
-		free(memo->text);
-		free(memo->category);
-		free(memo);
+		free(header);
 		return NULL;
 	}
 
-	/* Reading category */
-	char * categoryName = pdb_category_get_name(pdb, record->attributes & 0x0f);
-	strncpy(memo->category, categoryName, PDB_CATEGORY_LEN);
+	/* Encode text for UTF8 */
+	char * text = iconv_cp1251_to_utf8(textCp1251);
+	if(text == NULL)
+	{
+		log_write(LOG_ERR, "Failed to encode CP1251 text to UTF8");
+		free(header);
+		free(textCp1251);
+		return NULL;
+	}
+	free(textCp1251);
 
+	/* Get string with category name */
+	char * categoryName = pdb_category_get_name(pdb, record->attributes & 0x0f);
+	if(categoryName == NULL)
+	{
+		log_write(LOG_ERR, "Failed to read category name");
+		free(header);
+		free(text);
+	    return NULL;
+	}
+
+	/* Allocate memory for memo */
+	Memo * memo;
+	if((memo = calloc(1, sizeof(Memo))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for memo at offset 0x%08x:"
+				  " %s", record->offset, strerror(errno));
+		free(header);
+		free(text);
+		free(categoryName);
+		return NULL;
+	}
+
+	/* Allocate memory for new memo's category */
+	if((memo->category = calloc(PDB_CATEGORY_LEN, sizeof(char))) == NULL)
+	{
+		log_write(LOG_ERR, "Cannot allocate memory for memo category: %s",
+				  strerror(errno));
+		free(memo);
+		free(header);
+		free(text);
+		free(categoryName);
+		return NULL;
+	}
+
+	/* Set memo ID */
+	uint32_t id = pdb_record_get_unique_id(record);
+	if(id == 0)
+	{
+		log_write(LOG_ERR, "Failed to get ID of memo!");
+		free(memo->category);
+		free(memo);
+		free(text);
+		free(header);
+		free(categoryName);
+		return NULL;
+	}
+
+	memo->id = id;
+	memo->header = header;
+	memo->text = text;
+	strncpy(memo->category, categoryName, PDB_CATEGORY_LEN);
 	memo->_record = record;
+	memo->_header_cp1251_len = headerSize;
+	memo->_text_cp1251_len = textSize;
 	return memo;
 }
 
@@ -738,14 +970,25 @@ static int _memos_write_memo(int fd, Memo * memo)
 		return -1;
 	}
 
+	/* Encode header to CP1251 */
+	char * headerCp1251 = iconv_utf8_to_cp1251(memo->header);
+	if(headerCp1251 == NULL)
+	{
+		log_write(LOG_ERR, "Failed to encode memo's header \"%s\" to CP1251. "
+				  "Memo ID = %d", memo->header, memo->id);
+		return -1;
+	}
+
 	/* Insert header */
-	if(write_chunks(fd, memo->header, strlen(memo->header)))
+	if(write_chunks(fd, headerCp1251, memo->_header_cp1251_len))
 	{
 		log_write(LOG_ERR, "Failed to write memo header!");
+		free(headerCp1251);
 		return -1;
 	}
 	log_write(LOG_DEBUG, "Write header (len=%d) [%s] for memo",
-			  strlen(memo->header), iconv_cp1251_to_utf8(memo->header));
+			  strlen(memo->header), memo->header);
+	free(headerCp1251);
 
     /* Insert '\n' as divider */
 	if(write(fd, "\n", 1) != 1)
@@ -758,13 +1001,24 @@ static int _memos_write_memo(int fd, Memo * memo)
 	/* Insert text */
 	if(memo->text != NULL)
 	{
-		if(write_chunks(fd, memo->text, strlen(memo->text)))
+		/* Encode text to CP1251 */
+		char * textCp1251 = iconv_utf8_to_cp1251(memo->text);
+		if(textCp1251 == NULL)
 		{
-			log_write(LOG_ERR, "Failed to write memo text!");
+			log_write(LOG_ERR, "Failed to encode memo's text \"%s\" to CP1251. "
+					  "Memo ID = %d", memo->text, memo->id);
 			return -1;
 		}
-		log_write(LOG_DEBUG, "Write text (len=%d) for memo",
-				  strlen(memo->text));
+
+		if(write_chunks(fd, textCp1251, memo->_text_cp1251_len))
+		{
+			log_write(LOG_ERR, "Failed to write memo text!");
+			free(textCp1251);
+			return -1;
+		}
+		log_write(LOG_DEBUG, "Write text (len=%d) [%s] for memo",
+				  strlen(memo->text), memo->text);
+		free(textCp1251);
 	}
 
 	/* Insert '\0' at the end of memo */
